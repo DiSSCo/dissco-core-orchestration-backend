@@ -35,15 +35,25 @@ public class TranslatorController {
   private final TranslatorService service;
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<List<TranslatorResponse>> getAll() throws ApiException {
-    return ResponseEntity.ok(service.getAll());
+  public ResponseEntity<List<TranslatorResponse>> getAll() {
+    try {
+      return ResponseEntity.ok(service.getAll());
+    } catch (ApiException e) {
+      log.error("Application threw error with message: {}", e.getResponseBody());
+      return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
+    }
   }
 
   @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<TranslatorResponse> get(@PathVariable String id) throws ApiException {
-    var optionalResponse = service.get(id);
-    return optionalResponse.map(ResponseEntity::ok)
-        .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+  public ResponseEntity<TranslatorResponse> get(@PathVariable String id) {
+    try {
+      var optionalResponse = service.get(id);
+      return optionalResponse.map(ResponseEntity::ok)
+          .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    } catch (ApiException e) {
+      log.error("Application threw error with message: {}", e.getResponseBody());
+      return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
+    }
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -52,7 +62,8 @@ public class TranslatorController {
       @RequestBody TranslatorRequest request)
       throws TemplateException, IOException {
     try {
-      log.info("Received new post request: {} by user: {}", request, getNameFromToken(authentication));
+      log.info("Received new post request: {} by user: {}", request,
+          getNameFromToken(authentication));
       var result = service.createTranslator(request);
       return new ResponseEntity<>(result, HttpStatus.CREATED);
     } catch (ApiException e) {
@@ -71,12 +82,13 @@ public class TranslatorController {
   @DeleteMapping(value = "/{id}")
   public ResponseEntity<Void> deleteTranslator(Authentication authentication,
       @PathVariable String id) {
-    log.info("Received delete request for job: {} from user: {}", id, getNameFromToken(authentication));
+    log.info("Received delete request for job: {} from user: {}", id,
+        getNameFromToken(authentication));
     try {
       service.deleteJob(id);
       return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     } catch (ApiException e) {
-      log.error("Application threw error with message: {}", e.getMessage());
+      log.error("Application threw error with message: {}", e.getResponseBody());
       return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
     } catch (NotFoundException e) {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
