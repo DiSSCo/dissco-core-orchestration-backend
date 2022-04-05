@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestration-backend
+  labels:
+    app: orchestration-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestration-backend
+  template:
+    metadata:
+      labels:
+        app: orchestration-backend
+    spec:
+      serviceAccountName: orchestration-backend-sa
+      containers:
+        - name: orchestration-backend
+          image: leeflangjs/orchestration-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: keycloak.auth-server-url
+              value: https://login-demo.dissco.eu/auth
+            - name: keycloak.realm
+              value: dissco
+            - name: keycloak.resource
+              value: orchestration-service
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
