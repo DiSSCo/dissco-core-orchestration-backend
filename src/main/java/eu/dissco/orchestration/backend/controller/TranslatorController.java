@@ -67,6 +67,7 @@ public class TranslatorController {
       var result = service.createTranslator(request);
       return new ResponseEntity<>(result, HttpStatus.CREATED);
     } catch (ApiException e) {
+      log.error("Application threw error with message: {}", e.getResponseBody());
       return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
     }
   }
@@ -75,7 +76,7 @@ public class TranslatorController {
     KeycloakPrincipal<? extends KeycloakSecurityContext> principal =
         (KeycloakPrincipal<?>) authentication.getPrincipal();
     AccessToken token = principal.getKeycloakSecurityContext().getToken();
-    return token.getPreferredUsername();
+    return token.getSubject();
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -91,6 +92,7 @@ public class TranslatorController {
       log.error("Application threw error with message: {}", e.getResponseBody());
       return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
     } catch (NotFoundException e) {
+      log.error("Job was not found on the cluster");
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
   }

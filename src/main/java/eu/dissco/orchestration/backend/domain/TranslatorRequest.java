@@ -1,14 +1,13 @@
 package eu.dissco.orchestration.backend.domain;
 
-import lombok.Data;
+import java.util.List;
 
-@Data
-public class TranslatorRequest {
-
-  private String serviceName;
-  private TranslatorType translatorType;
-  private String endPoint;
-  private String query;
-  private Integer itemsPerRequest;
+public record TranslatorRequest(
+    String sourceSystemId,
+    TranslatorType translatorType,
+    String query,
+    Integer itemsPerRequest,
+    List<Enrichment> enrichmentList
+) {
 
 }

@@ -1,6 +1,7 @@
 package eu.dissco.orchestration.backend.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.orchestration.backend.domain.Enrichment;
 import eu.dissco.orchestration.backend.domain.TranslatorRequest;
 import eu.dissco.orchestration.backend.domain.TranslatorResponse;
 import eu.dissco.orchestration.backend.domain.TranslatorType;
@@ -10,6 +11,7 @@ import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
+import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobStatus;
 import java.io.IOException;
@@ -43,14 +45,33 @@ public class TranslatorService {
     this.batchV1Api = batchV1Api;
   }
 
+  private static String getSuffix(String sourceSystemId) {
+    return sourceSystemId.substring(sourceSystemId.indexOf('/') + 1).toLowerCase();
+  }
+
   public TranslatorResponse createTranslator(TranslatorRequest request)
       throws TemplateException, IOException, ApiException {
     var jobProps = getTemplateProperties(request);
-    var job = fillTemplate(jobProps, request.getTranslatorType());
+    var job = fillTemplate(jobProps, request.translatorType());
     var k8sJob = mapper.readValue(job.toString(), V1Job.class);
+    addEnrichmentService(k8sJob, request.enrichmentList());
     var result = batchV1Api.createNamespacedJob(NAMESPACE, k8sJob, "true", null,
-        null);
+        null, null);
     return mapToResponse(result);
+  }
+
+  private void addEnrichmentService(V1Job k8sJob, List<Enrichment> enrichmentList) {
+    var container = k8sJob.getSpec().getTemplate().getSpec().getContainers().get(0);
+    for (int i = 0; i < enrichmentList.size(); i++) {
+      var envName = new V1EnvVar();
+      envName.setName("ENRICHMENT_LIST_" + i + "_NAME");
+      envName.setValue(enrichmentList.get(i).getName());
+      container.addEnvItem(envName);
+      var envImageOnly = new V1EnvVar();
+      envImageOnly.setName("ENRICHMENT_LIST_" + i + "_IMAGE_ONLY");
+      envImageOnly.setValue(enrichmentList.get(i).getImageOnly());
+      container.addEnvItem(envImageOnly);
+    }
   }
 
   private TranslatorResponse mapToResponse(V1Job result) {
@@ -79,16 +100,11 @@ public class TranslatorService {
   private Map<String, Object> getTemplateProperties(TranslatorRequest request) {
     var map = new HashMap<String, Object>();
     map.put("image", jobProperties.getImage());
-    map.put("serviceName", request.getServiceName());
-    map.put("jobName", "job-" + request.getServiceName());
-    map.put("containerName", "container-" + request.getServiceName());
-    map.put("endpoint", request.getEndPoint());
+    map.put("sourceSystemId", request.sourceSystemId());
+    map.put("jobName", "job-" + getSuffix(request.sourceSystemId()));
+    map.put("containerName", "container-" + getSuffix(request.sourceSystemId()));
     map.put("kafkaHost", jobProperties.getKafkaHost());
     map.put("kafkaTopic", jobProperties.getKafkaTopic());
-    if (request.getTranslatorType().equals(TranslatorType.GEOCASE)) {
-      map.put("query", request.getQuery());
-      map.put("itemsPerRequest", request.getItemsPerRequest());
-    }
     return map;
   }
 
@@ -104,7 +120,6 @@ public class TranslatorService {
   private String determineTemplate(TranslatorType translatorType) {
     return switch (translatorType) {
       case DWCA -> "dwca-translator-job.ftl";
-      case GEOCASE -> "geocase-translator-job.ftl";
       case BIOCASE -> "biocase-translator-job.ftl";
     };
   }

@@ -11,10 +11,10 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("translator-job")
 public class TranslatorJobProperties {
 
-  private String image = "leeflangjs/translator-service:latest";
+  private String image = "public.ecr.aws/dissco/dissco-core-translator:latest";
 
   private String kafkaHost = "kafka.kafka.svc.cluster.local:9092";
 
-  private String kafkaTopic = "topic-multi";
+  private String kafkaTopic = "digital-specimen";
 
 }
