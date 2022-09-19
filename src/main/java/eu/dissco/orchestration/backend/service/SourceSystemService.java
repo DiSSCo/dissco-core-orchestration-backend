@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.service;
 
+import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
@@ -18,7 +19,7 @@ public class SourceSystemService {
   private final HandleService handleService;
 
   public SourceSystemRecord createSourceSystem(SourceSystem sourceSystem) throws TransformerException {
-    var handle = handleService.createNewHandle();
+    var handle = handleService.createNewHandle(HandleType.SOURCE_SYSTEM);
     var sourceSystemRecord = new SourceSystemRecord(handle, Instant.now(), sourceSystem);
     repository.createSourceSystem(sourceSystemRecord);
     return sourceSystemRecord;

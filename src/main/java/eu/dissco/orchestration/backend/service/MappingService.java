@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.service;
 
+import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
@@ -18,7 +19,7 @@ public class MappingService {
   private final MappingRepository repository;
 
   public MappingRecord createMapping(Mapping mapping, String userId) throws TransformerException {
-    var handle = handleService.createNewHandle();
+    var handle = handleService.createNewHandle(HandleType.MAPPING);
     var mappingRecord = new MappingRecord(handle, 1, Instant.now(), userId, mapping);
     repository.createMapping(mappingRecord);
     return mappingRecord;
