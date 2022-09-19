@@ -2,6 +2,7 @@ package eu.dissco.orchestration.backend.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.HandleAttribute;
+import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.repository.HandleRepository;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -35,16 +36,17 @@ public class HandleService {
   private final DocumentBuilder documentBuilder;
   private final HandleRepository repository;
 
-  public String createNewHandle()
+  public String createNewHandle(HandleType type)
       throws TransformerException {
     var handle = generateHandle();
     var recordTimestamp = Instant.now();
-    var handleAttributes = fillPidRecord(handle, recordTimestamp);
+    var handleAttributes = fillPidRecord(handle, recordTimestamp, type);
     repository.createHandle(handle, recordTimestamp, handleAttributes);
     return handle;
   }
 
-  private List<HandleAttribute> fillPidRecord(String handle, Instant recordTimestamp)
+  private List<HandleAttribute> fillPidRecord(String handle, Instant recordTimestamp,
+      HandleType type)
       throws TransformerException {
     var handleAttributes = new ArrayList<HandleAttribute>();
     handleAttributes.add(new HandleAttribute(1, "pid",
@@ -52,9 +54,9 @@ public class HandleService {
     handleAttributes.add(new HandleAttribute(2, "pidIssuer",
         createPidReference("https://doi.org/10.22/10.22/2AA-GAA-E29", "DOI", "RA Issuing DOI")));
     handleAttributes.add(new HandleAttribute(3, "digitalObjectType",
-        createPidReference("https://hdl.handle.net/21...", "Handle", "Digital Media Object")));
+        createPidReference("https://hdl.handle.net/21...", "Handle", type.toString())));
     handleAttributes.add(
-        new HandleAttribute(5, "10320/loc", createLocations(handle)));
+        new HandleAttribute(5, "10320/loc", createLocations(handle, type)));
     handleAttributes.add(new HandleAttribute(6, "issueDate", createIssueDate(recordTimestamp)));
     handleAttributes.add(
         new HandleAttribute(7, "issueNumber", "1".getBytes(StandardCharsets.UTF_8)));
@@ -72,13 +74,18 @@ public class HandleService {
     return formatter.format(Date.from(recordTimestamp)).getBytes(StandardCharsets.UTF_8);
   }
 
-  private byte[] createLocations(String handle) throws TransformerException {
+  private byte[] createLocations(String handle, HandleType type) throws TransformerException {
     var document = documentBuilder.newDocument();
     var locations = document.createElement("locations");
     document.appendChild(locations);
     var firstLocation = document.createElement("location");
     firstLocation.setAttribute("id", "0");
-    firstLocation.setAttribute("href", "https://sandbox.dissco.tech/api/v1/source-system/" + handle);
+    if (type == HandleType.MAPPING) {
+      firstLocation.setAttribute("href", "https://sandbox.dissco.tech/api/v1/mappings/" + handle);
+    } else {
+      firstLocation.setAttribute("href",
+          "https://sandbox.dissco.tech/api/v1/source-systems/" + handle);
+    }
     firstLocation.setAttribute("weight", "0");
     locations.appendChild(firstLocation);
     return documentToString(document).getBytes(StandardCharsets.UTF_8);
@@ -135,6 +142,5 @@ public class HandleService {
   private int toDigit(char hexChar) {
     return Character.digit(hexChar, 16);
   }
-
 
 }
