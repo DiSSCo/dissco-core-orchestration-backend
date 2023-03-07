@@ -19,6 +19,7 @@
 		<keycloak-adapter-bom.version>16.1.1</keycloak-adapter-bom.version>
     <k8s-client-java.version>16.0.0</k8s-client-java.version>
     <sonar.organization>dissco</sonar.organization>
+    <testcontainers.version>1.17.5</testcontainers.version>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.coverage.jacoco.xmlReportPaths>../app-it/target/site/jacoco-aggregate/jacoco.xml
     </sonar.coverage.jacoco.xmlReportPaths>
@@ -26,6 +27,13 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
       <dependency>
         <groupId>org.keycloak.bom</groupId>
         <artifactId>keycloak-adapter-bom</artifactId>
@@ -116,6 +124,35 @@
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <artifactId>mockito-inline</artifactId>
+      <groupId>org.mockito</groupId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
     </dependency>
   </dependencies>
 
