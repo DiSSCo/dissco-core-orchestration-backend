@@ -173,25 +173,33 @@
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.8.7</version>
+        <artifactId>jacoco-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>prepare-agent</id>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
+            <id>prepare-agent</id>
           </execution>
           <execution>
-            <id>report</id>
+            <goals>
+              <goal>prepare-agent-integration</goal>
+            </goals>
+            <id>prepare-agent-integration</id>
+          </execution>
+          <execution>
             <goals>
               <goal>report</goal>
             </goals>
-            <configuration>
-              <formats>
-                <format>XML</format>
-              </formats>
-            </configuration>
+            <id>report</id>
+            <phase>prepare-package</phase>
+          </execution>
+          <execution>
+            <goals>
+              <goal>report-integration</goal>
+            </goals>
+            <id>report-integration</id>
           </execution>
         </executions>
       </plugin>

@@ -72,7 +72,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetSourceSystems(){
     // Given
-    int pageNum = 2;
+    int pageNum = 1;
     int pageSize = 10;
     List<SourceSystemRecord> ssRecords = new ArrayList<>();
     IntStream.range(0, pageSize).boxed().toList()
