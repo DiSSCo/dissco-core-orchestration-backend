@@ -52,7 +52,7 @@ public class SourceSystemEndpoint {
 
   @GetMapping("")
   public ResponseEntity<JsonApiWrapper> getSourceSystems(
-      @RequestParam(value = "pageNum", defaultValue = "0") int pageNum,
+      @RequestParam(value = "pageNumber", defaultValue = "0") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest r
   ){

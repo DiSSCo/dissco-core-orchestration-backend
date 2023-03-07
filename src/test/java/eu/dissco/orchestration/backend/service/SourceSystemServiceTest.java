@@ -4,6 +4,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenLinksNode;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSsRecordResponse;
@@ -78,12 +79,13 @@ class SourceSystemServiceTest {
   @Test
   void getSourceSystemRecords(){
     // Given
-    int pageNum = 0;
+    int pageNum = 1;
     int pageSize = 10;
     String path = SANDBOX_URI;
-    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
-    given(repository.getSourceSystems(pageNum, pageSize)).willReturn(ssRecords);
-    var expected = givenSsRecordResponse(ssRecords, path);
+    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize+1, givenSourceSystemRecord());
+    given(repository.getSourceSystems(pageNum, pageSize+1)).willReturn(ssRecords);
+    var linksNode = givenLinksNode(path, pageNum, pageSize, true);
+    var expected = givenSsRecordResponse(ssRecords.subList(0, pageSize), linksNode);
 
     // When
     var result = service.getSourceSystemRecords(pageNum, pageSize, path);

@@ -9,7 +9,6 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,8 @@ public class SourceSystemService {
 
   private final ObjectMapper mapper;
 
-  public SourceSystemRecord createSourceSystem(SourceSystem sourceSystem) throws TransformerException {
+  public SourceSystemRecord createSourceSystem(SourceSystem sourceSystem)
+      throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.SOURCE_SYSTEM);
     var sourceSystemRecord = new SourceSystemRecord(handle, Instant.now(), sourceSystem);
     repository.createSourceSystem(sourceSystemRecord);
@@ -39,19 +39,43 @@ public class SourceSystemService {
     return sourceSystemRecord;
   }
 
-  public JsonApiWrapper getSourceSystemRecords(int pageNum, int pageSize, String path){
-    var ssRecords = repository.getSourceSystems(pageNum, pageSize);
-    var dataNode = wrapData(ssRecords);
-    return new JsonApiWrapper(dataNode, new JsonApiLinks(path));
+  public JsonApiWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
+    var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize + 1);
+    return wrapResponse(sourceSystemRecords, pageNum, pageSize, path);
   }
 
-  List<JsonApiData> wrapData(List<SourceSystemRecord> ssRecords){
-    List<JsonApiData> dataNode = new ArrayList<>();
-
-    ssRecords.forEach(ss -> dataNode.add(new JsonApiData(ss.id(), HandleType.SOURCE_SYSTEM, mapper.valueToTree(ss))));
-    return dataNode;
+  private JsonApiWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,
+      int pageSize, String path) {
+    boolean hasNext;
+    if (sourceSystemRecords.size() > pageSize) {
+      hasNext = true;
+      sourceSystemRecords = sourceSystemRecords.subList(0, pageSize);
+    } else {
+      hasNext = false;
+    }
+    var linksNode = buildLinksNode(pageSize, pageNum, hasNext, path);
+    var dataNode = wrapData(sourceSystemRecords);
+    return new JsonApiWrapper(dataNode, linksNode);
   }
 
+  List<JsonApiData> wrapData(List<SourceSystemRecord> sourceSystemRecords) {
+    return sourceSystemRecords.stream()
+        .map(r -> new JsonApiData(r.id(), HandleType.SOURCE_SYSTEM, mapper.valueToTree(r)))
+        .toList();
+  }
+
+  JsonApiLinks buildLinksNode(int pageSize, int pageNum,
+      boolean hasNext, String path) {
+    String pn = "?pageNumber=";
+    String ps = "&pageSize=";
+    String self = path + pn + pageNum + ps + pageSize;
+    String first = path + pn + "1" + ps + pageSize;
+    String prev = (pageNum <= 1) ? null : path + pn + (pageNum - 1) + ps + pageSize;
+
+    String next =
+        (hasNext) ? path + pn + (pageNum + 1) + ps + pageSize : null;
+    return new JsonApiLinks(self, first, next, prev);
+  }
 
 
 }

@@ -18,7 +18,8 @@ public class SourceSystemRepository {
   private final DSLContext context;
 
   public int createSourceSystem(SourceSystemRecord sourceSystemRecord) {
-    return context.insertInto(NEW_SOURCE_SYSTEM).set(NEW_SOURCE_SYSTEM.ID, sourceSystemRecord.id())
+    return context.insertInto(NEW_SOURCE_SYSTEM)
+        .set(NEW_SOURCE_SYSTEM.ID, sourceSystemRecord.id())
         .set(NEW_SOURCE_SYSTEM.NAME, sourceSystemRecord.sourceSystem().name())
         .set(NEW_SOURCE_SYSTEM.ENDPOINT, sourceSystemRecord.sourceSystem().endpoint())
         .set(NEW_SOURCE_SYSTEM.DESCRIPTION, sourceSystemRecord.sourceSystem().description())

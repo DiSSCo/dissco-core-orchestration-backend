@@ -45,11 +45,21 @@ public class TestUtils {
     );
   }
 
-  public static JsonApiWrapper givenSsRecordResponse(List<SourceSystemRecord> ssRecords, String path){
+  public static JsonApiWrapper givenSsRecordResponse(List<SourceSystemRecord> ssRecords, JsonApiLinks linksNode){
     List<JsonApiData> dataNode = new ArrayList<>();
     ssRecords.forEach(ss -> dataNode.add(new JsonApiData(ss.id(), HandleType.SOURCE_SYSTEM, MAPPER.valueToTree(ss))));
-    return new JsonApiWrapper(dataNode, new JsonApiLinks(path));
-
+    return new JsonApiWrapper(dataNode, linksNode);
+  }
+  
+  public static JsonApiLinks givenLinksNode(String path, int pageNum, int pageSize, boolean hasNext){
+    String pn = "?pageNumber=";
+    String ps = "&pageSize=";
+    String self = path + pn + pageNum + ps + pageSize;
+    String first = path + pn + "1" + ps + pageSize;
+    String prev = (pageNum <= 1) ? null : path + pn + (pageNum - 1) + ps + pageSize;
+    String next =
+        (hasNext) ? path + pn + (pageNum + 1) + ps + pageSize : null;
+    return new JsonApiLinks(self, first, next, prev);
   }
 
 
