@@ -94,6 +94,24 @@ class SourceSystemServiceTest {
     assertThat(result).isEqualTo(expected);
   }
 
+  @Test
+  void getSourceSystemRecordsLastPage(){
+    // Given
+    int pageNum = 2;
+    int pageSize = 10;
+    String path = SANDBOX_URI;
+    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
+    given(repository.getSourceSystems(pageNum, pageSize+1)).willReturn(ssRecords);
+    var linksNode = givenLinksNode(path, pageNum, pageSize, false);
+    var expected = givenSsRecordResponse(ssRecords, linksNode);
+
+    // When
+    var result = service.getSourceSystemRecords(pageNum, pageSize, path);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
   private void initTime() {
     Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
     Instant instant = Instant.now(clock);

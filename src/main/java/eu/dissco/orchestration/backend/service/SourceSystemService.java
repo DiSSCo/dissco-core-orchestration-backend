@@ -77,5 +77,4 @@ public class SourceSystemService {
     return new JsonApiLinks(self, first, next, prev);
   }
 
-
 }
