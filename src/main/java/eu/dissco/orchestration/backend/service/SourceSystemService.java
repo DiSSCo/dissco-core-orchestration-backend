@@ -47,7 +47,6 @@ public class SourceSystemService {
 
   List<JsonApiData> wrapData(List<SourceSystemRecord> ssRecords){
     List<JsonApiData> dataNode = new ArrayList<>();
-
     ssRecords.forEach(ss -> dataNode.add(new JsonApiData(ss.id(), HandleType.SOURCE_SYSTEM, mapper.valueToTree(ss))));
     return dataNode;
   }

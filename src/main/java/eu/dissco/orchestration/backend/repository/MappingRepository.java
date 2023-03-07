@@ -1,11 +1,13 @@
 package eu.dissco.orchestration.backend.repository;
 
 import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MAPPING;
+import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -43,6 +45,16 @@ public class MappingRepository {
         .where(NEW_MAPPING.ID.eq(id))
         .orderBy(NEW_MAPPING.ID, NEW_MAPPING.VERSION.desc())
         .fetchOne(this::mapToMappingRecord);
+  }
+
+  public List<MappingRecord> getMappings(int pageNum, int pageSize){
+    int offset = getOffset(pageNum, pageSize);
+
+    return context.select(NEW_MAPPING.asterisk())
+        .from(NEW_MAPPING)
+        .offset(offset)
+        .limit(pageSize)
+        .fetch(this::mapToMappingRecord);
   }
 
   private MappingRecord mapToMappingRecord(Record record) {

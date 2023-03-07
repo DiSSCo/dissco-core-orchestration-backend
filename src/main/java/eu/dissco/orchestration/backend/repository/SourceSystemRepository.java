@@ -1,6 +1,7 @@
 package eu.dissco.orchestration.backend.repository;
 
 import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
+import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -56,14 +57,6 @@ public class SourceSystemRepository {
             row.get(NEW_SOURCE_SYSTEM.ENDPOINT),
             row.get(NEW_SOURCE_SYSTEM.DESCRIPTION),
             row.get(NEW_SOURCE_SYSTEM.MAPPING_ID)));
-  }
-
-  private int getOffset(int pageNum, int pageSize) {
-    int offset = 0;
-    if (pageNum > 1) {
-      offset = offset + (pageSize * (pageNum - 1));
-    }
-    return offset;
   }
 
 
