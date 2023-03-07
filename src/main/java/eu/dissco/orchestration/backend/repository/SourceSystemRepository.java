@@ -4,11 +4,10 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SY
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
-import java.time.Instant;
 import java.util.List;
+import org.jooq.Record;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
-import org.jooq.Record6;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -48,7 +47,7 @@ public class SourceSystemRepository {
   }
 
   private SourceSystemRecord mapToSourceSystemRecord(
-      Record6<String, Instant, String, String, String, String> row) {
+      Record row) {
     return new SourceSystemRecord(
         row.get(NEW_SOURCE_SYSTEM.ID),
         row.get(NEW_SOURCE_SYSTEM.CREATED),
