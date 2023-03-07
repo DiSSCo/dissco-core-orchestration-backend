@@ -21,7 +21,8 @@
     <sonar.organization>dissco</sonar.organization>
     <testcontainers.version>1.17.5</testcontainers.version>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-    <sonar.coverage.jacoco.xmlReportPaths>../app-it/target/site/jacoco-aggregate/jacoco.xml
+    <sonar.coverage.jacoco.xmlReportPaths>
+      ../app-it/target/site/jacoco-aggregate/jacoco.xml
     </sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
@@ -172,8 +173,6 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.jacoco</groupId>
-        <version>0.8.7</version>
         <artifactId>jacoco-maven-plugin</artifactId>
         <executions>
           <execution>
@@ -202,6 +201,8 @@
             <id>report-integration</id>
           </execution>
         </executions>
+        <groupId>org.jacoco</groupId>
+        <version>0.8.7</version>
       </plugin>
       <plugin>
         <groupId>org.jooq</groupId>
