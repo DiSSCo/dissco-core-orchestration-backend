@@ -40,12 +40,12 @@ public class MappingController {
       @RequestBody Mapping mapping) throws TransformerException {
     log.info("Received create request for mapping: {}", mapping);
     var result = service.createMapping(mapping, getNameFromToken(authentication));
-    return ResponseEntity.ok(result);
+    return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
   @PreAuthorize("isAuthenticated()")
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<MappingRecord> updateSourceSystem(Authentication authentication,
+  public ResponseEntity<MappingRecord> updateMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody Mapping mapping) {
     var id = prefix + '/' + suffix;

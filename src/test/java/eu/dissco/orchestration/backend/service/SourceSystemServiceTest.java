@@ -4,10 +4,9 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenLinksNode;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSsRecordResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -15,6 +14,7 @@ import static org.mockito.Mockito.mockStatic;
 
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -38,7 +38,6 @@ class SourceSystemServiceTest {
   private SourceSystemRepository repository;
 
   private MockedStatic<Instant> mockedStatic;
-
 
   @BeforeEach
   void setup(){
@@ -84,8 +83,8 @@ class SourceSystemServiceTest {
     String path = SANDBOX_URI;
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize+1, givenSourceSystemRecord());
     given(repository.getSourceSystems(pageNum, pageSize+1)).willReturn(ssRecords);
-    var linksNode = givenLinksNode(path, pageNum, pageSize, true);
-    var expected = givenSsRecordResponse(ssRecords.subList(0, pageSize), linksNode);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, true, path);
+    var expected = givenSourceSystemRecordResponse(ssRecords.subList(0, pageSize), linksNode);
 
     // When
     var result = service.getSourceSystemRecords(pageNum, pageSize, path);
@@ -102,8 +101,8 @@ class SourceSystemServiceTest {
     String path = SANDBOX_URI;
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
     given(repository.getSourceSystems(pageNum, pageSize+1)).willReturn(ssRecords);
-    var linksNode = givenLinksNode(path, pageNum, pageSize, false);
-    var expected = givenSsRecordResponse(ssRecords, linksNode);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, false, path);
+    var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
 
     // When
     var result = service.getSourceSystemRecords(pageNum, pageSize, path);

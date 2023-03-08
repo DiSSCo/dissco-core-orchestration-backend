@@ -53,7 +53,7 @@ public class SourceSystemService {
     } else {
       hasNext = false;
     }
-    var linksNode = buildLinksNode(pageSize, pageNum, hasNext, path);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
     var dataNode = wrapData(sourceSystemRecords);
     return new JsonApiWrapper(dataNode, linksNode);
   }
@@ -64,17 +64,5 @@ public class SourceSystemService {
         .toList();
   }
 
-  JsonApiLinks buildLinksNode(int pageSize, int pageNum,
-      boolean hasNext, String path) {
-    String pn = "?pageNumber=";
-    String ps = "&pageSize=";
-    String self = path + pn + pageNum + ps + pageSize;
-    String first = path + pn + "1" + ps + pageSize;
-    String prev = (pageNum <= 1) ? null : path + pn + (pageNum - 1) + ps + pageSize;
-
-    String next =
-        (hasNext) ? path + pn + (pageNum + 1) + ps + pageSize : null;
-    return new JsonApiLinks(self, first, next, prev);
-  }
 
 }

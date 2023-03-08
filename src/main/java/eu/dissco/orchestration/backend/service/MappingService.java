@@ -4,13 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
-import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
@@ -32,19 +30,6 @@ public class MappingService {
     repository.createMapping(mappingRecord);
     return mappingRecord;
   }
-
-  public JsonApiWrapper getMappings(int pageNum, int pageSize, String path){
-    var mappingRecords = repository.getMappings(pageNum, pageSize);
-    var dataNode = wrapData(mappingRecords);
-    return new JsonApiWrapper(dataNode, new JsonApiLinks(path));
-  }
-
-  List<JsonApiData> wrapData(List<MappingRecord> mappingRecords){
-    List<JsonApiData> dataNode = new ArrayList<>();
-    mappingRecords.forEach(m -> dataNode.add(new JsonApiData(m.id(), HandleType.MAPPING, mapper.valueToTree(m))));
-    return dataNode;
-  }
-
   public MappingRecord updateMapping(String id, Mapping mapping, String userId) {
     var currentVersion = repository.getMapping(id);
     if (!currentVersion.mapping().equals(mapping)){
@@ -56,4 +41,30 @@ public class MappingService {
       return null;
     }
   }
+
+  public JsonApiWrapper getMappings(int pageNum, int pageSize, String path){
+    var mappingRecords = repository.getMappings(pageNum, pageSize+1);
+    return wrapResponse(mappingRecords, pageNum, pageSize, path);
+  }
+
+  private JsonApiWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,
+      int pageSize, String path) {
+    boolean hasNext;
+    if (mappingRecords.size() > pageSize) {
+      hasNext = true;
+      mappingRecords = mappingRecords.subList(0, pageSize);
+    } else {
+      hasNext = false;
+    }
+    var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
+    var dataNode = wrapData(mappingRecords);
+    return new JsonApiWrapper(dataNode, linksNode);
+  }
+
+  List<JsonApiData> wrapData(List<MappingRecord> mappingRecords) {
+    return mappingRecords.stream()
+        .map(r -> new JsonApiData(r.id(), HandleType.MAPPING, mapper.valueToTree(r)))
+        .toList();
+  }
+
 }

@@ -4,9 +4,9 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SY
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_DESCRIPTION;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_NAME;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,7 +57,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     var updatedRecord = new SourceSystemRecord(HANDLE, CREATED, new SourceSystem(
         "new name",
         SS_ENDPOINT,
-        SS_DESCRIPTION,
+        OBJECT_DESCRIPTION,
         HANDLE_ALT
     ));
 
@@ -108,9 +108,9 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
 
   private SourceSystem givenSourceSystemWithId(String endPoint){
     return new SourceSystem(
-        SS_NAME,
+        OBJECT_NAME,
         endPoint,
-        SS_DESCRIPTION,
+        OBJECT_DESCRIPTION,
         HANDLE_ALT
     );
   }
