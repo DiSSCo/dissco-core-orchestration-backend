@@ -4,6 +4,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenLinksNode;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSsRecordResponse;
@@ -74,13 +75,35 @@ class SourceSystemEndpointTest {
   @Test
   void testGetSourceSystems(){
     // Given
-    int pageNum = 0;
+    int pageNum = 1;
     int pageSize = 10;
     MockHttpServletRequest r = new MockHttpServletRequest();
     r.setRequestURI("/source-system");
     String path = SANDBOX_URI + "/source-system";
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
-    var expected = givenSsRecordResponse(ssRecords, path);
+    var linksNode = givenLinksNode(path, pageNum, pageSize, true);
+    var expected = givenSsRecordResponse(ssRecords, linksNode);
+    given(service.getSourceSystemRecords(pageNum, pageSize, path)).willReturn(expected);
+
+    // When
+    var result = controller.getSourceSystems(pageNum, pageSize, r);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(result.getBody()).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetSourceSystemsLastPage(){
+    // Given
+    int pageNum = 2;
+    int pageSize = 10;
+    MockHttpServletRequest r = new MockHttpServletRequest();
+    r.setRequestURI("/source-system");
+    String path = SANDBOX_URI + "/source-system";
+    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
+    var linksNode = givenLinksNode(path, pageNum, pageSize, false);
+    var expected = givenSsRecordResponse(ssRecords, linksNode);
     given(service.getSourceSystemRecords(pageNum, pageSize, path)).willReturn(expected);
 
     // When
