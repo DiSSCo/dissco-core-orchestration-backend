@@ -36,7 +36,7 @@ public class SourceSystemEndpoint {
       @RequestBody SourceSystem request) throws TransformerException {
     log.info("Received create request for request: {}", request);
     var result = service.createSourceSystem(request);
-    return ResponseEntity.ok(result);
+    return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
   @PreAuthorize("isAuthenticated()")

@@ -9,6 +9,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static org.assertj.core.api.Assertions.assertThat;
+import org.jooq.Record;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -122,8 +123,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
         .fetch(this::mapToSourceSystemRecord);
   }
 
-  private SourceSystemRecord mapToSourceSystemRecord(
-      Record6<String, Instant, String, String, String, String> row) {
+  private SourceSystemRecord mapToSourceSystemRecord(Record row) {
     return new SourceSystemRecord(
         row.get(NEW_SOURCE_SYSTEM.ID),
         row.get(NEW_SOURCE_SYSTEM.CREATED),
