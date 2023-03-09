@@ -106,6 +106,23 @@ class MappingServiceTest {
     // Given
     int pageSize = 10;
     int pageNum = 1;
+    List<MappingRecord> mappingRecords = Collections.nCopies(pageSize+1, givenMappingRecord(HANDLE, 1));
+    given(repository.getMappings(pageNum, pageSize+1)).willReturn(mappingRecords);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, true, SANDBOX_URI);
+    var expected = givenMappingRecordResponse(mappingRecords.subList(0, pageSize), linksNode);
+
+    // When
+    var result = service.getMappings(pageNum, pageSize, SANDBOX_URI);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetMappingsLastPage(){
+    // Given
+    int pageSize = 10;
+    int pageNum = 2;
     List<MappingRecord> mappingRecords = Collections.nCopies(pageSize, givenMappingRecord(HANDLE, 1));
     given(repository.getMappings(pageNum, pageSize+1)).willReturn(mappingRecords);
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, SANDBOX_URI);
