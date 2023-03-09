@@ -4,7 +4,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
@@ -29,18 +28,18 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
 @ExtendWith(MockitoExtension.class)
-class SourceSystemEndpointTest {
+class SourceSystemControllerTest {
   @Mock
   private SourceSystemService service;
 
-  private SourceSystemEndpoint controller;
+  private SourceSystemController controller;
 
   private Authentication authentication;
   @Mock
   private KeycloakPrincipal<KeycloakSecurityContext> principal;
 
   @BeforeEach
-  void setup(){controller = new SourceSystemEndpoint(service);}
+  void setup(){controller = new SourceSystemController(service);}
 
   @Test
   void testCreateSourceSystem() throws Exception{

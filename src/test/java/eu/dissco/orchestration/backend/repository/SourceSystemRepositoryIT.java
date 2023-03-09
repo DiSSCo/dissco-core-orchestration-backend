@@ -9,6 +9,8 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import eu.dissco.orchestration.backend.domain.HandleType;
 import org.jooq.Record;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
@@ -70,6 +72,21 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     assertThat(result).hasSize(1);
     assertThat(result.get(0)).isEqualTo(updatedRecord);
   }
+
+  @Test
+  void testGetSourceSystemById(){
+    // Given
+    var expected = givenSourceSystemRecord();
+    postSourceSystem(List.of(expected));
+
+    // When
+    var result = repository.getSourceSystemById(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+
   @Test
   void testGetSourceSystems(){
     // Given

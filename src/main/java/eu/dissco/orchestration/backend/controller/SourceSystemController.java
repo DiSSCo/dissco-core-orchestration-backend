@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/source-system")
 @RequiredArgsConstructor
-public class SourceSystemEndpoint {
+public class SourceSystemController {
   private final SourceSystemService service;
   private static final String SANDBOX_URI = "https://sandbox.dissco.tech/";
 
