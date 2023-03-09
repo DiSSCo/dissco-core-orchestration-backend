@@ -54,13 +54,8 @@ public class MappingService {
 
   private JsonApiWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,
       int pageSize, String path) {
-    boolean hasNext;
-    if (mappingRecords.size() > pageSize) {
-      hasNext = true;
-      mappingRecords = mappingRecords.subList(0, pageSize);
-    } else {
-      hasNext = false;
-    }
+    boolean hasNext = mappingRecords.size() > pageSize;
+    mappingRecords = hasNext ? mappingRecords.subList(0, pageSize) : mappingRecords;
     var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
     var dataNode = wrapData(mappingRecords);
     return new JsonApiWrapper(dataNode, linksNode);
