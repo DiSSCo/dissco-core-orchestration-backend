@@ -39,6 +39,10 @@ public class SourceSystemService {
     return sourceSystemRecord;
   }
 
+  public SourceSystemRecord getSourceSystemById(String id) {
+    return repository.getSourceSystemById(id);
+  }
+
   public JsonApiWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
     var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize + 1);
     return wrapResponse(sourceSystemRecords, pageNum, pageSize, path);

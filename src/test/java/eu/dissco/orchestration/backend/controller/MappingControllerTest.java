@@ -86,6 +86,21 @@ class MappingControllerTest {
   }
 
   @Test
+  void testGetMappingById(){
+    // Given
+    var id = HANDLE;
+    var expected = givenMappingRecord(id, 1);
+    given(service.getMappingById(id)).willReturn(expected);
+
+    // When
+    var result = controller.getMappingById(PREFIX, SUFFIX);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(result.getBody()).isEqualTo(expected);
+  }
+
+  @Test
   void testGetMappings(){
     int pageNum = 1;
     int pageSize = 10;

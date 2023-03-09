@@ -42,9 +42,14 @@ public class MappingService {
     }
   }
 
-  public JsonApiWrapper getMappings(int pageNum, int pageSize, String path){
+  public JsonApiWrapper getMappings(int pageNum, int pageSize, String//When
+     path){
     var mappingRecords = repository.getMappings(pageNum, pageSize+1);
     return wrapResponse(mappingRecords, pageNum, pageSize, path);
+  }
+
+  public MappingRecord getMappingById(String id){
+    return repository.getMapping(id);
   }
 
   private JsonApiWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,

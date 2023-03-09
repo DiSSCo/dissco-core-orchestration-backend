@@ -102,6 +102,19 @@ class MappingServiceTest {
   }
 
   @Test
+  void testGetMappingsById(){
+    // Given
+    var expected = givenMappingRecord(HANDLE, 1);
+    given(repository.getMapping(HANDLE)).willReturn(expected);
+
+    // When
+    var result = service.getMappingById(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
   void testGetMappings(){
     // Given
     int pageSize = 10;
