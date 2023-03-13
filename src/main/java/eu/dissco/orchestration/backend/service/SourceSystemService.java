@@ -39,6 +39,10 @@ public class SourceSystemService {
     return sourceSystemRecord;
   }
 
+  public SourceSystemRecord getSourceSystemById(String id) {
+    return repository.getSourceSystemById(id);
+  }
+
   public JsonApiWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
     var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize + 1);
     return wrapResponse(sourceSystemRecords, pageNum, pageSize, path);
@@ -46,13 +50,8 @@ public class SourceSystemService {
 
   private JsonApiWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,
       int pageSize, String path) {
-    boolean hasNext;
-    if (sourceSystemRecords.size() > pageSize) {
-      hasNext = true;
-      sourceSystemRecords = sourceSystemRecords.subList(0, pageSize);
-    } else {
-      hasNext = false;
-    }
+    boolean hasNext = sourceSystemRecords.size() > pageSize;
+    sourceSystemRecords = hasNext ? sourceSystemRecords.subList(0, pageSize) : sourceSystemRecords;
     var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
     var dataNode = wrapData(sourceSystemRecords);
     return new JsonApiWrapper(dataNode, linksNode);

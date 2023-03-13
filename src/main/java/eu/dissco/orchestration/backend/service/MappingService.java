@@ -42,20 +42,20 @@ public class MappingService {
     }
   }
 
-  public JsonApiWrapper getMappings(int pageNum, int pageSize, String path){
+  public JsonApiWrapper getMappings(int pageNum, int pageSize, String//When
+     path){
     var mappingRecords = repository.getMappings(pageNum, pageSize+1);
     return wrapResponse(mappingRecords, pageNum, pageSize, path);
   }
 
+  public MappingRecord getMappingById(String id){
+    return repository.getMapping(id);
+  }
+
   private JsonApiWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,
       int pageSize, String path) {
-    boolean hasNext;
-    if (mappingRecords.size() > pageSize) {
-      hasNext = true;
-      mappingRecords = mappingRecords.subList(0, pageSize);
-    } else {
-      hasNext = false;
-    }
+    boolean hasNext = mappingRecords.size() > pageSize;
+    mappingRecords = hasNext ? mappingRecords.subList(0, pageSize) : mappingRecords;
     var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
     var dataNode = wrapData(mappingRecords);
     return new JsonApiWrapper(dataNode, linksNode);

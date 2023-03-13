@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -52,6 +53,16 @@ public class MappingController {
     log.info("Received update request for mapping: {}", id);
     var result = service.updateMapping(id, mapping, getNameFromToken(authentication));
     return ResponseEntity.ok(result);
+  }
+
+  @ResponseStatus(HttpStatus.OK)
+  @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<MappingRecord> getMappingById(@PathVariable("prefix") String prefix,
+      @PathVariable("postfix") String postfix) {
+    var id = prefix + '/' + postfix;
+    log.info("Received get request for mapping with id: {}", id);
+    var mapping = service.getMappingById(id);
+    return ResponseEntity.ok(mapping);
   }
 
   @GetMapping(value = "")

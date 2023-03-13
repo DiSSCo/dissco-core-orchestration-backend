@@ -76,6 +76,19 @@ class SourceSystemServiceTest {
   }
 
   @Test
+  void testGetSourceSystemById(){
+    // Given
+    var expected = givenSourceSystemRecord();
+    given(repository.getSourceSystemById(HANDLE)).willReturn(expected);
+
+    // When
+    var result = service.getSourceSystemById(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
   void getSourceSystemRecords(){
     // Given
     int pageNum = 1;

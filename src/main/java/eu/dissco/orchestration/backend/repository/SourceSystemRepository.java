@@ -37,6 +37,13 @@ public class SourceSystemRepository {
         .where(NEW_SOURCE_SYSTEM.ID.eq(sourceSystemRecord.id())).execute();
   }
 
+  public SourceSystemRecord getSourceSystemById(String id) {
+    return context.select(NEW_SOURCE_SYSTEM.asterisk())
+        .from(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+        .fetchOne(this::mapToSourceSystemRecord);
+  }
+
   public List<SourceSystemRecord> getSourceSystems(int pageNum, int pageSize) {
     int offset = getOffset(pageNum, pageSize);
     return context.select(NEW_SOURCE_SYSTEM.ID, NEW_SOURCE_SYSTEM.CREATED, NEW_SOURCE_SYSTEM.NAME,

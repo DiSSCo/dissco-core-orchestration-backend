@@ -20,13 +20,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
 @RequestMapping("/source-system")
 @RequiredArgsConstructor
-public class SourceSystemEndpoint {
+public class SourceSystemController {
   private final SourceSystemService service;
   private static final String SANDBOX_URI = "https://sandbox.dissco.tech/";
 
@@ -48,6 +49,17 @@ public class SourceSystemEndpoint {
     log.info("Received update request for source system: {}", id);
     var result = service.updateSourceSystem(id, sourceSystem);
     return ResponseEntity.ok(result);
+  }
+
+  @ResponseStatus(HttpStatus.OK)
+  @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<SourceSystemRecord> getSourceSystemById(
+      @PathVariable("prefix") String prefix,
+      @PathVariable("postfix") String postfix) {
+    var id = prefix + '/' + postfix;
+    log.info("Received get request for source system with id: {}", id);
+    var sourceSystem = service.getSourceSystemById(id);
+    return ResponseEntity.ok(sourceSystem);
   }
 
   @GetMapping("")

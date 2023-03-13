@@ -28,18 +28,18 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
 @ExtendWith(MockitoExtension.class)
-class SourceSystemEndpointTest {
+class SourceSystemControllerTest {
   @Mock
   private SourceSystemService service;
 
-  private SourceSystemEndpoint controller;
+  private SourceSystemController controller;
 
   private Authentication authentication;
   @Mock
   private KeycloakPrincipal<KeycloakSecurityContext> principal;
 
   @BeforeEach
-  void setup(){controller = new SourceSystemEndpoint(service);}
+  void setup(){controller = new SourceSystemController(service);}
 
   @Test
   void testCreateSourceSystem() throws Exception{
@@ -70,6 +70,21 @@ class SourceSystemEndpointTest {
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(result.getBody()).isEqualTo(ssRecord);
+  }
+
+  @Test
+  void testGetSourceSystemById(){
+    // Given
+    var id = HANDLE;
+    var expected = givenSourceSystemRecord();
+    given(service.getSourceSystemById(id)).willReturn(expected);
+
+    // When
+    var result = controller.getSourceSystemById(PREFIX, SUFFIX);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(result.getBody()).isEqualTo(expected);
   }
 
   @Test
