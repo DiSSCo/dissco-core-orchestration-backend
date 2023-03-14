@@ -1,10 +1,15 @@
 package eu.dissco.orchestration.backend.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Instant;
+import java.util.List;
 import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +22,7 @@ public class MappingService {
 
   private final HandleService handleService;
   private final MappingRepository repository;
+  private final ObjectMapper mapper;
 
   public MappingRecord createMapping(Mapping mapping, String userId) throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.MAPPING);
@@ -24,7 +30,6 @@ public class MappingService {
     repository.createMapping(mappingRecord);
     return mappingRecord;
   }
-
   public MappingRecord updateMapping(String id, Mapping mapping, String userId) {
     var currentVersion = repository.getMapping(id);
     if (!currentVersion.mapping().equals(mapping)){
@@ -36,4 +41,30 @@ public class MappingService {
       return null;
     }
   }
+
+  public JsonApiWrapper getMappings(int pageNum, int pageSize, String//When
+     path){
+    var mappingRecords = repository.getMappings(pageNum, pageSize+1);
+    return wrapResponse(mappingRecords, pageNum, pageSize, path);
+  }
+
+  public MappingRecord getMappingById(String id){
+    return repository.getMapping(id);
+  }
+
+  private JsonApiWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,
+      int pageSize, String path) {
+    boolean hasNext = mappingRecords.size() > pageSize;
+    mappingRecords = hasNext ? mappingRecords.subList(0, pageSize) : mappingRecords;
+    var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
+    var dataNode = wrapData(mappingRecords);
+    return new JsonApiWrapper(dataNode, linksNode);
+  }
+
+  List<JsonApiData> wrapData(List<MappingRecord> mappingRecords) {
+    return mappingRecords.stream()
+        .map(r -> new JsonApiData(r.id(), HandleType.MAPPING, mapper.valueToTree(r)))
+        .toList();
+  }
+
 }

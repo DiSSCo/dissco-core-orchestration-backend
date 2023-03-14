@@ -4,14 +4,14 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenLinksNode;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSsRecordResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import java.util.Collections;
 import java.util.List;
@@ -28,18 +28,18 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
 @ExtendWith(MockitoExtension.class)
-class SourceSystemEndpointTest {
+class SourceSystemControllerTest {
   @Mock
   private SourceSystemService service;
 
-  private SourceSystemEndpoint controller;
+  private SourceSystemController controller;
 
   private Authentication authentication;
   @Mock
   private KeycloakPrincipal<KeycloakSecurityContext> principal;
 
   @BeforeEach
-  void setup(){controller = new SourceSystemEndpoint(service);}
+  void setup(){controller = new SourceSystemController(service);}
 
   @Test
   void testCreateSourceSystem() throws Exception{
@@ -52,7 +52,7 @@ class SourceSystemEndpointTest {
     // When
     var result = controller.createSourceSystem(authentication, ss);
 
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     assertThat(result.getBody()).isEqualTo(ssRecord);
   }
 
@@ -73,6 +73,21 @@ class SourceSystemEndpointTest {
   }
 
   @Test
+  void testGetSourceSystemById(){
+    // Given
+    var id = HANDLE;
+    var expected = givenSourceSystemRecord();
+    given(service.getSourceSystemById(id)).willReturn(expected);
+
+    // When
+    var result = controller.getSourceSystemById(PREFIX, SUFFIX);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(result.getBody()).isEqualTo(expected);
+  }
+
+  @Test
   void testGetSourceSystems(){
     // Given
     int pageNum = 1;
@@ -81,8 +96,8 @@ class SourceSystemEndpointTest {
     r.setRequestURI("/source-system");
     String path = SANDBOX_URI + "/source-system";
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
-    var linksNode = givenLinksNode(path, pageNum, pageSize, true);
-    var expected = givenSsRecordResponse(ssRecords, linksNode);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, true, path);
+    var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
     given(service.getSourceSystemRecords(pageNum, pageSize, path)).willReturn(expected);
 
     // When
@@ -102,8 +117,8 @@ class SourceSystemEndpointTest {
     r.setRequestURI("/source-system");
     String path = SANDBOX_URI + "/source-system";
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
-    var linksNode = givenLinksNode(path, pageNum, pageSize, false);
-    var expected = givenSsRecordResponse(ssRecords, linksNode);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, false, path);
+    var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
     given(service.getSourceSystemRecords(pageNum, pageSize, path)).willReturn(expected);
 
     // When

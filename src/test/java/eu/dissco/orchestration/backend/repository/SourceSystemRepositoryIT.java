@@ -4,11 +4,14 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SY
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_DESCRIPTION;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_NAME;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import eu.dissco.orchestration.backend.domain.HandleType;
+import org.jooq.Record;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -57,7 +60,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     var updatedRecord = new SourceSystemRecord(HANDLE, CREATED, new SourceSystem(
         "new name",
         SS_ENDPOINT,
-        SS_DESCRIPTION,
+        OBJECT_DESCRIPTION,
         HANDLE_ALT
     ));
 
@@ -69,6 +72,21 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     assertThat(result).hasSize(1);
     assertThat(result.get(0)).isEqualTo(updatedRecord);
   }
+
+  @Test
+  void testGetSourceSystemById(){
+    // Given
+    var expected = givenSourceSystemRecord();
+    postSourceSystem(List.of(expected));
+
+    // When
+    var result = repository.getSourceSystemById(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+
   @Test
   void testGetSourceSystems(){
     // Given
@@ -108,9 +126,9 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
 
   private SourceSystem givenSourceSystemWithId(String endPoint){
     return new SourceSystem(
-        SS_NAME,
+        OBJECT_NAME,
         endPoint,
-        SS_DESCRIPTION,
+        OBJECT_DESCRIPTION,
         HANDLE_ALT
     );
   }
@@ -122,8 +140,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
         .fetch(this::mapToSourceSystemRecord);
   }
 
-  private SourceSystemRecord mapToSourceSystemRecord(
-      Record6<String, Instant, String, String, String, String> row) {
+  private SourceSystemRecord mapToSourceSystemRecord(Record row) {
     return new SourceSystemRecord(
         row.get(NEW_SOURCE_SYSTEM.ID),
         row.get(NEW_SOURCE_SYSTEM.CREATED),

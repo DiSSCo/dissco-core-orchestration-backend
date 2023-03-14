@@ -39,6 +39,10 @@ public class SourceSystemService {
     return sourceSystemRecord;
   }
 
+  public SourceSystemRecord getSourceSystemById(String id) {
+    return repository.getSourceSystemById(id);
+  }
+
   public JsonApiWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
     var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize + 1);
     return wrapResponse(sourceSystemRecords, pageNum, pageSize, path);
@@ -46,14 +50,9 @@ public class SourceSystemService {
 
   private JsonApiWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,
       int pageSize, String path) {
-    boolean hasNext;
-    if (sourceSystemRecords.size() > pageSize) {
-      hasNext = true;
-      sourceSystemRecords = sourceSystemRecords.subList(0, pageSize);
-    } else {
-      hasNext = false;
-    }
-    var linksNode = buildLinksNode(pageSize, pageNum, hasNext, path);
+    boolean hasNext = sourceSystemRecords.size() > pageSize;
+    sourceSystemRecords = hasNext ? sourceSystemRecords.subList(0, pageSize) : sourceSystemRecords;
+    var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
     var dataNode = wrapData(sourceSystemRecords);
     return new JsonApiWrapper(dataNode, linksNode);
   }
@@ -64,17 +63,5 @@ public class SourceSystemService {
         .toList();
   }
 
-  JsonApiLinks buildLinksNode(int pageSize, int pageNum,
-      boolean hasNext, String path) {
-    String pn = "?pageNumber=";
-    String ps = "&pageSize=";
-    String self = path + pn + pageNum + ps + pageSize;
-    String first = path + pn + "1" + ps + pageSize;
-    String prev = (pageNum <= 1) ? null : path + pn + (pageNum - 1) + ps + pageSize;
-
-    String next =
-        (hasNext) ? path + pn + (pageNum + 1) + ps + pageSize : null;
-    return new JsonApiLinks(self, first, next, prev);
-  }
 
 }

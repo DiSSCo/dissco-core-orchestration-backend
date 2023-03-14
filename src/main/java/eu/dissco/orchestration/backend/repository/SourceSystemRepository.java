@@ -1,6 +1,7 @@
 package eu.dissco.orchestration.backend.repository;
 
 import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
+import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -36,6 +37,13 @@ public class SourceSystemRepository {
         .where(NEW_SOURCE_SYSTEM.ID.eq(sourceSystemRecord.id())).execute();
   }
 
+  public SourceSystemRecord getSourceSystemById(String id) {
+    return context.select(NEW_SOURCE_SYSTEM.asterisk())
+        .from(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+        .fetchOne(this::mapToSourceSystemRecord);
+  }
+
   public List<SourceSystemRecord> getSourceSystems(int pageNum, int pageSize) {
     int offset = getOffset(pageNum, pageSize);
     return context.select(NEW_SOURCE_SYSTEM.ID, NEW_SOURCE_SYSTEM.CREATED, NEW_SOURCE_SYSTEM.NAME,
@@ -56,14 +64,6 @@ public class SourceSystemRepository {
             row.get(NEW_SOURCE_SYSTEM.ENDPOINT),
             row.get(NEW_SOURCE_SYSTEM.DESCRIPTION),
             row.get(NEW_SOURCE_SYSTEM.MAPPING_ID)));
-  }
-
-  private int getOffset(int pageNum, int pageSize) {
-    int offset = 0;
-    if (pageNum > 1) {
-      offset = offset + (pageSize * (pageNum - 1));
-    }
-    return offset;
   }
 
 
