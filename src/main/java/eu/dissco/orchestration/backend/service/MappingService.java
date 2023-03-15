@@ -31,8 +31,12 @@ public class MappingService {
     repository.createMapping(mappingRecord);
     return mappingRecord;
   }
-  public MappingRecord updateMapping(String id, Mapping mapping, String userId) {
-    var currentVersion = repository.getMapping(id);
+  public MappingRecord updateMapping(String id, Mapping mapping, String userId)
+      throws NotFoundException {
+    var currentVersion = repository.getMappingOmitDeleted(id);
+    if (currentVersion == null){
+      throw new NotFoundException("Requested mapping does not exist");
+    }
     if (!currentVersion.mapping().equals(mapping)){
       var mappingRecord = new MappingRecord(id, currentVersion.version() + 1, Instant.now(), userId,
           mapping);

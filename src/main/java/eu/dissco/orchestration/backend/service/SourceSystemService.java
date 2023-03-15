@@ -34,7 +34,11 @@ public class SourceSystemService {
     return sourceSystemRecord;
   }
 
-  public SourceSystemRecord updateSourceSystem(String id, SourceSystem sourceSystem) {
+  public SourceSystemRecord updateSourceSystem(String id, SourceSystem sourceSystem) throws NotFoundException{
+    var sourceSystemExists = repository.sourceSystemExists(id);
+    if (sourceSystemExists < 1){
+      throw new NotFoundException("Could not update Source System " + id + ". Verify resource exists.");
+    }
     var sourceSystemRecord = new SourceSystemRecord(id, Instant.now(), sourceSystem);
     repository.updateSourceSystem(sourceSystemRecord);
     return sourceSystemRecord;

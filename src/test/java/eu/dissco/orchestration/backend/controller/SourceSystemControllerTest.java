@@ -60,7 +60,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testUpdateSourceSystem() {
+  void testUpdateSourceSystem() throws Exception {
     // Given
     var ssRecord = givenSourceSystemRecord();
     var ss = givenSourceSystem();

@@ -8,13 +8,10 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.MappingRecord;
-import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.service.MappingService;
 import java.util.Collections;
@@ -75,7 +72,11 @@ class MappingControllerTest {
     givenAuthentication();
     var mapping = givenMapping();
     var expected = givenMappingRecord(HANDLE, 2);
-    given(service.updateMapping(HANDLE, mapping, OBJECT_CREATOR)).willReturn(expected);
+    try {
+      given(service.updateMapping(HANDLE, mapping, OBJECT_CREATOR)).willReturn(expected);
+    } catch (eu.dissco.orchestration.backend.exception.NotFoundException e) {
+      throw new RuntimeException(e);
+    }
 
     // Whan
     var result = controller.updateMapping(authentication, PREFIX, SUFFIX, mapping);

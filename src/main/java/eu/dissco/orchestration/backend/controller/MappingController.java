@@ -17,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,7 +52,12 @@ public class MappingController {
       @RequestBody Mapping mapping) {
     var id = prefix + '/' + suffix;
     log.info("Received update request for mapping: {}", id);
-    var result = service.updateMapping(id, mapping, getNameFromToken(authentication));
+    MappingRecord result = null;
+    try {
+      result = service.updateMapping(id, mapping, getNameFromToken(authentication));
+    } catch (NotFoundException e) {
+      throw new RuntimeException(e);
+    }
     return ResponseEntity.ok(result);
   }
 

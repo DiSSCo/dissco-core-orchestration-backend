@@ -67,12 +67,24 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testUpdateSourceSystem(){
+  void testUpdateSourceSystemNotFound() {
+    // Given
+    var sourceSystem = givenSourceSystem();
+    given(repository.sourceSystemExists(HANDLE)).willReturn(0);
+
+    // Then
+    assertThrowsExactly(NotFoundException.class, () -> service.updateSourceSystem(HANDLE, sourceSystem));
+  }
+
+  @Test
+  void testUpdateSourceSystem() throws NotFoundException {
+    // Given
     var expected = givenSourceSystemRecord();
-    var ss = givenSourceSystem();
+    var sourceSystem = givenSourceSystem();
+    given(repository.sourceSystemExists(HANDLE)).willReturn(1);
 
     // When
-    var result = service.updateSourceSystem(HANDLE, ss);
+    var result = service.updateSourceSystem(HANDLE, sourceSystem);
 
     // Then
     assertThat(result).isEqualTo(expected);

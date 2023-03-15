@@ -48,6 +48,16 @@ public class MappingRepository {
         .fetchOne(this::mapToMappingRecord);
   }
 
+  public MappingRecord getMappingOmitDeleted(String id) {
+    return context.select(NEW_MAPPING.asterisk())
+        .distinctOn(NEW_MAPPING.ID)
+        .from(NEW_MAPPING)
+        .where(NEW_MAPPING.ID.eq(id))
+        .and(NEW_MAPPING.DELETED.isNull())
+        .orderBy(NEW_MAPPING.ID, NEW_MAPPING.VERSION.desc())
+        .fetchOne(this::mapToMappingRecord);
+  }
+
   public List<MappingRecord> getMappings(int pageNum, int pageSize){
     int offset = getOffset(pageNum, pageSize);
 
