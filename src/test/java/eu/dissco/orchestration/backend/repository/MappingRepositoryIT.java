@@ -4,6 +4,7 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MAPPING;
 import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,6 +62,36 @@ class MappingRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(result).isEqualTo(mappingRecord);
+  }
+
+  @Test
+  void testGetMappingOmitDeletedIsPresent() throws Exception{
+    // Given
+    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    postMappingRecords(List.of(mappingRecord));
+
+    // When
+    var result = repository.getMappingOmitDeleted(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(mappingRecord);
+  }
+
+  @Test
+  void testGetMappingOmitDeletedNotPresent() throws Exception{
+    // Given
+    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    postMappingRecords(List.of(mappingRecord));
+    context.update(NEW_MAPPING)
+        .set(NEW_MAPPING.DELETED, CREATED)
+        .where(NEW_MAPPING.ID.eq(HANDLE))
+        .execute();
+
+    // When
+    var result = repository.getMappingOmitDeleted(HANDLE);
+
+    // Then
+    assertThat(result).isNull();
   }
 
   @Test

@@ -13,6 +13,7 @@ import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.MappingService;
 import java.util.Collections;
 import java.util.List;
@@ -67,7 +68,7 @@ class MappingControllerTest {
   }
 
   @Test
-  void testUpdateMapping() {
+  void testUpdateMapping() throws NotFoundException {
     // Given
     givenAuthentication();
     var mapping = givenMapping();

@@ -49,15 +49,11 @@ public class MappingController {
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<MappingRecord> updateMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      @RequestBody Mapping mapping) {
+      @RequestBody Mapping mapping) throws NotFoundException{
     var id = prefix + '/' + suffix;
     log.info("Received update request for mapping: {}", id);
     MappingRecord result = null;
-    try {
-      result = service.updateMapping(id, mapping, getNameFromToken(authentication));
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+    result = service.updateMapping(id, mapping, getNameFromToken(authentication));
     return ResponseEntity.ok(result);
   }
 
