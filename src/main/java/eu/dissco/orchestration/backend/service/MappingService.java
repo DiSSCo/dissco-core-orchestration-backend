@@ -7,6 +7,7 @@ import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Instant;
 import java.util.List;
@@ -40,6 +41,14 @@ public class MappingService {
     } else {
       return null;
     }
+  }
+
+  public void deleteMapping(String id) throws NotFoundException {
+    int result = repository.mappingExists(id);
+    if (result > 0){
+      repository.deleteMapping(id);
+    }
+    else throw new NotFoundException("Requested mapping does not exist");
   }
 
   public JsonApiWrapper getMappings(int pageNum, int pageSize, String//When

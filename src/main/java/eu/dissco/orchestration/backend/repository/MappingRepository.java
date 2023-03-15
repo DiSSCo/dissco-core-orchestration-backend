@@ -57,18 +57,31 @@ public class MappingRepository {
         .fetch(this::mapToMappingRecord);
   }
 
-  private MappingRecord mapToMappingRecord(Record record) {
+  public int mappingExists(String id){
+    return context.select(NEW_MAPPING.ID)
+        .from(NEW_MAPPING)
+        .where(NEW_MAPPING.ID.eq(id))
+        .and(NEW_MAPPING.DELETED.isNull())
+        .fetch().size();
+  }
+  public void deleteMapping(String id){
+    context.delete(NEW_MAPPING)
+        .where(NEW_MAPPING.ID.eq(id))
+        .execute();
+  }
+
+  private MappingRecord mapToMappingRecord(Record dbRecord) {
     try {
       var mapping = new Mapping(
-          record.get(NEW_MAPPING.NAME),
-          record.get(NEW_MAPPING.DESCRIPTION),
-          mapper.readTree(record.get(NEW_MAPPING.MAPPING).data())
+          dbRecord.get(NEW_MAPPING.NAME),
+          dbRecord.get(NEW_MAPPING.DESCRIPTION),
+          mapper.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data())
       );
       return new MappingRecord(
-          record.get(NEW_MAPPING.ID),
-          record.get(NEW_MAPPING.VERSION),
-          record.get(NEW_MAPPING.CREATED),
-          record.get(NEW_MAPPING.CREATOR),
+          dbRecord.get(NEW_MAPPING.ID),
+          dbRecord.get(NEW_MAPPING.VERSION),
+          dbRecord.get(NEW_MAPPING.CREATED),
+          dbRecord.get(NEW_MAPPING.CREATOR),
           mapping
       );
     } catch (JsonProcessingException e) {

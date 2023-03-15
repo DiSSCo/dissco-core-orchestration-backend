@@ -43,6 +43,20 @@ public class SourceSystemRepository {
         .where(NEW_SOURCE_SYSTEM.ID.eq(id))
         .fetchOne(this::mapToSourceSystemRecord);
   }
+  
+  public int sourceSystemExists(String id){
+    return context.select(NEW_SOURCE_SYSTEM.ID)
+        .from(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+        .and(NEW_SOURCE_SYSTEM.DELETED.isNull())
+        .fetch().size();    
+  }
+
+  public void deleteSourceSystem(String id){
+    context.delete(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+        .execute();
+  }
 
   public List<SourceSystemRecord> getSourceSystems(int pageNum, int pageSize) {
     int offset = getOffset(pageNum, pageSize);

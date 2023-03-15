@@ -7,6 +7,7 @@ import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Instant;
 import java.util.List;
@@ -46,6 +47,14 @@ public class SourceSystemService {
   public JsonApiWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
     var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize + 1);
     return wrapResponse(sourceSystemRecords, pageNum, pageSize, path);
+  }
+
+  public void deleteSourceSystem(String id) throws NotFoundException {
+    int result = repository.sourceSystemExists(id);
+    if (result > 0){
+      repository.deleteSourceSystem(id);
+    }
+    else throw new NotFoundException("Requested mapping does not exist");
   }
 
   private JsonApiWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,

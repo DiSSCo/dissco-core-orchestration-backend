@@ -3,6 +3,7 @@ package eu.dissco.orchestration.backend.controller;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.MappingService;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.transform.TransformerException;
@@ -16,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +55,16 @@ public class MappingController {
     log.info("Received update request for mapping: {}", id);
     var result = service.updateMapping(id, mapping, getNameFromToken(authentication));
     return ResponseEntity.ok(result);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @DeleteMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> deleteMapping(@PathVariable("prefix") String prefix,
+      @PathVariable("postfix") String postfix) throws NotFoundException {
+    String id = prefix + "/" + postfix;
+    service.deleteMapping(id);
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
   @ResponseStatus(HttpStatus.OK)

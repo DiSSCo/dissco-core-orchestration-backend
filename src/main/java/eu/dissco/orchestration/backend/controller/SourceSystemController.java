@@ -3,6 +3,7 @@ package eu.dissco.orchestration.backend.controller;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.transform.TransformerException;
@@ -13,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -70,6 +72,16 @@ public class SourceSystemController {
   ){
     String path = SANDBOX_URI + r.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK).body(service.getSourceSystemRecords(pageNum, pageSize, path));
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @DeleteMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> deleteSourceSystem(@PathVariable("prefix") String prefix,
+      @PathVariable("postfix") String postfix) throws NotFoundException {
+    String id = prefix + "/" + postfix;
+    service.deleteSourceSystem(id);
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
 }
