@@ -131,7 +131,6 @@ class SourceSystemServiceTest {
   void testDeleteSourceSystem(){
     // Given
     given(repository.sourceSystemExists(HANDLE)).willReturn(1);
-
     // Then
     assertDoesNotThrow(() -> service.deleteSourceSystem(HANDLE));
   }

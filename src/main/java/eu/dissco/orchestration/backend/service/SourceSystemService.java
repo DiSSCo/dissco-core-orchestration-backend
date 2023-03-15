@@ -52,7 +52,8 @@ public class SourceSystemService {
   public void deleteSourceSystem(String id) throws NotFoundException {
     int result = repository.sourceSystemExists(id);
     if (result > 0){
-      repository.deleteSourceSystem(id);
+      Instant deleted = Instant.now();
+      repository.deleteSourceSystem(id, deleted);
     }
     else throw new NotFoundException("Requested mapping does not exist");
   }

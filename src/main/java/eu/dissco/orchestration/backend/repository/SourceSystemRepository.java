@@ -5,6 +5,7 @@ import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffs
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
+import java.time.Instant;
 import java.util.List;
 import org.jooq.Record;
 import lombok.RequiredArgsConstructor;
@@ -52,8 +53,9 @@ public class SourceSystemRepository {
         .fetch().size();    
   }
 
-  public void deleteSourceSystem(String id){
-    context.delete(NEW_SOURCE_SYSTEM)
+  public void deleteSourceSystem(String id, Instant deleted){
+    context.update(NEW_SOURCE_SYSTEM)
+        .set(NEW_SOURCE_SYSTEM.DELETED, deleted)
         .where(NEW_SOURCE_SYSTEM.ID.eq(id))
         .execute();
   }

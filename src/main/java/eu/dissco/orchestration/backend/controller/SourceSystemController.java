@@ -76,7 +76,7 @@ public class SourceSystemController {
 
   @PreAuthorize("isAuthenticated()")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @DeleteMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> deleteSourceSystem(@PathVariable("prefix") String prefix,
       @PathVariable("postfix") String postfix) throws NotFoundException {
     String id = prefix + "/" + postfix;

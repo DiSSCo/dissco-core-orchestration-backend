@@ -142,11 +142,11 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     postSourceSystem(List.of(sourceSystemRecord));
 
     // When
-    repository.deleteSourceSystem(sourceSystemRecord.id());
-    var result = getAllSourceSystems();
+    repository.deleteSourceSystem(sourceSystemRecord.id(), CREATED);
+    var result = getDeleted(HANDLE);
 
     // Then
-    assertThat(result).isEmpty();
+    assertThat(result).isEqualTo(CREATED);
   }
 
   private SourceSystemRecord givenSourceSystemRecordWithId(String id){
@@ -163,10 +163,20 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   private List<SourceSystemRecord> getAllSourceSystems() {
-    return context.select(NEW_SOURCE_SYSTEM.ID, NEW_SOURCE_SYSTEM.CREATED, NEW_SOURCE_SYSTEM.NAME,
-            NEW_SOURCE_SYSTEM.ENDPOINT, NEW_SOURCE_SYSTEM.DESCRIPTION, NEW_SOURCE_SYSTEM.MAPPING_ID)
+    return context.select(NEW_SOURCE_SYSTEM.asterisk())
         .from(NEW_SOURCE_SYSTEM)
         .fetch(this::mapToSourceSystemRecord);
+  }
+
+  private Instant getDeleted(String id){
+    return context.select(NEW_SOURCE_SYSTEM.ID, NEW_SOURCE_SYSTEM.DELETED)
+        .from(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+        .fetchOne(this::getInstantDeleted);
+  }
+
+  private Instant getInstantDeleted(Record dbRecord){
+    return dbRecord.get(NEW_SOURCE_SYSTEM.DELETED);
   }
 
   private SourceSystemRecord mapToSourceSystemRecord(Record row) {

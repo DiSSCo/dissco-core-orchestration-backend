@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -64,8 +65,9 @@ public class MappingRepository {
         .and(NEW_MAPPING.DELETED.isNull())
         .fetch().size();
   }
-  public void deleteMapping(String id){
-    context.delete(NEW_MAPPING)
+  public void deleteMapping(String id, Instant deleted){
+    context.update(NEW_MAPPING)
+        .set(NEW_MAPPING.DELETED, deleted)
         .where(NEW_MAPPING.ID.eq(id))
         .execute();
   }

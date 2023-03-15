@@ -1,6 +1,8 @@
 package eu.dissco.orchestration.backend.repository;
 
 import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MAPPING;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
@@ -9,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -114,11 +117,22 @@ class MappingRepositoryIT extends BaseRepositoryIT {
     postMappingRecords(List.of(mapping));
 
     // When
-    repository.deleteMapping(HANDLE);
-    var result = readAllMappings();
+    repository.deleteMapping(HANDLE, CREATED);
+    var result = getDeleted(HANDLE);
 
     // Then
-    assertThat(result).isEmpty();
+    assertThat(result).isEqualTo(CREATED);
+  }
+
+  private Instant getDeleted(String id){
+    return context.select(NEW_MAPPING.ID, NEW_MAPPING.DELETED)
+        .from(NEW_MAPPING)
+        .where(NEW_MAPPING.ID.eq(id))
+        .fetchOne(this::getInstantDeleted);
+  }
+
+  private Instant getInstantDeleted(Record dbRecord){
+    return dbRecord.get(NEW_SOURCE_SYSTEM.DELETED);
   }
 
   List<MappingRecord> readAllMappings() {

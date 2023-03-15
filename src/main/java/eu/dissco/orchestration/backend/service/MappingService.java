@@ -46,7 +46,8 @@ public class MappingService {
   public void deleteMapping(String id) throws NotFoundException {
     int result = repository.mappingExists(id);
     if (result > 0){
-      repository.deleteMapping(id);
+      Instant deleted = Instant.now();
+      repository.deleteMapping(id, deleted);
     }
     else throw new NotFoundException("Requested mapping does not exist");
   }
