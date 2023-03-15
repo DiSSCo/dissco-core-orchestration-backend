@@ -2,6 +2,7 @@ package eu.dissco.orchestration.backend.controller;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import javax.servlet.http.HttpServletRequest;
@@ -25,45 +26,48 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("/source-system")
+@RequestMapping("orchestrator/source-system")
 @RequiredArgsConstructor
 public class SourceSystemController {
   private final SourceSystemService service;
-  private static final String SANDBOX_URI = "https://sandbox.dissco.tech/";
+  private static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
 
   @PreAuthorize("isAuthenticated()")
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<SourceSystemRecord> createSourceSystem(Authentication authentication,
-      @RequestBody SourceSystem request) throws TransformerException {
+  public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
+      @RequestBody SourceSystem request, HttpServletRequest servletRequest) throws TransformerException {
+    String path = SANDBOX_URI + servletRequest.getRequestURI();
     log.info("Received create request for request: {}", request);
-    var result = service.createSourceSystem(request);
+    var result = service.createSourceSystem(request, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
   @PreAuthorize("isAuthenticated()")
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<SourceSystemRecord> updateSourceSystem(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> updateSourceSystem(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      @RequestBody SourceSystem sourceSystem) {
+      @RequestBody SourceSystem sourceSystem, HttpServletRequest servletRequest) {
     var id = prefix + '/' + suffix;
     log.info("Received update request for source system: {}", id);
-    var result = service.updateSourceSystem(id, sourceSystem);
+    String path = SANDBOX_URI + servletRequest.getRequestURI();
+    var result = service.updateSourceSystem(id, sourceSystem, path);
     return ResponseEntity.ok(result);
   }
 
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<SourceSystemRecord> getSourceSystemById(
+  public ResponseEntity<JsonApiWrapper> getSourceSystemById(
       @PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) {
+      @PathVariable("postfix") String postfix, HttpServletRequest servletRequest) {
     var id = prefix + '/' + postfix;
     log.info("Received get request for source system with id: {}", id);
-    var sourceSystem = service.getSourceSystemById(id);
+    String path = SANDBOX_URI + servletRequest.getRequestURI();
+    var sourceSystem = service.getSourceSystemById(id, path);
     return ResponseEntity.ok(sourceSystem);
   }
 
   @GetMapping("")
-  public ResponseEntity<JsonApiWrapper> getSourceSystems(
+  public ResponseEntity<JsonApiListWrapper> getSourceSystems(
       @RequestParam(value = "pageNumber", defaultValue = "0") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest r

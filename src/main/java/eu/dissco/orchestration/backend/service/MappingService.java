@@ -6,7 +6,7 @@ import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Instant;
 import java.util.List;
@@ -42,7 +42,7 @@ public class MappingService {
     }
   }
 
-  public JsonApiWrapper getMappings(int pageNum, int pageSize, String//When
+  public JsonApiListWrapper getMappings(int pageNum, int pageSize, String//When
      path){
     var mappingRecords = repository.getMappings(pageNum, pageSize+1);
     return wrapResponse(mappingRecords, pageNum, pageSize, path);
@@ -52,13 +52,13 @@ public class MappingService {
     return repository.getMapping(id);
   }
 
-  private JsonApiWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,
+  private JsonApiListWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,
       int pageSize, String path) {
     boolean hasNext = mappingRecords.size() > pageSize;
     mappingRecords = hasNext ? mappingRecords.subList(0, pageSize) : mappingRecords;
     var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
     var dataNode = wrapData(mappingRecords);
-    return new JsonApiWrapper(dataNode, linksNode);
+    return new JsonApiListWrapper(dataNode, linksNode);
   }
 
   List<JsonApiData> wrapData(List<MappingRecord> mappingRecords) {

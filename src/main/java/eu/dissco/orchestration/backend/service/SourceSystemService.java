@@ -6,6 +6,7 @@ import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Instant;
@@ -25,36 +26,44 @@ public class SourceSystemService {
 
   private final ObjectMapper mapper;
 
-  public SourceSystemRecord createSourceSystem(SourceSystem sourceSystem)
+  public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String path)
       throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.SOURCE_SYSTEM);
     var sourceSystemRecord = new SourceSystemRecord(handle, Instant.now(), sourceSystem);
     repository.createSourceSystem(sourceSystemRecord);
-    return sourceSystemRecord;
+    return new JsonApiWrapper(
+        new JsonApiData(handle, HandleType.SOURCE_SYSTEM, mapper.valueToTree(sourceSystemRecord.sourceSystem())),
+        new JsonApiLinks(path)
+    );
   }
 
-  public SourceSystemRecord updateSourceSystem(String id, SourceSystem sourceSystem) {
+  public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String path) {
     var sourceSystemRecord = new SourceSystemRecord(id, Instant.now(), sourceSystem);
     repository.updateSourceSystem(sourceSystemRecord);
-    return sourceSystemRecord;
+    return new JsonApiWrapper(
+        new JsonApiData(id, HandleType.SOURCE_SYSTEM, mapper.valueToTree(sourceSystemRecord.sourceSystem())),
+        new JsonApiLinks(path)
+    );
   }
 
-  public SourceSystemRecord getSourceSystemById(String id) {
-    return repository.getSourceSystemById(id);
+  public JsonApiWrapper getSourceSystemById(String id, String path) {
+    var sourceSystemRecord = repository.getSourceSystemById(id);
+    return new JsonApiWrapper(new JsonApiData(id, HandleType.SOURCE_SYSTEM, mapper.valueToTree(sourceSystemRecord.sourceSystem())),
+        new JsonApiLinks(path));
   }
 
-  public JsonApiWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
+  public JsonApiListWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
     var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize + 1);
     return wrapResponse(sourceSystemRecords, pageNum, pageSize, path);
   }
 
-  private JsonApiWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,
+  private JsonApiListWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,
       int pageSize, String path) {
     boolean hasNext = sourceSystemRecords.size() > pageSize;
     sourceSystemRecords = hasNext ? sourceSystemRecords.subList(0, pageSize) : sourceSystemRecords;
     var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
     var dataNode = wrapData(sourceSystemRecords);
-    return new JsonApiWrapper(dataNode, linksNode);
+    return new JsonApiListWrapper(dataNode, linksNode);
   }
 
   List<JsonApiData> wrapData(List<SourceSystemRecord> sourceSystemRecords) {

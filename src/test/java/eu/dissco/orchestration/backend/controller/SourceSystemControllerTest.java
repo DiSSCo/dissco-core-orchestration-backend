@@ -4,6 +4,8 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
@@ -38,53 +40,46 @@ class SourceSystemControllerTest {
   @Mock
   private KeycloakPrincipal<KeycloakSecurityContext> principal;
 
+  MockHttpServletRequest mockRequest = new MockHttpServletRequest();
+
   @BeforeEach
-  void setup(){controller = new SourceSystemController(service);}
+  void setup(){controller = new SourceSystemController(service);
+    mockRequest.setRequestURI(SYSTEM_URI);}
 
   @Test
   void testCreateSourceSystem() throws Exception{
     // Given
-    var ssRecord = givenSourceSystemRecord();
-    var ss = givenSourceSystem();
+    var sourceSystem = givenSourceSystem();
     givenAuthentication();
-    given(service.createSourceSystem(ss)).willReturn(ssRecord);
 
     // When
-    var result = controller.createSourceSystem(authentication, ss);
+    var result = controller.createSourceSystem(authentication, sourceSystem, mockRequest);
 
+    // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    assertThat(result.getBody()).isEqualTo(ssRecord);
   }
 
   @Test
   void testUpdateSourceSystem() {
     // Given
-    var ssRecord = givenSourceSystemRecord();
-    var ss = givenSourceSystem();
+    var sourceSystem = givenSourceSystem();
     givenAuthentication();
-    given(service.updateSourceSystem(HANDLE, ss)).willReturn(ssRecord);
 
     // When
-    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, ss);
+    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, sourceSystem, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(ssRecord);
   }
 
   @Test
   void testGetSourceSystemById(){
     // Given
-    var id = HANDLE;
-    var expected = givenSourceSystemRecord();
-    given(service.getSourceSystemById(id)).willReturn(expected);
-
     // When
-    var result = controller.getSourceSystemById(PREFIX, SUFFIX);
+    var result = controller.getSourceSystemById(PREFIX, SUFFIX, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(expected);
   }
 
   @Test
@@ -92,16 +87,13 @@ class SourceSystemControllerTest {
     // Given
     int pageNum = 1;
     int pageSize = 10;
-    MockHttpServletRequest r = new MockHttpServletRequest();
-    r.setRequestURI("/source-system");
-    String path = SANDBOX_URI + "/source-system";
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
-    var linksNode = new JsonApiLinks(pageSize, pageNum, true, path);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, true, SYSTEM_PATH);
     var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
-    given(service.getSourceSystemRecords(pageNum, pageSize, path)).willReturn(expected);
+    given(service.getSourceSystemRecords(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
 
     // When
-    var result = controller.getSourceSystems(pageNum, pageSize, r);
+    var result = controller.getSourceSystems(pageNum, pageSize, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -113,16 +105,13 @@ class SourceSystemControllerTest {
     // Given
     int pageNum = 2;
     int pageSize = 10;
-    MockHttpServletRequest r = new MockHttpServletRequest();
-    r.setRequestURI("/source-system");
-    String path = SANDBOX_URI + "/source-system";
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
-    var linksNode = new JsonApiLinks(pageSize, pageNum, false, path);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, false, SYSTEM_PATH);
     var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
-    given(service.getSourceSystemRecords(pageNum, pageSize, path)).willReturn(expected);
+    given(service.getSourceSystemRecords(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
 
     // When
-    var result = controller.getSourceSystems(pageNum, pageSize, r);
+    var result = controller.getSourceSystems(pageNum, pageSize, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);

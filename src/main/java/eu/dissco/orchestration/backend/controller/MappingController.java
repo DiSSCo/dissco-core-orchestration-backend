@@ -2,7 +2,7 @@ package eu.dissco.orchestration.backend.controller;
 
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.service.MappingService;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.transform.TransformerException;
@@ -66,7 +66,7 @@ public class MappingController {
   }
 
   @GetMapping(value = "")
-  public ResponseEntity<JsonApiWrapper> getMappings(
+  public ResponseEntity<JsonApiListWrapper> getMappings(
       @RequestParam(value = "pageNum", defaultValue = "0") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest r

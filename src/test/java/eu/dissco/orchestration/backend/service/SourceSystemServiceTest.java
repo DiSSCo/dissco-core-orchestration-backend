@@ -4,7 +4,9 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -31,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SourceSystemServiceTest {
+
   private SourceSystemService service;
   @Mock
   private HandleService handleService;
@@ -40,62 +43,66 @@ class SourceSystemServiceTest {
   private MockedStatic<Instant> mockedStatic;
 
   @BeforeEach
-  void setup(){
+  void setup() {
     service = new SourceSystemService(repository, handleService, MAPPER);
     initTime();
   }
+
   @AfterEach
   void destroy() {
     mockedStatic.close();
   }
 
   @Test
-  void testCreateSourceSystem() throws Exception{
+  void testCreateSourceSystem() throws Exception {
     // Given
-    var expected = givenSourceSystemRecord();
-    var ss = givenSourceSystem();
+    var expected = givenSourceSystemSingleJsonApiWrapper();
+    var sourceSystem = givenSourceSystem();
     given(handleService.createNewHandle(HandleType.SOURCE_SYSTEM)).willReturn(HANDLE);
 
     // When
-    var result = service.createSourceSystem(ss);
+    var result = service.createSourceSystem(sourceSystem, SYSTEM_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
-  void testUpdateSourceSystem(){
-    var expected = givenSourceSystemRecord();
-    var ss = givenSourceSystem();
+  void testUpdateSourceSystem() {
+    var sourceSystem = givenSourceSystem();
+    var expected = givenSourceSystemSingleJsonApiWrapper();
 
     // When
-    var result = service.updateSourceSystem(HANDLE, ss);
+    var result = service.updateSourceSystem(HANDLE, sourceSystem, SYSTEM_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
-  void testGetSourceSystemById(){
+  void testGetSourceSystemById() {
     // Given
-    var expected = givenSourceSystemRecord();
-    given(repository.getSourceSystemById(HANDLE)).willReturn(expected);
+    var sourceSystemRecord = givenSourceSystemRecord();
+    var expected = givenSourceSystemSingleJsonApiWrapper();
+
+    given(repository.getSourceSystemById(HANDLE)).willReturn(sourceSystemRecord);
 
     // When
-    var result = service.getSourceSystemById(HANDLE);
+    var result = service.getSourceSystemById(HANDLE, SYSTEM_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
-  void getSourceSystemRecords(){
+  void getSourceSystemRecords() {
     // Given
     int pageNum = 1;
     int pageSize = 10;
     String path = SANDBOX_URI;
-    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize+1, givenSourceSystemRecord());
-    given(repository.getSourceSystems(pageNum, pageSize+1)).willReturn(ssRecords);
+    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize + 1,
+        givenSourceSystemRecord());
+    given(repository.getSourceSystems(pageNum, pageSize + 1)).willReturn(ssRecords);
     var linksNode = new JsonApiLinks(pageSize, pageNum, true, path);
     var expected = givenSourceSystemRecordResponse(ssRecords.subList(0, pageSize), linksNode);
 
@@ -107,13 +114,13 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void getSourceSystemRecordsLastPage(){
+  void getSourceSystemRecordsLastPage() {
     // Given
     int pageNum = 2;
     int pageSize = 10;
     String path = SANDBOX_URI;
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
-    given(repository.getSourceSystems(pageNum, pageSize+1)).willReturn(ssRecords);
+    given(repository.getSourceSystems(pageNum, pageSize + 1)).willReturn(ssRecords);
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, path);
     var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
 
