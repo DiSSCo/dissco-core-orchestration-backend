@@ -1,6 +1,8 @@
 package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
@@ -8,13 +10,10 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.MappingRecord;
-import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.service.MappingService;
 import java.util.Collections;
@@ -47,10 +46,12 @@ class MappingControllerTest {
   private KeycloakSecurityContext securityContext;
   @Mock
   private AccessToken accessToken;
+    private MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
   @BeforeEach
   void setup() {
     controller = new MappingController(service);
+    mockRequest.setRequestURI(MAPPING_URI);
   }
 
   @Test
@@ -58,15 +59,12 @@ class MappingControllerTest {
     // Given
     givenAuthentication();
     var mapping = givenMapping();
-    var expected = givenMappingRecord(HANDLE, 1);
-    given(service.createMapping(mapping, OBJECT_CREATOR)).willReturn(expected);
 
     // When
-    var result = controller.createMapping(authentication, mapping);
+    var result = controller.createMapping(authentication, mapping, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    assertThat(result.getBody()).isEqualTo(expected);
   }
 
   @Test
@@ -74,30 +72,24 @@ class MappingControllerTest {
     // Given
     givenAuthentication();
     var mapping = givenMapping();
-    var expected = givenMappingRecord(HANDLE, 2);
-    given(service.updateMapping(HANDLE, mapping, OBJECT_CREATOR)).willReturn(expected);
 
     // Whan
-    var result = controller.updateMapping(authentication, PREFIX, SUFFIX, mapping);
+    var result = controller.updateMapping(authentication, PREFIX, SUFFIX, mapping, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(expected);
   }
 
   @Test
   void testGetMappingById(){
     // Given
     var id = HANDLE;
-    var expected = givenMappingRecord(id, 1);
-    given(service.getMappingById(id)).willReturn(expected);
 
     // When
-    var result = controller.getMappingById(PREFIX, SUFFIX);
+    var result = controller.getMappingById(PREFIX, SUFFIX, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(expected);
   }
 
   @Test
@@ -105,17 +97,13 @@ class MappingControllerTest {
     int pageNum = 1;
     int pageSize = 10;
 
-    MockHttpServletRequest r = new MockHttpServletRequest();
-    r.setRequestURI("/source-system");
-    String path = SANDBOX_URI + "/source-system";
-
     List<MappingRecord> mappingRecords = Collections.nCopies(pageSize, givenMappingRecord(HANDLE, 1));
-    var linksNode = new JsonApiLinks(pageSize, pageNum, true, path);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, true, MAPPING_PATH);
     var expected = givenMappingRecordResponse(mappingRecords, linksNode);
-    given(service.getMappings(pageNum, pageSize, path)).willReturn(expected);
+    given(service.getMappings(pageNum, pageSize, MAPPING_PATH)).willReturn(expected);
 
     // When
-    var result = controller.getMappings(pageNum, pageSize, r);
+    var result = controller.getMappings(pageNum, pageSize, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);

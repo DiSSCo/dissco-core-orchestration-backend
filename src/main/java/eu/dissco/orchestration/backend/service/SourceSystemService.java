@@ -31,30 +31,30 @@ public class SourceSystemService {
     var handle = handleService.createNewHandle(HandleType.SOURCE_SYSTEM);
     var sourceSystemRecord = new SourceSystemRecord(handle, Instant.now(), sourceSystem);
     repository.createSourceSystem(sourceSystemRecord);
-    return new JsonApiWrapper(
-        new JsonApiData(handle, HandleType.SOURCE_SYSTEM, mapper.valueToTree(sourceSystemRecord.sourceSystem())),
-        new JsonApiLinks(path)
-    );
+    return wrapSingleResponse(handle, sourceSystemRecord, path);
   }
 
   public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String path) {
     var sourceSystemRecord = new SourceSystemRecord(id, Instant.now(), sourceSystem);
     repository.updateSourceSystem(sourceSystemRecord);
-    return new JsonApiWrapper(
-        new JsonApiData(id, HandleType.SOURCE_SYSTEM, mapper.valueToTree(sourceSystemRecord.sourceSystem())),
-        new JsonApiLinks(path)
-    );
+    return wrapSingleResponse(id, sourceSystemRecord, path);
   }
 
   public JsonApiWrapper getSourceSystemById(String id, String path) {
     var sourceSystemRecord = repository.getSourceSystemById(id);
-    return new JsonApiWrapper(new JsonApiData(id, HandleType.SOURCE_SYSTEM, mapper.valueToTree(sourceSystemRecord.sourceSystem())),
-        new JsonApiLinks(path));
+    return wrapSingleResponse(id, sourceSystemRecord, path);
   }
 
   public JsonApiListWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
     var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize + 1);
     return wrapResponse(sourceSystemRecords, pageNum, pageSize, path);
+  }
+
+  private JsonApiWrapper wrapSingleResponse(String id, SourceSystemRecord sourceSystemRecord, String path){
+    return new JsonApiWrapper(
+        new JsonApiData(id, HandleType.SOURCE_SYSTEM, mapper.valueToTree(sourceSystemRecord.sourceSystem())),
+        new JsonApiLinks(path)
+    );
   }
 
   private JsonApiListWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,

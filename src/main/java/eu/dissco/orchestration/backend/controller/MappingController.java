@@ -2,7 +2,9 @@ package eu.dissco.orchestration.backend.controller;
 
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.service.MappingService;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.transform.TransformerException;
@@ -33,35 +35,38 @@ import org.springframework.web.bind.annotation.RestController;
 public class MappingController {
 
   private final MappingService service;
-  private static final String SANDBOX_URI = "https://sandbox.dissco.tech/";
+  private static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
 
   @PreAuthorize("isAuthenticated()")
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<MappingRecord> createMapping(Authentication authentication,
-      @RequestBody Mapping mapping) throws TransformerException {
+  public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
+      @RequestBody Mapping mapping, HttpServletRequest request) throws TransformerException {
     log.info("Received create request for mapping: {}", mapping);
-    var result = service.createMapping(mapping, getNameFromToken(authentication));
+    String path = SANDBOX_URI + request.getRequestURI();
+    var result = service.createMapping(mapping, getNameFromToken(authentication), path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
   @PreAuthorize("isAuthenticated()")
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<MappingRecord> updateMapping(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> updateMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      @RequestBody Mapping mapping) {
+      @RequestBody Mapping mapping, HttpServletRequest request) {
     var id = prefix + '/' + suffix;
     log.info("Received update request for mapping: {}", id);
-    var result = service.updateMapping(id, mapping, getNameFromToken(authentication));
+    String path = SANDBOX_URI + request.getRequestURI();
+    var result = service.updateMapping(id, mapping, getNameFromToken(authentication), path);
     return ResponseEntity.ok(result);
   }
 
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<MappingRecord> getMappingById(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) {
+  public ResponseEntity<JsonApiWrapper> getMappingById(@PathVariable("prefix") String prefix,
+      @PathVariable("postfix") String postfix, HttpServletRequest request) {
     var id = prefix + '/' + postfix;
     log.info("Received get request for mapping with id: {}", id);
-    var mapping = service.getMappingById(id);
+    String path = SANDBOX_URI + request.getRequestURI();
+    var mapping = service.getMappingById(id, path);
     return ResponseEntity.ok(mapping);
   }
 

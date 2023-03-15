@@ -28,6 +28,8 @@ public class TestUtils {
   public static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
   public static final String SYSTEM_URI = "/source-system";
   public static final String SYSTEM_PATH = SANDBOX_URI + SYSTEM_URI;
+  public static final String MAPPING_URI = "/mapping";
+  public static final String MAPPING_PATH = SANDBOX_URI + MAPPING_URI;
 
 
   private TestUtils() {
@@ -41,6 +43,15 @@ public class TestUtils {
         HandleType.SOURCE_SYSTEM,
         MAPPER.valueToTree(sourceSystemRecord.sourceSystem())
     ), new JsonApiLinks(SYSTEM_PATH));
+  }
+
+  public static JsonApiWrapper givenMappingSingleJsonApiWrapper(){
+    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    return new JsonApiWrapper(new JsonApiData(
+        mappingRecord.id(),
+        HandleType.MAPPING,
+        MAPPER.valueToTree(mappingRecord.mapping())
+    ), new JsonApiLinks(MAPPING_PATH));
   }
 
   public static SourceSystemRecord givenSourceSystemRecord(){
