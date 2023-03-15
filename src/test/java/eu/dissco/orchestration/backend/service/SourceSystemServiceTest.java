@@ -8,6 +8,8 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
@@ -15,6 +17,7 @@ import static org.mockito.Mockito.mockStatic;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -122,6 +125,24 @@ class SourceSystemServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testDeleteSourceSystem(){
+    // Given
+    given(repository.sourceSystemExists(HANDLE)).willReturn(1);
+
+    // Then
+    assertDoesNotThrow(() -> service.deleteSourceSystem(HANDLE));
+  }
+
+  @Test
+  void testDeleteSourceSystemNotFound(){
+    // Given
+    given(repository.sourceSystemExists(HANDLE)).willReturn(0);
+
+    // Then
+    assertThrowsExactly(NotFoundException.class, () -> service.deleteSourceSystem(HANDLE));
   }
 
   private void initTime() {

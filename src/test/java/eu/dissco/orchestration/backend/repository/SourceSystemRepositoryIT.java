@@ -7,10 +7,12 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import eu.dissco.orchestration.backend.domain.HandleType;
+import eu.dissco.orchestration.backend.domain.MappingRecord;
 import org.jooq.Record;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
@@ -118,6 +120,33 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     var result = repository.getSourceSystems(pageNum, pageSize);
 
     assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void testMappingExists() throws Exception {
+    // Given
+    var sourceSystemRecord = givenSourceSystemRecord();
+    postSourceSystem(List.of(sourceSystemRecord));
+
+    // When
+    var result = repository.sourceSystemExists(sourceSystemRecord.id());
+
+    // Then
+    assertThat(result).isEqualTo(1);
+  }
+
+  @Test
+  void testDeleteMapping() throws Exception {
+    // Given
+    var sourceSystemRecord = givenSourceSystemRecord();
+    postSourceSystem(List.of(sourceSystemRecord));
+
+    // When
+    repository.deleteSourceSystem(sourceSystemRecord.id());
+    var result = getAllSourceSystems();
+
+    // Then
+    assertThat(result).isEmpty();
   }
 
   private SourceSystemRecord givenSourceSystemRecordWithId(String id){

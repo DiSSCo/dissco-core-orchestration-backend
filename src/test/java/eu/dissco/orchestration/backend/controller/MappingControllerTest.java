@@ -101,6 +101,15 @@ class MappingControllerTest {
   }
 
   @Test
+  void testDeleteSourceSystem() throws Exception {
+    // When
+    var result = controller.deleteMapping(PREFIX, SUFFIX);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+  }
+
+  @Test
   void testGetMappings(){
     int pageNum = 1;
     int pageSize = 10;

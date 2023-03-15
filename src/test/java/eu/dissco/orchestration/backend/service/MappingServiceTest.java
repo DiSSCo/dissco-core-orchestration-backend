@@ -10,6 +10,8 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
@@ -18,6 +20,7 @@ import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Clock;
@@ -112,6 +115,24 @@ class MappingServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testDeleteMapping(){
+    // Given
+    given(repository.mappingExists(HANDLE)).willReturn(1);
+
+    // Then
+    assertDoesNotThrow(() -> service.deleteMapping(HANDLE));
+  }
+
+  @Test
+  void testDeleteSourceSystemNotFound(){
+    // Given
+    given(repository.mappingExists(HANDLE)).willReturn(0);
+
+    // Then
+    assertThrowsExactly(NotFoundException.class, () -> service.deleteMapping(HANDLE));
   }
 
   @Test

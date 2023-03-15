@@ -29,6 +29,7 @@ import org.springframework.security.core.Authentication;
 
 @ExtendWith(MockitoExtension.class)
 class SourceSystemControllerTest {
+
   @Mock
   private SourceSystemService service;
 
@@ -39,10 +40,12 @@ class SourceSystemControllerTest {
   private KeycloakPrincipal<KeycloakSecurityContext> principal;
 
   @BeforeEach
-  void setup(){controller = new SourceSystemController(service);}
+  void setup() {
+    controller = new SourceSystemController(service);
+  }
 
   @Test
-  void testCreateSourceSystem() throws Exception{
+  void testCreateSourceSystem() throws Exception {
     // Given
     var ssRecord = givenSourceSystemRecord();
     var ss = givenSourceSystem();
@@ -73,7 +76,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testGetSourceSystemById(){
+  void testGetSourceSystemById() {
     // Given
     var id = HANDLE;
     var expected = givenSourceSystemRecord();
@@ -88,7 +91,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testGetSourceSystems(){
+  void testGetSourceSystems() {
     // Given
     int pageNum = 1;
     int pageSize = 10;
@@ -109,7 +112,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testGetSourceSystemsLastPage(){
+  void testGetSourceSystemsLastPage() {
     // Given
     int pageNum = 2;
     int pageSize = 10;
@@ -127,6 +130,15 @@ class SourceSystemControllerTest {
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(result.getBody()).isEqualTo(expected);
+  }
+
+  @Test
+  void testDeleteSourceSystem() throws Exception {
+    // When
+    var result = controller.deleteSourceSystem(PREFIX, SUFFIX);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
 
   private void givenAuthentication() {
