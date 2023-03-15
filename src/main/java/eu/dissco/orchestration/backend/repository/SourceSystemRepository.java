@@ -62,9 +62,9 @@ public class SourceSystemRepository {
 
   public List<SourceSystemRecord> getSourceSystems(int pageNum, int pageSize) {
     int offset = getOffset(pageNum, pageSize);
-    return context.select(NEW_SOURCE_SYSTEM.ID, NEW_SOURCE_SYSTEM.CREATED, NEW_SOURCE_SYSTEM.NAME,
-            NEW_SOURCE_SYSTEM.ENDPOINT, NEW_SOURCE_SYSTEM.DESCRIPTION, NEW_SOURCE_SYSTEM.MAPPING_ID)
+    return context.select(NEW_SOURCE_SYSTEM.asterisk())
         .from(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.DELETED.isNull())
         .limit(pageSize)
         .offset(offset)
         .fetch(this::mapToSourceSystemRecord);

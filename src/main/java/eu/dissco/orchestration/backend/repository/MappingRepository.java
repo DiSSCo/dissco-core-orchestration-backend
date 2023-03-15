@@ -53,6 +53,7 @@ public class MappingRepository {
 
     return context.select(NEW_MAPPING.asterisk())
         .from(NEW_MAPPING)
+        .where(NEW_MAPPING.DELETED.isNull())
         .offset(offset)
         .limit(pageSize)
         .fetch(this::mapToMappingRecord);
