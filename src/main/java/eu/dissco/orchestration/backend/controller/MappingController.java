@@ -1,9 +1,11 @@
 package eu.dissco.orchestration.backend.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
-import eu.dissco.orchestration.backend.domain.MappingRecord;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.service.MappingService;
 import javax.servlet.http.HttpServletRequest;
@@ -36,11 +38,14 @@ public class MappingController {
 
   private final MappingService service;
   private static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
+  private final ObjectMapper mapper;
 
   @PreAuthorize("isAuthenticated()")
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
-      @RequestBody Mapping mapping, HttpServletRequest request) throws TransformerException {
+      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest request)
+      throws TransformerException, JsonProcessingException {
+    var mapping = getMappingFromRequest(requestBody);
     log.info("Received create request for mapping: {}", mapping);
     String path = SANDBOX_URI + request.getRequestURI();
     var result = service.createMapping(mapping, getNameFromToken(authentication), path);
@@ -51,7 +56,9 @@ public class MappingController {
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> updateMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      @RequestBody Mapping mapping, HttpServletRequest request) {
+      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest request)
+      throws JsonProcessingException {
+    var mapping = getMappingFromRequest(requestBody);
     var id = prefix + '/' + suffix;
     log.info("Received update request for mapping: {}", id);
     String path = SANDBOX_URI + request.getRequestURI();
@@ -78,6 +85,14 @@ public class MappingController {
   ){
     String path = SANDBOX_URI + r.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK).body(service.getMappings(pageNum, pageSize, path));
+  }
+
+  private Mapping getMappingFromRequest(JsonApiRequestWrapper requestBody)
+      throws JsonProcessingException, IllegalArgumentException {
+    if(!requestBody.data().type().equals(HandleType.MAPPING)){
+      throw new IllegalArgumentException();
+    }
+    return mapper.treeToValue(requestBody.data().attributes(), Mapping.class);
   }
 
   private String getNameFromToken(Authentication authentication) {

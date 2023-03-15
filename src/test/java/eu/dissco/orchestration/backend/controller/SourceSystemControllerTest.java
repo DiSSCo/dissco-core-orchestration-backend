@@ -1,15 +1,19 @@
 package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -31,25 +35,25 @@ import org.springframework.security.core.Authentication;
 
 @ExtendWith(MockitoExtension.class)
 class SourceSystemControllerTest {
+
+  MockHttpServletRequest mockRequest = new MockHttpServletRequest();
   @Mock
   private SourceSystemService service;
-
   private SourceSystemController controller;
-
   private Authentication authentication;
   @Mock
   private KeycloakPrincipal<KeycloakSecurityContext> principal;
 
-  MockHttpServletRequest mockRequest = new MockHttpServletRequest();
-
   @BeforeEach
-  void setup(){controller = new SourceSystemController(service);
-    mockRequest.setRequestURI(SYSTEM_URI);}
+  void setup() {
+    controller = new SourceSystemController(service, MAPPER);
+    mockRequest.setRequestURI(SYSTEM_URI);
+  }
 
   @Test
-  void testCreateSourceSystem() throws Exception{
+  void testCreateSourceSystem() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystem();
+    var sourceSystem = givenSourceSystemRequest();
     givenAuthentication();
 
     // When
@@ -60,20 +64,33 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testUpdateSourceSystem() {
+  void testCreateSourceSystemBadType() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystem();
+    var sourceSystem = givenMappingRequest();
+
+    // When
+    assertThrowsExactly(
+        IllegalArgumentException.class,
+        () -> controller.createSourceSystem(authentication, sourceSystem, mockRequest));
+  }
+
+  @Test
+  void testUpdateSourceSystem() throws Exception{
+    // Given
+    var sourceSystem = givenSourceSystemRequest();
+
     givenAuthentication();
 
     // When
-    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, sourceSystem, mockRequest);
+    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, sourceSystem,
+        mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
   @Test
-  void testGetSourceSystemById(){
+  void testGetSourceSystemById() {
     // Given
     // When
     var result = controller.getSourceSystemById(PREFIX, SUFFIX, mockRequest);
@@ -83,7 +100,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testGetSourceSystems(){
+  void testGetSourceSystems() {
     // Given
     int pageNum = 1;
     int pageSize = 10;
@@ -101,7 +118,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testGetSourceSystemsLastPage(){
+  void testGetSourceSystemsLastPage() {
     // Given
     int pageNum = 2;
     int pageSize = 10;

@@ -1,16 +1,18 @@
 package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.MappingRecord;
@@ -50,7 +52,7 @@ class MappingControllerTest {
 
   @BeforeEach
   void setup() {
-    controller = new MappingController(service);
+    controller = new MappingController(service, MAPPER);
     mockRequest.setRequestURI(MAPPING_URI);
   }
 
@@ -58,23 +60,34 @@ class MappingControllerTest {
   void testCreateMapping() throws Exception {
     // Given
     givenAuthentication();
-    var mapping = givenMapping();
+    var requestBody = givenMappingRequest();
 
     // When
-    var result = controller.createMapping(authentication, mapping, mockRequest);
+    var result = controller.createMapping(authentication, requestBody, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
   }
 
   @Test
-  void testUpdateMapping() {
+  void testCreateMappingBadType() {
+    // Given
+    var requestBody = givenSourceSystemRequest();
+
+    // Then
+    assertThrowsExactly(
+        IllegalArgumentException.class, () -> controller.createMapping(authentication, requestBody, mockRequest));
+  }
+
+
+  @Test
+  void testUpdateMapping() throws Exception {
     // Given
     givenAuthentication();
-    var mapping = givenMapping();
+    var requestBody = givenMappingRequest();
 
     // Whan
-    var result = controller.updateMapping(authentication, PREFIX, SUFFIX, mapping, mockRequest);
+    var result = controller.updateMapping(authentication, PREFIX, SUFFIX, requestBody, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
