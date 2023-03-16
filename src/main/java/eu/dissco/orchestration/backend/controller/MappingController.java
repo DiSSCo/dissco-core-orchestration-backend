@@ -53,7 +53,7 @@ public class MappingController {
   }
 
   @PutMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<MappingRecord> updateMapping(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> updateMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest request)
       throws JsonProcessingException {

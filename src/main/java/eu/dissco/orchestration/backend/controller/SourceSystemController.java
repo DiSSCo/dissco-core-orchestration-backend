@@ -52,7 +52,7 @@ public class SourceSystemController {
 
   @PreAuthorize("isAuthenticated()")
   @PutMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<SourceSystemRecord> updateSourceSystem(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> updateSourceSystem(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException {
