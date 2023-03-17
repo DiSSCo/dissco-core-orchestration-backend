@@ -8,9 +8,9 @@ import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import org.jooq.Record;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 
 @Repository

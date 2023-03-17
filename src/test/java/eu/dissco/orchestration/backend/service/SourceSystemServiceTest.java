@@ -80,6 +80,19 @@ class SourceSystemServiceTest {
   }
 
   @Test
+  void testUpdateSourceSystemNoChanges() throws Exception {
+    // Given
+    var sourceSystem = givenSourceSystem();
+    given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.of(givenSourceSystemRecord()));
+
+    // When
+    var result = service.updateSourceSystem(HANDLE, sourceSystem);
+
+    // Then
+    assertThat(result).isNull();
+  }
+
+  @Test
   void testUpdateSourceSystem() throws NotFoundException {
     // Given
     var prevRecord = new SourceSystemRecord(
