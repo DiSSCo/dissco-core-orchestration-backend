@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("orchestrator/source-system")
+@RequestMapping("/source-system")
 @RequiredArgsConstructor
 public class SourceSystemController {
   private final SourceSystemService service;

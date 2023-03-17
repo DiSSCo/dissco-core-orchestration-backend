@@ -3,7 +3,8 @@ package eu.dissco.orchestration.backend.domain;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public enum HandleType {
-  @JsonProperty("mapping")MAPPING("mapping"), @JsonProperty("sourceSystem")SOURCE_SYSTEM("sourceSystem");
+  @JsonProperty("mapping")MAPPING("mapping"),
+  @JsonProperty("sourceSystem")SOURCE_SYSTEM("sourceSystem");
 
   private String type;
 

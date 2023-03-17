@@ -55,7 +55,7 @@ public class MappingService {
     );
   }
 
-  public JsonApiListWrapper getMappings(int pageNum, int pageSize, String//When
+  public JsonApiListWrapper getMappings(int pageNum, int pageSize, String
      path){
     var mappingRecords = repository.getMappings(pageNum, pageSize+1);
     return wrapResponse(mappingRecords, pageNum, pageSize, path);
