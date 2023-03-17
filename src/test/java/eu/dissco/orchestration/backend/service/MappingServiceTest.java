@@ -28,6 +28,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import javax.swing.text.html.Option;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,11 +78,11 @@ class MappingServiceTest {
   void testUpdateMapping() {
     // Given
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode());
-    var prevRecord = new MappingRecord(HANDLE, 1, CREATED, OBJECT_CREATOR, prevMapping);
+    var prevRecord = Optional.of(new MappingRecord(HANDLE, 1, CREATED, OBJECT_CREATOR, prevMapping));
     var mapping = givenMapping();
     var expected = givenMappingRecord(HANDLE, 2);
 
-    given(repository.getMappingOmitDeleted(HANDLE)).willReturn(prevRecord);
+    given(repository.getActiveMapping(HANDLE)).willReturn(prevRecord);
 
     // When
     MappingRecord result = null;
@@ -97,10 +99,10 @@ class MappingServiceTest {
   @Test
   void testUpdateMappingNoChanges() {
     // Given
-    var prevMapping = givenMappingRecord(HANDLE, 1);
+    var prevMapping = Optional.of(givenMappingRecord(HANDLE, 1));
     var mapping = givenMapping();
 
-    given(repository.getMappingOmitDeleted(HANDLE)).willReturn(prevMapping);
+    given(repository.getActiveMapping(HANDLE)).willReturn(prevMapping);
 
     // When
     MappingRecord result = null;
@@ -117,7 +119,7 @@ class MappingServiceTest {
   @Test
   void testUpdateMappingNotFound() {
     // Given
-    given(repository.getMappingOmitDeleted(HANDLE)).willReturn(null);
+    given(repository.getActiveMapping(HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrows(NotFoundException.class,
@@ -141,16 +143,16 @@ class MappingServiceTest {
   @Test
   void testDeleteMapping() {
     // Given
-    given(repository.mappingExists(HANDLE)).willReturn(1);
+    given(repository.getActiveMapping(HANDLE)).willReturn(Optional.of(givenMappingRecord(HANDLE, 1)));
 
     // Then
     assertDoesNotThrow(() -> service.deleteMapping(HANDLE));
   }
 
   @Test
-  void testDeleteSourceSystemNotFound() {
+  void testDeleteMappingNotFound() {
     // Given
-    given(repository.mappingExists(HANDLE)).willReturn(0);
+    given(repository.getActiveMapping(HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrowsExactly(NotFoundException.class, () -> service.deleteMapping(HANDLE));

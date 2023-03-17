@@ -7,6 +7,7 @@ import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.jooq.Record;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -38,19 +39,19 @@ public class SourceSystemRepository {
         .where(NEW_SOURCE_SYSTEM.ID.eq(sourceSystemRecord.id())).execute();
   }
 
-  public SourceSystemRecord getSourceSystemById(String id) {
+  public SourceSystemRecord getSourceSystem(String id) {
     return context.select(NEW_SOURCE_SYSTEM.asterisk())
         .from(NEW_SOURCE_SYSTEM)
         .where(NEW_SOURCE_SYSTEM.ID.eq(id))
         .fetchOne(this::mapToSourceSystemRecord);
   }
-  
-  public int sourceSystemExists(String id){
-    return context.select(NEW_SOURCE_SYSTEM.ID)
+
+  public Optional<SourceSystemRecord> getActiveSourceSystem(String id) {
+    return context.select(NEW_SOURCE_SYSTEM.asterisk())
         .from(NEW_SOURCE_SYSTEM)
         .where(NEW_SOURCE_SYSTEM.ID.eq(id))
         .and(NEW_SOURCE_SYSTEM.DELETED.isNull())
-        .fetch().size();    
+        .fetchOptional(this::mapToSourceSystemRecord);
   }
 
   public void deleteSourceSystem(String id, Instant deleted){

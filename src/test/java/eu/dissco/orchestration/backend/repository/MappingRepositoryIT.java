@@ -4,7 +4,6 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MAPPING;
 import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,20 +64,20 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetMappingOmitDeletedIsPresent() throws Exception{
+  void testGetActiveMappingIsPresent() throws Exception{
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     postMappingRecords(List.of(mappingRecord));
 
     // When
-    var result = repository.getMappingOmitDeleted(HANDLE);
+    var result = repository.getActiveMapping(HANDLE);
 
     // Then
-    assertThat(result).isEqualTo(mappingRecord);
+    assertThat(result).contains(mappingRecord);
   }
 
   @Test
-  void testGetMappingOmitDeletedNotPresent() throws Exception{
+  void testGetActiveMappingNotPresent() throws Exception{
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     postMappingRecords(List.of(mappingRecord));
@@ -88,10 +87,10 @@ class MappingRepositoryIT extends BaseRepositoryIT {
         .execute();
 
     // When
-    var result = repository.getMappingOmitDeleted(HANDLE);
+    var result = repository.getActiveMapping(HANDLE);
 
     // Then
-    assertThat(result).isNull();
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -126,19 +125,6 @@ class MappingRepositoryIT extends BaseRepositoryIT {
 
     //Then
     assertThat(result).hasSize(1);
-  }
-
-  @Test
-  void testMappingExists() throws Exception {
-    // Given
-    MappingRecord mapping = givenMappingRecord(HANDLE, 1);
-    postMappingRecords(List.of(mapping));
-
-    // When
-    var result = repository.mappingExists(HANDLE);
-
-    // Then
-    assertThat(result).isEqualTo(1);
   }
 
   @Test

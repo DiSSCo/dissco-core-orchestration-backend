@@ -9,6 +9,7 @@ import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -48,14 +49,14 @@ public class MappingRepository {
         .fetchOne(this::mapToMappingRecord);
   }
 
-  public MappingRecord getMappingOmitDeleted(String id) {
+  public Optional<MappingRecord> getActiveMapping(String id) {
     return context.select(NEW_MAPPING.asterisk())
         .distinctOn(NEW_MAPPING.ID)
         .from(NEW_MAPPING)
         .where(NEW_MAPPING.ID.eq(id))
         .and(NEW_MAPPING.DELETED.isNull())
         .orderBy(NEW_MAPPING.ID, NEW_MAPPING.VERSION.desc())
-        .fetchOne(this::mapToMappingRecord);
+        .fetchOptional(this::mapToMappingRecord);
   }
 
   public List<MappingRecord> getMappings(int pageNum, int pageSize){
@@ -69,13 +70,6 @@ public class MappingRepository {
         .fetch(this::mapToMappingRecord);
   }
 
-  public int mappingExists(String id){
-    return context.select(NEW_MAPPING.ID)
-        .from(NEW_MAPPING)
-        .where(NEW_MAPPING.ID.eq(id))
-        .and(NEW_MAPPING.DELETED.isNull())
-        .fetch().size();
-  }
   public void deleteMapping(String id, Instant deleted){
     context.update(NEW_MAPPING)
         .set(NEW_MAPPING.DELETED, deleted)

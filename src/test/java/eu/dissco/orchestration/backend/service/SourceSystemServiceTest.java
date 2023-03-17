@@ -2,6 +2,7 @@ package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
@@ -15,6 +16,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
 import eu.dissco.orchestration.backend.domain.HandleType;
+import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
@@ -24,6 +26,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +73,7 @@ class SourceSystemServiceTest {
   void testUpdateSourceSystemNotFound() {
     // Given
     var sourceSystem = givenSourceSystem();
-    given(repository.sourceSystemExists(HANDLE)).willReturn(0);
+    given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrowsExactly(NotFoundException.class, () -> service.updateSourceSystem(HANDLE, sourceSystem));
@@ -79,9 +82,14 @@ class SourceSystemServiceTest {
   @Test
   void testUpdateSourceSystem() throws NotFoundException {
     // Given
+    var prevRecord = new SourceSystemRecord(
+        HANDLE,
+        CREATED,
+        new SourceSystem("name", "endpoint", "description", "mappingId")
+    );
     var expected = givenSourceSystemRecord();
     var sourceSystem = givenSourceSystem();
-    given(repository.sourceSystemExists(HANDLE)).willReturn(1);
+    given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.of(prevRecord));
 
     // When
     var result = service.updateSourceSystem(HANDLE, sourceSystem);
@@ -94,7 +102,7 @@ class SourceSystemServiceTest {
   void testGetSourceSystemById(){
     // Given
     var expected = givenSourceSystemRecord();
-    given(repository.getSourceSystemById(HANDLE)).willReturn(expected);
+    given(repository.getSourceSystem(HANDLE)).willReturn(expected);
 
     // When
     var result = service.getSourceSystemById(HANDLE);
@@ -142,7 +150,7 @@ class SourceSystemServiceTest {
   @Test
   void testDeleteSourceSystem(){
     // Given
-    given(repository.sourceSystemExists(HANDLE)).willReturn(1);
+    given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.of(givenSourceSystemRecord()));
     // Then
     assertDoesNotThrow(() -> service.deleteSourceSystem(HANDLE));
   }
@@ -150,7 +158,7 @@ class SourceSystemServiceTest {
   @Test
   void testDeleteSourceSystemNotFound(){
     // Given
-    given(repository.sourceSystemExists(HANDLE)).willReturn(0);
+    given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrowsExactly(NotFoundException.class, () -> service.deleteSourceSystem(HANDLE));

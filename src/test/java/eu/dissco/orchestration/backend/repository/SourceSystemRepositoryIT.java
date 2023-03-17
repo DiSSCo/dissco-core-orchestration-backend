@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.repository;
 
+import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MAPPING;
 import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
@@ -7,12 +8,9 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import eu.dissco.orchestration.backend.domain.HandleType;
-import eu.dissco.orchestration.backend.domain.MappingRecord;
 import org.jooq.Record;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
@@ -22,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.jooq.Query;
-import org.jooq.Record6;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,7 +79,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     postSourceSystem(List.of(expected));
 
     // When
-    var result = repository.getSourceSystemById(HANDLE);
+    var result = repository.getSourceSystem(HANDLE);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -123,19 +120,6 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testMappingExists() throws Exception {
-    // Given
-    var sourceSystemRecord = givenSourceSystemRecord();
-    postSourceSystem(List.of(sourceSystemRecord));
-
-    // When
-    var result = repository.sourceSystemExists(sourceSystemRecord.id());
-
-    // Then
-    assertThat(result).isEqualTo(1);
-  }
-
-  @Test
   void testDeleteMapping() throws Exception {
     // Given
     var sourceSystemRecord = givenSourceSystemRecord();
@@ -147,6 +131,35 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(result).isEqualTo(CREATED);
+  }
+
+  @Test
+  void testGetActiveSourceSystem(){
+    // Given
+    var sourceSystemRecord = givenSourceSystemRecord();
+    postSourceSystem(List.of(sourceSystemRecord));
+
+    // When
+    var result = repository.getActiveSourceSystem(sourceSystemRecord.id());
+
+    // Then
+    assertThat(result).contains(sourceSystemRecord);
+  }
+
+  @Test
+  void testGetActiveSourceSystemWasDeleted(){
+    var sourceSystemRecord = givenSourceSystemRecord();
+    postSourceSystem(List.of(sourceSystemRecord));
+    context.update(NEW_SOURCE_SYSTEM)
+        .set(NEW_SOURCE_SYSTEM.DELETED, CREATED)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(HANDLE))
+        .execute();
+
+    // When
+    var result = repository.getActiveSourceSystem(HANDLE);
+
+    // Then
+    assertThat(result).isEmpty();
   }
 
   private SourceSystemRecord givenSourceSystemRecordWithId(String id){

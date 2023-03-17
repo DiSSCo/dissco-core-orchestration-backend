@@ -33,12 +33,12 @@ public class MappingService {
   }
   public MappingRecord updateMapping(String id, Mapping mapping, String userId)
       throws NotFoundException {
-    var currentVersion = repository.getMappingOmitDeleted(id);
-    if (currentVersion == null){
+    var currentVersion = repository.getActiveMapping(id);
+    if (!currentVersion.isPresent()){
       throw new NotFoundException("Requested mapping does not exist");
     }
-    if (!currentVersion.mapping().equals(mapping)){
-      var mappingRecord = new MappingRecord(id, currentVersion.version() + 1, Instant.now(), userId,
+    if (!currentVersion.get().mapping().equals(mapping)){
+      var mappingRecord = new MappingRecord(id, currentVersion.get().version() + 1, Instant.now(), userId,
           mapping);
       repository.createMapping(mappingRecord);
       return mappingRecord;
@@ -48,12 +48,12 @@ public class MappingService {
   }
 
   public void deleteMapping(String id) throws NotFoundException {
-    int result = repository.mappingExists(id);
-    if (result > 0){
+    var result = repository.getActiveMapping(id);
+    if (result.isPresent()){
       Instant deleted = Instant.now();
       repository.deleteMapping(id, deleted);
     }
-    else throw new NotFoundException("Requested mapping does not exist");
+    else throw new NotFoundException("Requested mapping "+id +" does not exist");
   }
 
   public JsonApiWrapper getMappings(int pageNum, int pageSize, String//When
