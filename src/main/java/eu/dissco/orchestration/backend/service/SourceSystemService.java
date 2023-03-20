@@ -1,6 +1,8 @@
 package eu.dissco.orchestration.backend.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -52,7 +54,7 @@ public class SourceSystemService {
 
   private JsonApiWrapper wrapSingleResponse(String id, SourceSystemRecord sourceSystemRecord, String path){
     return new JsonApiWrapper(
-        new JsonApiData(id, HandleType.SOURCE_SYSTEM, mapper.valueToTree(sourceSystemRecord.sourceSystem())),
+        new JsonApiData(id, HandleType.SOURCE_SYSTEM, flattenSourceSystemRecord(sourceSystemRecord)),
         new JsonApiLinks(path)
     );
   }
@@ -66,11 +68,15 @@ public class SourceSystemService {
     return new JsonApiListWrapper(dataNode, linksNode);
   }
 
-  List<JsonApiData> wrapData(List<SourceSystemRecord> sourceSystemRecords) {
+  private List<JsonApiData> wrapData(List<SourceSystemRecord> sourceSystemRecords) {
     return sourceSystemRecords.stream()
-        .map(r -> new JsonApiData(r.id(), HandleType.SOURCE_SYSTEM, mapper.valueToTree(r)))
+        .map(r -> new JsonApiData(r.id(), HandleType.SOURCE_SYSTEM, flattenSourceSystemRecord(r)))
         .toList();
   }
 
-
+  private JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord){
+    var sourceSystemNode =  (ObjectNode) mapper.valueToTree(sourceSystemRecord.sourceSystem());
+    sourceSystemNode.put("created", sourceSystemRecord.created().toString());
+    return sourceSystemNode;
+  }
 }

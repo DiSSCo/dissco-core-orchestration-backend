@@ -1,6 +1,8 @@
 package eu.dissco.orchestration.backend.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
@@ -50,7 +52,7 @@ public class MappingService {
 
   private JsonApiWrapper wrapSingleResponse(String id, MappingRecord mappingRecord, String path){
     return new JsonApiWrapper(
-        new JsonApiData(id, HandleType.MAPPING, mapper.valueToTree(mappingRecord.mapping())),
+        new JsonApiData(id, HandleType.MAPPING, flattenMappingRecord(mappingRecord)),
         new JsonApiLinks(path)
     );
   }
@@ -71,10 +73,17 @@ public class MappingService {
     return new JsonApiListWrapper(dataNode, linksNode);
   }
 
-  List<JsonApiData> wrapData(List<MappingRecord> mappingRecords) {
+  private List<JsonApiData> wrapData(List<MappingRecord> mappingRecords) {
     return mappingRecords.stream()
-        .map(r -> new JsonApiData(r.id(), HandleType.MAPPING, mapper.valueToTree(r)))
+        .map(r -> new JsonApiData(r.id(), HandleType.MAPPING, flattenMappingRecord(r)))
         .toList();
+  }
+
+  private JsonNode flattenMappingRecord(MappingRecord mappingRecord){
+    var mappingNode = (ObjectNode) mapper.valueToTree(mappingRecord.mapping());
+    mappingNode.put("version", mappingRecord.version());
+    mappingNode.put("created", mappingRecord.created().toString());
+    return mappingNode;
   }
 
 }

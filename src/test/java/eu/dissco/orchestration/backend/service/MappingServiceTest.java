@@ -75,7 +75,7 @@ class MappingServiceTest {
   void testUpdateMapping(){
     // Given
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode());
-    var prevRecord = new MappingRecord(HANDLE, 1,CREATED, OBJECT_CREATOR, prevMapping);
+    var prevRecord = new MappingRecord(HANDLE, 0,CREATED, OBJECT_CREATOR, prevMapping);
     var mapping = givenMapping();
     var expected = givenMappingSingleJsonApiWrapper();
 
