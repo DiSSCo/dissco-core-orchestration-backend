@@ -88,8 +88,10 @@ public class SourceSystemController {
 
   @GetMapping("")
   public ResponseEntity<JsonApiListWrapper> getSourceSystems(
-      @RequestParam(value = "pageNumber", defaultValue = "0") int pageNum,
-      @RequestParam(value = "pageSize", defaultValue = "10") int pageSize, HttpServletRequest r) {
+      @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
+      @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+      HttpServletRequest r
+  ){
     String path = SANDBOX_URI + r.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK)
         .body(service.getSourceSystemRecords(pageNum, pageSize, path));
