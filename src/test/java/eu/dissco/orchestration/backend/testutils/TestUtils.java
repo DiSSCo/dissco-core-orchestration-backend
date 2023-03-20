@@ -8,6 +8,9 @@ import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,11 +27,51 @@ public class TestUtils {
   public static final String OBJECT_DESCRIPTION = "Source system for the DWCA of the Tunicate specimen";
   public static final Instant CREATED = Instant.parse("2022-11-01T09:59:24.00Z");
   public static final ObjectMapper MAPPER = new ObjectMapper().findAndRegisterModules();
-  public static final String SANDBOX_URI = "https://sandbox.dissco.tech/";
+  public static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
+  public static final String SYSTEM_URI = "/source-system";
+  public static final String SYSTEM_PATH = SANDBOX_URI + SYSTEM_URI;
+  public static final String MAPPING_URI = "/mapping";
+  public static final String MAPPING_PATH = SANDBOX_URI + MAPPING_URI;
 
 
   private TestUtils() {
     throw new IllegalStateException("Utility class");
+  }
+
+  public static JsonApiWrapper givenSourceSystemSingleJsonApiWrapper(){
+    var sourceSystemRecord = givenSourceSystemRecord();
+    return new JsonApiWrapper(new JsonApiData(
+        sourceSystemRecord.id(),
+        HandleType.SOURCE_SYSTEM,
+        MAPPER.valueToTree(sourceSystemRecord.sourceSystem())
+    ), new JsonApiLinks(SYSTEM_PATH));
+  }
+
+  public static JsonApiWrapper givenMappingSingleJsonApiWrapper(){
+    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    return new JsonApiWrapper(new JsonApiData(
+        mappingRecord.id(),
+        HandleType.MAPPING,
+        MAPPER.valueToTree(mappingRecord.mapping())
+    ), new JsonApiLinks(MAPPING_PATH));
+  }
+
+  public static JsonApiRequestWrapper givenSourceSystemRequest(){
+    return new JsonApiRequestWrapper(
+        new JsonApiRequest(
+            HandleType.SOURCE_SYSTEM,
+            MAPPER.valueToTree(givenSourceSystem())
+        )
+    );
+  }
+
+  public static JsonApiRequestWrapper givenMappingRequest(){
+    return new JsonApiRequestWrapper(
+        new JsonApiRequest(
+            HandleType.MAPPING,
+            MAPPER.valueToTree(givenMapping())
+        )
+    );
   }
 
   public static SourceSystemRecord givenSourceSystemRecord(){
@@ -48,10 +91,10 @@ public class TestUtils {
     );
   }
 
-  public static JsonApiWrapper givenSourceSystemRecordResponse(List<SourceSystemRecord> ssRecords, JsonApiLinks linksNode){
+  public static JsonApiListWrapper givenSourceSystemRecordResponse(List<SourceSystemRecord> ssRecords, JsonApiLinks linksNode){
     List<JsonApiData> dataNode = new ArrayList<>();
     ssRecords.forEach(ss -> dataNode.add(new JsonApiData(ss.id(), HandleType.SOURCE_SYSTEM, MAPPER.valueToTree(ss))));
-    return new JsonApiWrapper(dataNode, linksNode);
+    return new JsonApiListWrapper(dataNode, linksNode);
   }
 
 
@@ -73,10 +116,10 @@ public class TestUtils {
     );
   }
 
-  public static JsonApiWrapper givenMappingRecordResponse(List<MappingRecord> mappingRecords, JsonApiLinks linksNode){
+  public static JsonApiListWrapper givenMappingRecordResponse(List<MappingRecord> mappingRecords, JsonApiLinks linksNode){
     List<JsonApiData> dataNode = new ArrayList<>();
     mappingRecords.forEach(m -> dataNode.add(new JsonApiData(m.id(), HandleType.MAPPING, MAPPER.valueToTree(m))));
-    return new JsonApiWrapper(dataNode, linksNode);
+    return new JsonApiListWrapper(dataNode, linksNode);
   }
 
 

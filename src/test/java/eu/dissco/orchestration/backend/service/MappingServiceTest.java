@@ -3,12 +3,14 @@ package eu.dissco.orchestration.backend.service;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingSingleJsonApiWrapper;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -59,11 +61,11 @@ class MappingServiceTest {
   void testCreateMapping() throws  Exception{
     // Given
     var mapping = givenMapping();
-    var expected = givenMappingRecord(HANDLE, 1);
+    var expected = givenMappingSingleJsonApiWrapper();
     given(handleService.createNewHandle(HandleType.MAPPING)).willReturn(HANDLE);
 
     // When
-    var result = service.createMapping(mapping, OBJECT_CREATOR);
+    var result = service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -75,12 +77,12 @@ class MappingServiceTest {
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode());
     var prevRecord = new MappingRecord(HANDLE, 1,CREATED, OBJECT_CREATOR, prevMapping);
     var mapping = givenMapping();
-    var expected = givenMappingRecord(HANDLE, 2);
+    var expected = givenMappingSingleJsonApiWrapper();
 
     given(repository.getMapping(HANDLE)).willReturn(prevRecord);
 
     // When
-    var result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR);
+    var result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR, MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -95,7 +97,7 @@ class MappingServiceTest {
     given(repository.getMapping(HANDLE)).willReturn(prevMapping);
 
     // When
-    var result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR);
+    var result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR, MAPPING_PATH);
 
     // Then
     assertThat(result).isNull();
@@ -104,11 +106,12 @@ class MappingServiceTest {
   @Test
   void testGetMappingsById(){
     // Given
-    var expected = givenMappingRecord(HANDLE, 1);
-    given(repository.getMapping(HANDLE)).willReturn(expected);
+    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
+    var expected = givenMappingSingleJsonApiWrapper();
 
     // When
-    var result = service.getMappingById(HANDLE);
+    var result = service.getMappingById(HANDLE, MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
