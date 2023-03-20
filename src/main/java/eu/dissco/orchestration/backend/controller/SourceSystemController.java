@@ -1,8 +1,14 @@
 package eu.dissco.orchestration.backend.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.orchestration.backend.domain.HandleType;
+import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.*;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +24,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,47 +38,63 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class SourceSystemController {
   private final SourceSystemService service;
-  private static final String SANDBOX_URI = "https://sandbox.dissco.tech/";
+  private static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
+  private final ObjectMapper mapper;
 
   @PreAuthorize("isAuthenticated()")
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<SourceSystemRecord> createSourceSystem(Authentication authentication,
-      @RequestBody SourceSystem request) throws TransformerException {
-    log.info("Received create request for request: {}", request);
-    var result = service.createSourceSystem(request);
+  public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
+      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
+      throws TransformerException, JsonProcessingException {
+    var sourceSystem = getSourceSystemFromRequest(requestBody);
+    String path = SANDBOX_URI + servletRequest.getRequestURI();
+    log.info("Received create request for request: {}", sourceSystem);
+    var result = service.createSourceSystem(sourceSystem, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
   @PreAuthorize("isAuthenticated()")
   @PutMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<SourceSystemRecord> updateSourceSystem(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> updateSourceSystem(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      @RequestBody SourceSystem sourceSystem) throws NotFoundException {
+      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
+      throws JsonProcessingException, NotFoundException {
+    var sourceSystem = getSourceSystemFromRequest(requestBody);
     var id = prefix + '/' + suffix;
     log.info("Received update request for source system: {}", id);
-    var result = service.updateSourceSystem(id, sourceSystem);
+    String path = SANDBOX_URI + servletRequest.getRequestURI();
+    var result = service.updateSourceSystem(id, sourceSystem, path);
     return ResponseEntity.ok(result);
   }
 
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<SourceSystemRecord> getSourceSystemById(
+  public ResponseEntity<JsonApiWrapper> getSourceSystemById(
       @PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) {
+      @PathVariable("postfix") String postfix, HttpServletRequest servletRequest) {
     var id = prefix + '/' + postfix;
     log.info("Received get request for source system with id: {}", id);
-    var sourceSystem = service.getSourceSystemById(id);
+    String path = SANDBOX_URI + servletRequest.getRequestURI();
+    var sourceSystem = service.getSourceSystemById(id, path);
     return ResponseEntity.ok(sourceSystem);
   }
 
   @GetMapping("")
-  public ResponseEntity<JsonApiWrapper> getSourceSystems(
+  public ResponseEntity<JsonApiListWrapper> getSourceSystems(
       @RequestParam(value = "pageNumber", defaultValue = "0") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest r
   ){
     String path = SANDBOX_URI + r.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK).body(service.getSourceSystemRecords(pageNum, pageSize, path));
+  }
+
+  private SourceSystem getSourceSystemFromRequest(JsonApiRequestWrapper requestBody)
+      throws JsonProcessingException, IllegalArgumentException {
+    if(!requestBody.data().type().equals(HandleType.SOURCE_SYSTEM)){
+      throw new IllegalArgumentException();
+    }
+    return mapper.treeToValue(requestBody.data().attributes(), SourceSystem.class);
   }
 
   @PreAuthorize("isAuthenticated()")

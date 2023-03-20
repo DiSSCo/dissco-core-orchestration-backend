@@ -6,6 +6,7 @@ import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
@@ -25,14 +26,13 @@ public class MappingService {
   private final MappingRepository repository;
   private final ObjectMapper mapper;
 
-  public MappingRecord createMapping(Mapping mapping, String userId) throws TransformerException {
+  public JsonApiWrapper createMapping(Mapping mapping, String userId, String path) throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.MAPPING);
     var mappingRecord = new MappingRecord(handle, 1, Instant.now(), userId, mapping);
     repository.createMapping(mappingRecord);
-    return mappingRecord;
+    return wrapSingleResponse(handle, mappingRecord, path);
   }
-  public MappingRecord updateMapping(String id, Mapping mapping, String userId)
-      throws NotFoundException {
+  public JsonApiWrapper  updateMapping(String id, Mapping mapping, String userId, String path) throws NotFoundException{
     var currentVersion = repository.getActiveMapping(id);
     if (!currentVersion.isPresent()){
       throw new NotFoundException("Requested mapping does not exist");
@@ -41,7 +41,7 @@ public class MappingService {
       var mappingRecord = new MappingRecord(id, currentVersion.get().version() + 1, Instant.now(), userId,
           mapping);
       repository.createMapping(mappingRecord);
-      return mappingRecord;
+      return wrapSingleResponse(id, mappingRecord, path);
     } else {
       return null;
     }
@@ -56,23 +56,32 @@ public class MappingService {
     else throw new NotFoundException("Requested mapping "+id +" does not exist");
   }
 
-  public JsonApiWrapper getMappings(int pageNum, int pageSize, String//When
+  public JsonApiListWrapper getMappings(int pageNum, int pageSize, String//When
      path){
     var mappingRecords = repository.getMappings(pageNum, pageSize+1);
     return wrapResponse(mappingRecords, pageNum, pageSize, path);
   }
 
-  public MappingRecord getMappingById(String id){
-    return repository.getMapping(id);
+  public JsonApiWrapper getMappingById(String id, String path){
+    var mappingRecord = repository.getMapping(id);
+    return wrapSingleResponse(id, mappingRecord, path);
   }
 
-  private JsonApiWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,
+  private JsonApiWrapper wrapSingleResponse(String id, MappingRecord mappingRecord, String path){
+    return new JsonApiWrapper(
+        new JsonApiData(id, HandleType.MAPPING, mapper.valueToTree(mappingRecord.mapping())),
+        new JsonApiLinks(path)
+    );
+  }
+
+
+  private JsonApiListWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,
       int pageSize, String path) {
     boolean hasNext = mappingRecords.size() > pageSize;
     mappingRecords = hasNext ? mappingRecords.subList(0, pageSize) : mappingRecords;
     var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
     var dataNode = wrapData(mappingRecords);
-    return new JsonApiWrapper(dataNode, linksNode);
+    return new JsonApiListWrapper(dataNode, linksNode);
   }
 
   List<JsonApiData> wrapData(List<MappingRecord> mappingRecords) {

@@ -1,8 +1,12 @@
 package eu.dissco.orchestration.backend.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
-import eu.dissco.orchestration.backend.domain.MappingRecord;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.*;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.MappingService;
 import javax.servlet.http.HttpServletRequest;
@@ -35,26 +39,31 @@ import org.springframework.web.bind.annotation.RestController;
 public class MappingController {
 
   private final MappingService service;
-  private static final String SANDBOX_URI = "https://sandbox.dissco.tech/";
+  private static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
+  private final ObjectMapper mapper;
 
   @PreAuthorize("isAuthenticated()")
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<MappingRecord> createMapping(Authentication authentication,
-      @RequestBody Mapping mapping) throws TransformerException {
+  public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
+      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest request)
+      throws TransformerException, JsonProcessingException {
+    var mapping = getMappingFromRequest(requestBody);
     log.info("Received create request for mapping: {}", mapping);
-    var result = service.createMapping(mapping, getNameFromToken(authentication));
+    String path = SANDBOX_URI + request.getRequestURI();
+    var result = service.createMapping(mapping, getNameFromToken(authentication), path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
-  @PreAuthorize("isAuthenticated()")
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<MappingRecord> updateMapping(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> updateMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      @RequestBody Mapping mapping) throws NotFoundException{
+      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest request)
+      throws JsonProcessingException, NotFoundException {
+    var mapping = getMappingFromRequest(requestBody);
     var id = prefix + '/' + suffix;
     log.info("Received update request for mapping: {}", id);
-    MappingRecord result = null;
-    result = service.updateMapping(id, mapping, getNameFromToken(authentication));
+    String path = SANDBOX_URI + request.getRequestURI();
+    var result = service.updateMapping(id, mapping, getNameFromToken(authentication), path);
     return ResponseEntity.ok(result);
   }
 
@@ -70,22 +79,31 @@ public class MappingController {
 
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<MappingRecord> getMappingById(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) {
+  public ResponseEntity<JsonApiWrapper> getMappingById(@PathVariable("prefix") String prefix,
+      @PathVariable("postfix") String postfix, HttpServletRequest request) {
     var id = prefix + '/' + postfix;
     log.info("Received get request for mapping with id: {}", id);
-    var mapping = service.getMappingById(id);
+    String path = SANDBOX_URI + request.getRequestURI();
+    var mapping = service.getMappingById(id, path);
     return ResponseEntity.ok(mapping);
   }
 
   @GetMapping(value = "")
-  public ResponseEntity<JsonApiWrapper> getMappings(
+  public ResponseEntity<JsonApiListWrapper> getMappings(
       @RequestParam(value = "pageNum", defaultValue = "0") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest r
   ){
     String path = SANDBOX_URI + r.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK).body(service.getMappings(pageNum, pageSize, path));
+  }
+
+  private Mapping getMappingFromRequest(JsonApiRequestWrapper requestBody)
+      throws JsonProcessingException, IllegalArgumentException {
+    if(!requestBody.data().type().equals(HandleType.MAPPING)){
+      throw new IllegalArgumentException();
+    }
+    return mapper.treeToValue(requestBody.data().attributes(), Mapping.class);
   }
 
   private String getNameFromToken(Authentication authentication) {

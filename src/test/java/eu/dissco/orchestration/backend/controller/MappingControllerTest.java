@@ -1,14 +1,20 @@
 package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.MappingRecord;
@@ -45,61 +51,60 @@ class MappingControllerTest {
   private KeycloakSecurityContext securityContext;
   @Mock
   private AccessToken accessToken;
+  private final MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
   @BeforeEach
   void setup() {
-    controller = new MappingController(service);
+    controller = new MappingController(service, MAPPER);
+    mockRequest.setRequestURI(MAPPING_URI);
   }
 
   @Test
   void testCreateMapping() throws Exception {
     // Given
     givenAuthentication();
-    var mapping = givenMapping();
-    var expected = givenMappingRecord(HANDLE, 1);
-    given(service.createMapping(mapping, OBJECT_CREATOR)).willReturn(expected);
+    var requestBody = givenMappingRequest();
 
     // When
-    var result = controller.createMapping(authentication, mapping);
+    var result = controller.createMapping(authentication, requestBody, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    assertThat(result.getBody()).isEqualTo(expected);
   }
 
   @Test
-  void testUpdateMapping() throws NotFoundException {
+  void testCreateMappingBadType() {
+    // Given
+    var requestBody = givenSourceSystemRequest();
+
+    // Then
+    assertThrowsExactly(
+        IllegalArgumentException.class, () -> controller.createMapping(authentication, requestBody, mockRequest));
+  }
+
+  @Test
+  void testUpdateMapping() throws Exception {
     // Given
     givenAuthentication();
-    var mapping = givenMapping();
-    var expected = givenMappingRecord(HANDLE, 2);
-    try {
-      given(service.updateMapping(HANDLE, mapping, OBJECT_CREATOR)).willReturn(expected);
-    } catch (eu.dissco.orchestration.backend.exception.NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+    var requestBody = givenMappingRequest();
 
     // Whan
-    var result = controller.updateMapping(authentication, PREFIX, SUFFIX, mapping);
+    var result = controller.updateMapping(authentication, PREFIX, SUFFIX, requestBody, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(expected);
   }
 
   @Test
   void testGetMappingById(){
     // Given
     var id = HANDLE;
-    var expected = givenMappingRecord(id, 1);
-    given(service.getMappingById(id)).willReturn(expected);
 
     // When
-    var result = controller.getMappingById(PREFIX, SUFFIX);
+    var result = controller.getMappingById(PREFIX, SUFFIX, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(expected);
   }
 
   @Test
@@ -116,17 +121,13 @@ class MappingControllerTest {
     int pageNum = 1;
     int pageSize = 10;
 
-    MockHttpServletRequest r = new MockHttpServletRequest();
-    r.setRequestURI("/source-system");
-    String path = SANDBOX_URI + "/source-system";
-
     List<MappingRecord> mappingRecords = Collections.nCopies(pageSize, givenMappingRecord(HANDLE, 1));
-    var linksNode = new JsonApiLinks(pageSize, pageNum, true, path);
+    var linksNode = new JsonApiLinks(pageSize, pageNum, true, MAPPING_PATH);
     var expected = givenMappingRecordResponse(mappingRecords, linksNode);
-    given(service.getMappings(pageNum, pageSize, path)).willReturn(expected);
+    given(service.getMappings(pageNum, pageSize, MAPPING_PATH)).willReturn(expected);
 
     // When
-    var result = controller.getMappings(pageNum, pageSize, r);
+    var result = controller.getMappings(pageNum, pageSize, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);

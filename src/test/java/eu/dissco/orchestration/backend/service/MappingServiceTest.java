@@ -3,12 +3,14 @@ package eu.dissco.orchestration.backend.service;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingSingleJsonApiWrapper;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -21,6 +23,7 @@ import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Clock;
@@ -29,7 +32,6 @@ import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import javax.swing.text.html.Option;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,40 +66,35 @@ class MappingServiceTest {
   void testCreateMapping() throws Exception {
     // Given
     var mapping = givenMapping();
-    var expected = givenMappingRecord(HANDLE, 1);
+    var expected = givenMappingSingleJsonApiWrapper();
     given(handleService.createNewHandle(HandleType.MAPPING)).willReturn(HANDLE);
 
     // When
-    var result = service.createMapping(mapping, OBJECT_CREATOR);
+    var result = service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
-  void testUpdateMapping() {
+  void testUpdateMapping() throws Exception {
     // Given
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode());
     var prevRecord = Optional.of(new MappingRecord(HANDLE, 1, CREATED, OBJECT_CREATOR, prevMapping));
     var mapping = givenMapping();
-    var expected = givenMappingRecord(HANDLE, 2);
+    var expected = givenMappingSingleJsonApiWrapper();
 
     given(repository.getActiveMapping(HANDLE)).willReturn(prevRecord);
 
     // When
-    MappingRecord result = null;
-    try {
-      result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+    var result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR, MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
-  void testUpdateMappingNoChanges() {
+  void testUpdateMappingNoChanges() throws Exception {
     // Given
     var prevMapping = Optional.of(givenMappingRecord(HANDLE, 1));
     var mapping = givenMapping();
@@ -105,36 +102,32 @@ class MappingServiceTest {
     given(repository.getActiveMapping(HANDLE)).willReturn(prevMapping);
 
     // When
-    MappingRecord result = null;
-    try {
-      result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+    var result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR, MAPPING_PATH);
 
     // Then
     assertThat(result).isNull();
   }
 
   @Test
-  void testUpdateMappingNotFound() {
+  void testUpdateMappingNotFound() throws Exception {
     // Given
     given(repository.getActiveMapping(HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrows(NotFoundException.class,
-        () -> service.updateMapping(HANDLE, givenMapping(), OBJECT_CREATOR));
+        () -> service.updateMapping(HANDLE, givenMapping(),OBJECT_CREATOR , OBJECT_CREATOR));
   }
 
 
   @Test
   void testGetMappingsById() {
     // Given
-    var expected = givenMappingRecord(HANDLE, 1);
-    given(repository.getMapping(HANDLE)).willReturn(expected);
+    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
+    var expected = givenMappingSingleJsonApiWrapper();
 
     // When
-    var result = service.getMappingById(HANDLE);
+    var result = service.getMappingById(HANDLE, MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
