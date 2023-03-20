@@ -8,6 +8,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Instant;
 import java.util.List;
@@ -34,16 +35,24 @@ public class SourceSystemService {
     return wrapSingleResponse(handle, sourceSystemRecord, path);
   }
 
-  public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String path) {
+  public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String path) throws NotFoundException{
+    var prevSourceSystem = repository.getActiveSourceSystem(id);
+    if (prevSourceSystem.isEmpty()){
+      throw new NotFoundException("Could not update Source System " + id + ". Verify resource exists.");
+    }
+    if ((prevSourceSystem.get().sourceSystem()).equals(sourceSystem)){
+      return null;
+    }
     var sourceSystemRecord = new SourceSystemRecord(id, Instant.now(), sourceSystem);
     repository.updateSourceSystem(sourceSystemRecord);
     return wrapSingleResponse(id, sourceSystemRecord, path);
   }
 
   public JsonApiWrapper getSourceSystemById(String id, String path) {
-    var sourceSystemRecord = repository.getSourceSystemById(id);
+    var sourceSystemRecord = repository.getSourceSystem(id);
     return wrapSingleResponse(id, sourceSystemRecord, path);
   }
+
 
   public JsonApiListWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
     var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize + 1);
@@ -56,6 +65,16 @@ public class SourceSystemService {
         new JsonApiLinks(path)
     );
   }
+
+  public void deleteSourceSystem(String id) throws NotFoundException {
+    var result = repository.getActiveSourceSystem(id);
+    if (result.isPresent()){
+      Instant deleted = Instant.now();
+      repository.deleteSourceSystem(id, deleted);
+    }
+    else throw new NotFoundException("Requested source system"+id +" does not exist");
+  }
+
 
   private JsonApiListWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,
       int pageSize, String path) {
