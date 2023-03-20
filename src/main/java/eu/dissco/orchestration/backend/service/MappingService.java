@@ -12,6 +12,7 @@ import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +55,10 @@ public class MappingService {
       repository.deleteMapping(id, deleted);
     }
     else throw new NotFoundException("Requested mapping "+id +" does not exist");
+  }
+
+  protected Optional<MappingRecord> getActiveMapping(String id){
+    return repository.getActiveMapping(id);
   }
 
   public JsonApiListWrapper getMappings(int pageNum, int pageSize, String//When

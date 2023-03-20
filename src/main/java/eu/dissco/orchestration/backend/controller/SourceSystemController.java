@@ -43,7 +43,7 @@ public class SourceSystemController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException {
+      throws TransformerException, JsonProcessingException, NotFoundException {
     var sourceSystem = getSourceSystemFromRequest(requestBody);
     String path = SANDBOX_URI + servletRequest.getRequestURI();
     log.info("Received create request for request: {}", sourceSystem);
