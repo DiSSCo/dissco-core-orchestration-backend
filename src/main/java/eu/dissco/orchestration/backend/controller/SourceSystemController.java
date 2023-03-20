@@ -78,7 +78,7 @@ public class SourceSystemController {
 
   @GetMapping("")
   public ResponseEntity<JsonApiListWrapper> getSourceSystems(
-      @RequestParam(value = "pageNumber", defaultValue = "0") int pageNum,
+      @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest r
   ){
