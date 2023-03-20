@@ -36,6 +36,7 @@ import org.springframework.security.core.Authentication;
 @ExtendWith(MockitoExtension.class)
 class SourceSystemControllerTest {
 
+
   MockHttpServletRequest mockRequest = new MockHttpServletRequest();
   @Mock
   private SourceSystemService service;
@@ -133,6 +134,15 @@ class SourceSystemControllerTest {
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(result.getBody()).isEqualTo(expected);
+  }
+
+  @Test
+  void testDeleteSourceSystem() throws Exception {
+    // When
+    var result = controller.deleteSourceSystem(PREFIX, SUFFIX);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
 
   private void givenAuthentication() {
