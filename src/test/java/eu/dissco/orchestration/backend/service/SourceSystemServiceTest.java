@@ -114,8 +114,6 @@ class SourceSystemServiceTest {
     assertThat(result).isNull();
   }
 
-
-
   @Test
   void testGetSourceSystemById() throws Exception {
     // Given

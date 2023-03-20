@@ -48,10 +48,6 @@ public class SourceSystemService {
     return wrapSingleResponse(id, sourceSystemRecord, path);
   }
 
-  public SourceSystemRecord getSourceSystemById(String id) {
-    return repository.getSourceSystem(id);
-  }
-
   public JsonApiWrapper getSourceSystemById(String id, String path) {
     var sourceSystemRecord = repository.getSourceSystem(id);
     return wrapSingleResponse(id, sourceSystemRecord, path);
