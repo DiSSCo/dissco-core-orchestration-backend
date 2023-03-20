@@ -12,6 +12,9 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRe
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingSingleJsonApiWrapper;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
@@ -20,13 +23,15 @@ import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
-import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +52,7 @@ class MappingServiceTest {
   private MockedStatic<Instant> mockedStatic;
 
   @BeforeEach
-  void setup(){
+  void setup() {
     service = new MappingService(handleService, repository, MAPPER);
     initTime();
   }
@@ -58,7 +63,7 @@ class MappingServiceTest {
   }
 
   @Test
-  void testCreateMapping() throws  Exception{
+  void testCreateMapping() throws Exception {
     // Given
     var mapping = givenMapping();
     var expected = givenMappingSingleJsonApiWrapper();
@@ -72,14 +77,14 @@ class MappingServiceTest {
   }
 
   @Test
-  void testUpdateMapping(){
+  void testUpdateMapping() throws Exception {
     // Given
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode());
-    var prevRecord = new MappingRecord(HANDLE, 1,CREATED, OBJECT_CREATOR, prevMapping);
+    var prevRecord = Optional.of(new MappingRecord(HANDLE, 1, CREATED, OBJECT_CREATOR, prevMapping));
     var mapping = givenMapping();
     var expected = givenMappingSingleJsonApiWrapper();
 
-    given(repository.getMapping(HANDLE)).willReturn(prevRecord);
+    given(repository.getActiveMapping(HANDLE)).willReturn(prevRecord);
 
     // When
     var result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR, MAPPING_PATH);
@@ -89,12 +94,12 @@ class MappingServiceTest {
   }
 
   @Test
-  void testUpdateMappingNoChanges(){
+  void testUpdateMappingNoChanges() throws Exception {
     // Given
-    var prevMapping = givenMappingRecord(HANDLE, 1);
+    var prevMapping = Optional.of(givenMappingRecord(HANDLE, 1));
     var mapping = givenMapping();
 
-    given(repository.getMapping(HANDLE)).willReturn(prevMapping);
+    given(repository.getActiveMapping(HANDLE)).willReturn(prevMapping);
 
     // When
     var result = service.updateMapping(HANDLE, mapping, OBJECT_CREATOR, MAPPING_PATH);
@@ -104,7 +109,18 @@ class MappingServiceTest {
   }
 
   @Test
-  void testGetMappingsById(){
+  void testUpdateMappingNotFound() throws Exception {
+    // Given
+    given(repository.getActiveMapping(HANDLE)).willReturn(Optional.empty());
+
+    // Then
+    assertThrows(NotFoundException.class,
+        () -> service.updateMapping(HANDLE, givenMapping(),OBJECT_CREATOR , OBJECT_CREATOR));
+  }
+
+
+  @Test
+  void testGetMappingsById() {
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
@@ -118,12 +134,31 @@ class MappingServiceTest {
   }
 
   @Test
-  void testGetMappings(){
+  void testDeleteMapping() {
+    // Given
+    given(repository.getActiveMapping(HANDLE)).willReturn(Optional.of(givenMappingRecord(HANDLE, 1)));
+
+    // Then
+    assertDoesNotThrow(() -> service.deleteMapping(HANDLE));
+  }
+
+  @Test
+  void testDeleteMappingNotFound() {
+    // Given
+    given(repository.getActiveMapping(HANDLE)).willReturn(Optional.empty());
+
+    // Then
+    assertThrowsExactly(NotFoundException.class, () -> service.deleteMapping(HANDLE));
+  }
+
+  @Test
+  void testGetMappings() {
     // Given
     int pageSize = 10;
     int pageNum = 1;
-    List<MappingRecord> mappingRecords = Collections.nCopies(pageSize+1, givenMappingRecord(HANDLE, 1));
-    given(repository.getMappings(pageNum, pageSize+1)).willReturn(mappingRecords);
+    List<MappingRecord> mappingRecords = Collections.nCopies(pageSize + 1,
+        givenMappingRecord(HANDLE, 1));
+    given(repository.getMappings(pageNum, pageSize + 1)).willReturn(mappingRecords);
     var linksNode = new JsonApiLinks(pageSize, pageNum, true, SANDBOX_URI);
     var expected = givenMappingRecordResponse(mappingRecords.subList(0, pageSize), linksNode);
 
@@ -135,12 +170,13 @@ class MappingServiceTest {
   }
 
   @Test
-  void testGetMappingsLastPage(){
+  void testGetMappingsLastPage() {
     // Given
     int pageSize = 10;
     int pageNum = 2;
-    List<MappingRecord> mappingRecords = Collections.nCopies(pageSize, givenMappingRecord(HANDLE, 1));
-    given(repository.getMappings(pageNum, pageSize+1)).willReturn(mappingRecords);
+    List<MappingRecord> mappingRecords = Collections.nCopies(pageSize,
+        givenMappingRecord(HANDLE, 1));
+    given(repository.getMappings(pageNum, pageSize + 1)).willReturn(mappingRecords);
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, SANDBOX_URI);
     var expected = givenMappingRecordResponse(mappingRecords, linksNode);
 

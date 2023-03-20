@@ -11,12 +11,15 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRe
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.MappingService;
 import java.util.Collections;
 import java.util.List;
@@ -48,7 +51,7 @@ class MappingControllerTest {
   private KeycloakSecurityContext securityContext;
   @Mock
   private AccessToken accessToken;
-    private MockHttpServletRequest mockRequest = new MockHttpServletRequest();
+  private final MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
   @BeforeEach
   void setup() {
@@ -79,7 +82,6 @@ class MappingControllerTest {
         IllegalArgumentException.class, () -> controller.createMapping(authentication, requestBody, mockRequest));
   }
 
-
   @Test
   void testUpdateMapping() throws Exception {
     // Given
@@ -103,6 +105,15 @@ class MappingControllerTest {
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test
+  void testDeleteSourceSystem() throws Exception {
+    // When
+    var result = controller.deleteMapping(PREFIX, SUFFIX);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
 
   @Test
