@@ -6,6 +6,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
@@ -45,12 +46,14 @@ class SourceSystemServiceTest {
   private HandleService handleService;
   @Mock
   private SourceSystemRepository repository;
+  @Mock
+  private MappingService mappingService;
 
   private MockedStatic<Instant> mockedStatic;
 
   @BeforeEach
   void setup() {
-    service = new SourceSystemService(repository, handleService, MAPPER);
+    service = new SourceSystemService(repository, handleService, mappingService, MAPPER);
     initTime();
   }
 
@@ -65,12 +68,22 @@ class SourceSystemServiceTest {
     var expected = givenSourceSystemSingleJsonApiWrapper();
     var sourceSystem = givenSourceSystem();
     given(handleService.createNewHandle(HandleType.SOURCE_SYSTEM)).willReturn(HANDLE);
+    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
 
     // When
     var result = service.createSourceSystem(sourceSystem, SYSTEM_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testCreateSourceSystemMappingNotFound() throws Exception {
+    // Given
+    var sourceSystem = givenSourceSystem();
+    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(Optional.empty());
+
+    assertThrowsExactly(NotFoundException.class, () -> service.createSourceSystem(sourceSystem, SYSTEM_PATH));
   }
 
   @Test

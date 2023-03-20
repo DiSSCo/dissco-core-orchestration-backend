@@ -24,15 +24,25 @@ public class SourceSystemService {
 
   private final SourceSystemRepository repository;
   private final HandleService handleService;
+  private final MappingService mappingService;
 
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String path)
-      throws TransformerException {
+      throws TransformerException, NotFoundException {
     var handle = handleService.createNewHandle(HandleType.SOURCE_SYSTEM);
+    validateMappingExists(sourceSystem.mappingId());
+
     var sourceSystemRecord = new SourceSystemRecord(handle, Instant.now(), sourceSystem);
     repository.createSourceSystem(sourceSystemRecord);
     return wrapSingleResponse(handle, sourceSystemRecord, path);
+  }
+
+  private void validateMappingExists(String mappingId) throws NotFoundException{
+    var mappingRecord = mappingService.getActiveMapping(mappingId);
+    if (mappingRecord.isEmpty()){
+      throw new NotFoundException("Unable to locate Mapping record with id " + mappingId);
+    }
   }
 
   public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String path) throws NotFoundException{
