@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.repository;
 
+import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MAPPING;
 import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
@@ -10,7 +11,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import eu.dissco.orchestration.backend.domain.HandleType;
 import org.jooq.Record;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.jooq.Query;
-import org.jooq.Record6;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +79,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     postSourceSystem(List.of(expected));
 
     // When
-    var result = repository.getSourceSystemById(HANDLE);
+    var result = repository.getSourceSystem(HANDLE);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -120,6 +119,49 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     assertThat(result).hasSize(1);
   }
 
+  @Test
+  void testDeleteMapping() throws Exception {
+    // Given
+    var sourceSystemRecord = givenSourceSystemRecord();
+    postSourceSystem(List.of(sourceSystemRecord));
+
+    // When
+    repository.deleteSourceSystem(sourceSystemRecord.id(), CREATED);
+    var result = getDeleted(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(CREATED);
+  }
+
+  @Test
+  void testGetActiveSourceSystem(){
+    // Given
+    var sourceSystemRecord = givenSourceSystemRecord();
+    postSourceSystem(List.of(sourceSystemRecord));
+
+    // When
+    var result = repository.getActiveSourceSystem(sourceSystemRecord.id());
+
+    // Then
+    assertThat(result).contains(sourceSystemRecord);
+  }
+
+  @Test
+  void testGetActiveSourceSystemWasDeleted(){
+    var sourceSystemRecord = givenSourceSystemRecord();
+    postSourceSystem(List.of(sourceSystemRecord));
+    context.update(NEW_SOURCE_SYSTEM)
+        .set(NEW_SOURCE_SYSTEM.DELETED, CREATED)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(HANDLE))
+        .execute();
+
+    // When
+    var result = repository.getActiveSourceSystem(HANDLE);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
   private SourceSystemRecord givenSourceSystemRecordWithId(String id){
     return new SourceSystemRecord(id, CREATED, givenSourceSystemWithId(id + "a"));
   }
@@ -134,10 +176,20 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   private List<SourceSystemRecord> getAllSourceSystems() {
-    return context.select(NEW_SOURCE_SYSTEM.ID, NEW_SOURCE_SYSTEM.CREATED, NEW_SOURCE_SYSTEM.NAME,
-            NEW_SOURCE_SYSTEM.ENDPOINT, NEW_SOURCE_SYSTEM.DESCRIPTION, NEW_SOURCE_SYSTEM.MAPPING_ID)
+    return context.select(NEW_SOURCE_SYSTEM.asterisk())
         .from(NEW_SOURCE_SYSTEM)
         .fetch(this::mapToSourceSystemRecord);
+  }
+
+  private Instant getDeleted(String id){
+    return context.select(NEW_SOURCE_SYSTEM.ID, NEW_SOURCE_SYSTEM.DELETED)
+        .from(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+        .fetchOne(this::getInstantDeleted);
+  }
+
+  private Instant getInstantDeleted(Record dbRecord){
+    return dbRecord.get(NEW_SOURCE_SYSTEM.DELETED);
   }
 
   private SourceSystemRecord mapToSourceSystemRecord(Record row) {

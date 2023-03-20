@@ -7,7 +7,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -47,28 +49,46 @@ public class MappingRepository {
         .fetchOne(this::mapToMappingRecord);
   }
 
+  public Optional<MappingRecord> getActiveMapping(String id) {
+    return context.select(NEW_MAPPING.asterisk())
+        .distinctOn(NEW_MAPPING.ID)
+        .from(NEW_MAPPING)
+        .where(NEW_MAPPING.ID.eq(id))
+        .and(NEW_MAPPING.DELETED.isNull())
+        .orderBy(NEW_MAPPING.ID, NEW_MAPPING.VERSION.desc())
+        .fetchOptional(this::mapToMappingRecord);
+  }
+
   public List<MappingRecord> getMappings(int pageNum, int pageSize){
     int offset = getOffset(pageNum, pageSize);
 
     return context.select(NEW_MAPPING.asterisk())
         .from(NEW_MAPPING)
+        .where(NEW_MAPPING.DELETED.isNull())
         .offset(offset)
         .limit(pageSize)
         .fetch(this::mapToMappingRecord);
   }
 
-  private MappingRecord mapToMappingRecord(Record record) {
+  public void deleteMapping(String id, Instant deleted){
+    context.update(NEW_MAPPING)
+        .set(NEW_MAPPING.DELETED, deleted)
+        .where(NEW_MAPPING.ID.eq(id))
+        .execute();
+  }
+
+  private MappingRecord mapToMappingRecord(Record dbRecord) {
     try {
       var mapping = new Mapping(
-          record.get(NEW_MAPPING.NAME),
-          record.get(NEW_MAPPING.DESCRIPTION),
-          mapper.readTree(record.get(NEW_MAPPING.MAPPING).data())
+          dbRecord.get(NEW_MAPPING.NAME),
+          dbRecord.get(NEW_MAPPING.DESCRIPTION),
+          mapper.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data())
       );
       return new MappingRecord(
-          record.get(NEW_MAPPING.ID),
-          record.get(NEW_MAPPING.VERSION),
-          record.get(NEW_MAPPING.CREATED),
-          record.get(NEW_MAPPING.CREATOR),
+          dbRecord.get(NEW_MAPPING.ID),
+          dbRecord.get(NEW_MAPPING.VERSION),
+          dbRecord.get(NEW_MAPPING.CREATED),
+          dbRecord.get(NEW_MAPPING.CREATOR),
           mapping
       );
     } catch (JsonProcessingException e) {

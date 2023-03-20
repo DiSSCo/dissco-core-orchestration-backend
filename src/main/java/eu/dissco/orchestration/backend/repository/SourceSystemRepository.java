@@ -5,10 +5,12 @@ import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffs
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
+import java.time.Instant;
 import java.util.List;
-import org.jooq.Record;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -37,18 +39,33 @@ public class SourceSystemRepository {
         .where(NEW_SOURCE_SYSTEM.ID.eq(sourceSystemRecord.id())).execute();
   }
 
-  public SourceSystemRecord getSourceSystemById(String id) {
+  public SourceSystemRecord getSourceSystem(String id) {
     return context.select(NEW_SOURCE_SYSTEM.asterisk())
         .from(NEW_SOURCE_SYSTEM)
         .where(NEW_SOURCE_SYSTEM.ID.eq(id))
         .fetchOne(this::mapToSourceSystemRecord);
   }
 
+  public Optional<SourceSystemRecord> getActiveSourceSystem(String id) {
+    return context.select(NEW_SOURCE_SYSTEM.asterisk())
+        .from(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+        .and(NEW_SOURCE_SYSTEM.DELETED.isNull())
+        .fetchOptional(this::mapToSourceSystemRecord);
+  }
+
+  public void deleteSourceSystem(String id, Instant deleted){
+    context.update(NEW_SOURCE_SYSTEM)
+        .set(NEW_SOURCE_SYSTEM.DELETED, deleted)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+        .execute();
+  }
+
   public List<SourceSystemRecord> getSourceSystems(int pageNum, int pageSize) {
     int offset = getOffset(pageNum, pageSize);
-    return context.select(NEW_SOURCE_SYSTEM.ID, NEW_SOURCE_SYSTEM.CREATED, NEW_SOURCE_SYSTEM.NAME,
-            NEW_SOURCE_SYSTEM.ENDPOINT, NEW_SOURCE_SYSTEM.DESCRIPTION, NEW_SOURCE_SYSTEM.MAPPING_ID)
+    return context.select(NEW_SOURCE_SYSTEM.asterisk())
         .from(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.DELETED.isNull())
         .limit(pageSize)
         .offset(offset)
         .fetch(this::mapToSourceSystemRecord);

@@ -4,14 +4,9 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MAPPING;
 import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.domain.Mapping;
@@ -19,12 +14,10 @@ import eu.dissco.orchestration.backend.domain.MappingRecord;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
 import org.jooq.JSONB;
 import org.jooq.Query;
 import org.jooq.Record;
-import org.jooq.Record6;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,6 +64,36 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
+  void testGetActiveMappingIsPresent() throws Exception{
+    // Given
+    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    postMappingRecords(List.of(mappingRecord));
+
+    // When
+    var result = repository.getActiveMapping(HANDLE);
+
+    // Then
+    assertThat(result).contains(mappingRecord);
+  }
+
+  @Test
+  void testGetActiveMappingNotPresent() throws Exception{
+    // Given
+    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    postMappingRecords(List.of(mappingRecord));
+    context.update(NEW_MAPPING)
+        .set(NEW_MAPPING.DELETED, CREATED)
+        .where(NEW_MAPPING.ID.eq(HANDLE))
+        .execute();
+
+    // When
+    var result = repository.getActiveMapping(HANDLE);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
   void testGetMappings() throws Exception{
     // Given
     int pageNum = 1;
@@ -104,30 +127,58 @@ class MappingRepositoryIT extends BaseRepositoryIT {
     assertThat(result).hasSize(1);
   }
 
+  @Test
+  void testDeleteMapping() throws Exception {
+    // Given
+    MappingRecord mapping = givenMappingRecord(HANDLE, 1);
+    postMappingRecords(List.of(mapping));
+
+    // When
+    repository.deleteMapping(HANDLE, CREATED);
+    var result = getDeleted(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(CREATED);
+  }
+
+  private Instant getDeleted(String id){
+    return context.select(NEW_MAPPING.ID, NEW_MAPPING.DELETED)
+        .from(NEW_MAPPING)
+        .where(NEW_MAPPING.ID.eq(id))
+        .fetchOne(this::getInstantDeleted);
+  }
+
+  private Instant getInstantDeleted(Record dbRecord){
+    return dbRecord.get(NEW_SOURCE_SYSTEM.DELETED);
+  }
+
   List<MappingRecord> readAllMappings() {
     return context.select(NEW_MAPPING.asterisk())
         .from(NEW_MAPPING)
         .fetch(this::mapToMappingRecord);
   }
 
-  private MappingRecord mapToMappingRecord(Record record) {
+  private MappingRecord mapToMappingRecord(Record dbRecord) {
     try {
       var mapping = new Mapping(
-          record.get(NEW_MAPPING.NAME),
-          record.get(NEW_MAPPING.DESCRIPTION),
-          MAPPER.readTree(record.get(NEW_MAPPING.MAPPING).data())
+          dbRecord.get(NEW_MAPPING.NAME),
+          dbRecord.get(NEW_MAPPING.DESCRIPTION),
+          MAPPER.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data())
       );
       return new MappingRecord(
-          record.get(NEW_MAPPING.ID),
-          record.get(NEW_MAPPING.VERSION),
-          record.get(NEW_MAPPING.CREATED),
-          record.get(NEW_MAPPING.CREATOR),
+          dbRecord.get(NEW_MAPPING.ID),
+          dbRecord.get(NEW_MAPPING.VERSION),
+          dbRecord.get(NEW_MAPPING.CREATED),
+          dbRecord.get(NEW_MAPPING.CREATOR),
           mapping
       );
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
+
+
+
 
   private void postMappingRecords(List<MappingRecord> mappingRecords)
       throws Exception {
