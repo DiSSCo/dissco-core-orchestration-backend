@@ -82,8 +82,8 @@ public class MappingRepository {
       var mapping = new Mapping(
           dbRecord.get(NEW_MAPPING.NAME),
           dbRecord.get(NEW_MAPPING.DESCRIPTION),
-          mapper.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data())
-      );
+          mapper.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data()),
+          dbRecord.get(NEW_MAPPING.SOURCEDATASTANDARD));
       return new MappingRecord(
           dbRecord.get(NEW_MAPPING.ID),
           dbRecord.get(NEW_MAPPING.VERSION),

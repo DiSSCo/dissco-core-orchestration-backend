@@ -163,8 +163,8 @@ class MappingRepositoryIT extends BaseRepositoryIT {
       var mapping = new Mapping(
           dbRecord.get(NEW_MAPPING.NAME),
           dbRecord.get(NEW_MAPPING.DESCRIPTION),
-          MAPPER.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data())
-      );
+          MAPPER.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data()),
+          "dwc");
       return new MappingRecord(
           dbRecord.get(NEW_MAPPING.ID),
           dbRecord.get(NEW_MAPPING.VERSION),

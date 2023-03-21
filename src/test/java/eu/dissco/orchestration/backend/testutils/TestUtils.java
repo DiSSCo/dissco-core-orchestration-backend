@@ -121,8 +121,8 @@ public class TestUtils {
     return new Mapping(
         OBJECT_NAME,
         OBJECT_DESCRIPTION,
-        MAPPER.createObjectNode()
-    );
+        MAPPER.createObjectNode(),
+        "dwc");
   }
 
   public static JsonApiListWrapper givenMappingRecordResponse(List<MappingRecord> mappingRecords, JsonApiLinks linksNode){
