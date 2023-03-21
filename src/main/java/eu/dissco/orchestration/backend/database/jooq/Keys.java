@@ -4,12 +4,11 @@
 package eu.dissco.orchestration.backend.database.jooq;
 
 
-import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
 import eu.dissco.orchestration.backend.database.jooq.tables.NewMapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
-import eu.dissco.orchestration.backend.database.jooq.tables.records.HandlesRecord;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.NewMappingRecord;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.NewSourceSystemRecord;
+
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -27,7 +26,6 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
-    public static final UniqueKey<HandlesRecord> HANDLES_PKEY = Internal.createUniqueKey(Handles.HANDLES, DSL.name("handles_pkey"), new TableField[] { Handles.HANDLES.HANDLE, Handles.HANDLES.IDX }, true);
     public static final UniqueKey<NewMappingRecord> NEW_MAPPING_PK = Internal.createUniqueKey(NewMapping.NEW_MAPPING, DSL.name("new_mapping_pk"), new TableField[] { NewMapping.NEW_MAPPING.ID, NewMapping.NEW_MAPPING.VERSION }, true);
     public static final UniqueKey<NewSourceSystemRecord> NEW_SOURCE_SYSTEM_ENDPOINT_KEY = Internal.createUniqueKey(NewSourceSystem.NEW_SOURCE_SYSTEM, DSL.name("new_source_system_endpoint_key"), new TableField[] { NewSourceSystem.NEW_SOURCE_SYSTEM.ENDPOINT }, true);
     public static final UniqueKey<NewSourceSystemRecord> NEW_SOURCE_SYSTEM_PKEY = Internal.createUniqueKey(NewSourceSystem.NEW_SOURCE_SYSTEM, DSL.name("new_source_system_pkey"), new TableField[] { NewSourceSystem.NEW_SOURCE_SYSTEM.ID }, true);
