@@ -37,12 +37,13 @@ public class MappingService {
   }
   public JsonApiWrapper  updateMapping(String id, Mapping mapping, String userId, String path) throws NotFoundException{
     var currentVersion = repository.getActiveMapping(id);
-    if (!currentVersion.isPresent()){
+    if (currentVersion.isEmpty()){
       throw new NotFoundException("Requested mapping does not exist");
     }
     if (!currentVersion.get().mapping().equals(mapping)){
       var mappingRecord = new MappingRecord(id, currentVersion.get().version() + 1, Instant.now(), userId,
           mapping);
+      repository.deleteMapping(id, Instant.now());
       repository.createMapping(mappingRecord);
       return wrapSingleResponse(id, mappingRecord, path);
     } else {
