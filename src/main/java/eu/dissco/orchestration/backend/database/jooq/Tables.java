@@ -4,6 +4,7 @@
 package eu.dissco.orchestration.backend.database.jooq;
 
 
+import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
 import eu.dissco.orchestration.backend.database.jooq.tables.NewMapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
 
@@ -13,6 +14,11 @@ import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
+
+    /**
+     * The table <code>public.handles</code>.
+     */
+    public static final Handles HANDLES = Handles.HANDLES;
 
     /**
      * The table <code>public.new_mapping</code>.

@@ -4,6 +4,7 @@
 package eu.dissco.orchestration.backend.database.jooq;
 
 
+import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
 import eu.dissco.orchestration.backend.database.jooq.tables.NewMapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
 
@@ -27,6 +28,11 @@ public class Public extends SchemaImpl {
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.handles</code>.
+     */
+    public final Handles HANDLES = Handles.HANDLES;
 
     /**
      * The table <code>public.new_mapping</code>.
@@ -54,6 +60,7 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.<Table<?>>asList(
+            Handles.HANDLES,
             NewMapping.NEW_MAPPING,
             NewSourceSystem.NEW_SOURCE_SYSTEM);
     }
