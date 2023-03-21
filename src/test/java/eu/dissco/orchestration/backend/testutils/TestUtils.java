@@ -1,6 +1,8 @@
 package eu.dissco.orchestration.backend.testutils;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
@@ -43,7 +45,7 @@ public class TestUtils {
     return new JsonApiWrapper(new JsonApiData(
         sourceSystemRecord.id(),
         HandleType.SOURCE_SYSTEM,
-        MAPPER.valueToTree(sourceSystemRecord.sourceSystem())
+        flattenSourceSystemRecord(sourceSystemRecord)
     ), new JsonApiLinks(SYSTEM_PATH));
   }
 
@@ -52,7 +54,7 @@ public class TestUtils {
     return new JsonApiWrapper(new JsonApiData(
         mappingRecord.id(),
         HandleType.MAPPING,
-        MAPPER.valueToTree(mappingRecord.mapping())
+      flattenMappingRecord(mappingRecord)
     ), new JsonApiLinks(MAPPING_PATH));
   }
 
@@ -93,8 +95,15 @@ public class TestUtils {
 
   public static JsonApiListWrapper givenSourceSystemRecordResponse(List<SourceSystemRecord> ssRecords, JsonApiLinks linksNode){
     List<JsonApiData> dataNode = new ArrayList<>();
-    ssRecords.forEach(ss -> dataNode.add(new JsonApiData(ss.id(), HandleType.SOURCE_SYSTEM, MAPPER.valueToTree(ss))));
+    ssRecords.forEach(ss -> dataNode.add(new JsonApiData(ss.id(), HandleType.SOURCE_SYSTEM, flattenSourceSystemRecord(ss))));
     return new JsonApiListWrapper(dataNode, linksNode);
+  }
+
+
+  private static JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord){
+    var sourceSystemNode =  (ObjectNode) MAPPER.valueToTree(sourceSystemRecord.sourceSystem());
+    sourceSystemNode.put("created", sourceSystemRecord.created().toString());
+    return sourceSystemNode;
   }
 
 
@@ -118,8 +127,15 @@ public class TestUtils {
 
   public static JsonApiListWrapper givenMappingRecordResponse(List<MappingRecord> mappingRecords, JsonApiLinks linksNode){
     List<JsonApiData> dataNode = new ArrayList<>();
-    mappingRecords.forEach(m -> dataNode.add(new JsonApiData(m.id(), HandleType.MAPPING, MAPPER.valueToTree(m))));
+    mappingRecords.forEach(m -> dataNode.add(new JsonApiData(m.id(), HandleType.MAPPING, flattenMappingRecord(m))));
     return new JsonApiListWrapper(dataNode, linksNode);
+  }
+
+  private static JsonNode flattenMappingRecord(MappingRecord mappingRecord){
+    var mappingNode = (ObjectNode) MAPPER.valueToTree(mappingRecord.mapping());
+    mappingNode.put("version", mappingRecord.version());
+    mappingNode.put("created", mappingRecord.created().toString());
+    return mappingNode;
   }
 
 
