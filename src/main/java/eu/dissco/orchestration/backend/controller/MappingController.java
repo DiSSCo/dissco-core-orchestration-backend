@@ -9,6 +9,8 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.MappingService;
+import java.util.ArrayList;
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +43,7 @@ public class MappingController {
   private final MappingService service;
   private static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
   private final ObjectMapper mapper;
+  private static final ArrayList<String> sourceDataSystems = new ArrayList<>(List.of("dwc", "abcd", "abcdefg"));
 
   @PreAuthorize("isAuthenticated()")
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -103,7 +106,9 @@ public class MappingController {
     if(!requestBody.data().type().equals(HandleType.MAPPING)){
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(), Mapping.class);
+    var mapping = mapper.treeToValue(requestBody.data().attributes(), Mapping.class);
+    checkSourceStandard(mapping);
+    return mapping;
   }
 
   private String getNameFromToken(Authentication authentication) {
@@ -111,6 +116,13 @@ public class MappingController {
         (KeycloakPrincipal<?>) authentication.getPrincipal();
     AccessToken token = principal.getKeycloakSecurityContext().getToken();
     return token.getSubject();
+  }
+
+  private void checkSourceStandard(Mapping mapping){
+    if (!sourceDataSystems.contains(mapping.sourceDataStandard())){
+      throw new IllegalArgumentException("Invalid source data standard" + mapping.sourceDataStandard());
+    }
+
   }
 
 }

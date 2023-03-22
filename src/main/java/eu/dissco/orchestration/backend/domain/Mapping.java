@@ -7,7 +7,6 @@ public record Mapping(
     String name,
     String description,
     @JsonProperty(value="fieldMapping")
-    JsonNode mapping
-) {
-
+    JsonNode mapping,
+    String sourceDataStandard) {
 }

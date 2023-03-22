@@ -30,6 +30,7 @@ public class MappingRepository {
           .set(NEW_MAPPING.VERSION, mappingRecord.version())
           .set(NEW_MAPPING.NAME, mappingRecord.mapping().name())
           .set(NEW_MAPPING.DESCRIPTION, mappingRecord.mapping().description())
+          .set(NEW_MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard())
           .set(NEW_MAPPING.MAPPING,
               JSONB.valueOf(mapper.writeValueAsString(mappingRecord.mapping().mapping())))
           .set(NEW_MAPPING.CREATED, mappingRecord.created())
@@ -82,8 +83,8 @@ public class MappingRepository {
       var mapping = new Mapping(
           dbRecord.get(NEW_MAPPING.NAME),
           dbRecord.get(NEW_MAPPING.DESCRIPTION),
-          mapper.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data())
-      );
+          mapper.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data()),
+          dbRecord.get(NEW_MAPPING.SOURCEDATASTANDARD));
       return new MappingRecord(
           dbRecord.get(NEW_MAPPING.ID),
           dbRecord.get(NEW_MAPPING.VERSION),

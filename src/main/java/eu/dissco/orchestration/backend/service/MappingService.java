@@ -81,7 +81,6 @@ public class MappingService {
     );
   }
 
-
   private JsonApiListWrapper wrapResponse(List<MappingRecord> mappingRecords, int pageNum,
       int pageSize, String path) {
     boolean hasNext = mappingRecords.size() > pageSize;

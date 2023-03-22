@@ -17,8 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
+import eu.dissco.orchestration.backend.domain.HandleType;
+import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.MappingService;
 import java.util.Collections;
@@ -80,6 +85,21 @@ class MappingControllerTest {
     // Then
     assertThrowsExactly(
         IllegalArgumentException.class, () -> controller.createMapping(authentication, requestBody, mockRequest));
+  }
+
+  @Test
+  void testCreateMappingBadSourceSystemStandard(){
+    // Given
+    var mapping = new Mapping(
+        "name",
+        "description",
+        MAPPER.createObjectNode(),
+        "badType"
+    );
+    var requestBody = new JsonApiRequestWrapper(new JsonApiRequest(HandleType.MAPPING, MAPPER.valueToTree(mapping)));
+
+    // Then
+    assertThrowsExactly(IllegalArgumentException.class, () -> controller.createMapping(authentication, requestBody, mockRequest));
   }
 
   @Test

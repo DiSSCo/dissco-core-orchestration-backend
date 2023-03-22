@@ -8,8 +8,10 @@ import eu.dissco.orchestration.backend.database.jooq.Indexes;
 import eu.dissco.orchestration.backend.database.jooq.Keys;
 import eu.dissco.orchestration.backend.database.jooq.Public;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.HandlesRecord;
+
 import java.util.Arrays;
 import java.util.List;
+
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Index;
