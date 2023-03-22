@@ -80,7 +80,7 @@ class MappingServiceTest {
     // Given
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode(),
         "dwc");
-    var prevRecord = Optional.of(new MappingRecord(HANDLE, 0, CREATED, OBJECT_CREATOR, prevMapping));
+    var prevRecord = Optional.of(new MappingRecord(HANDLE, 0, CREATED, null, OBJECT_CREATOR, prevMapping));
     var mapping = givenMapping();
     var expected = givenMappingSingleJsonApiWrapper();
 

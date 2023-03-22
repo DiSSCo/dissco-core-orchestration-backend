@@ -112,7 +112,7 @@ public class TestUtils {
         id,
         version,
         CREATED,
-        OBJECT_CREATOR,
+        null, OBJECT_CREATOR,
         givenMapping()
     );
   }

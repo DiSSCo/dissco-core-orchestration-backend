@@ -169,7 +169,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
           dbRecord.get(NEW_MAPPING.ID),
           dbRecord.get(NEW_MAPPING.VERSION),
           dbRecord.get(NEW_MAPPING.CREATED),
-          dbRecord.get(NEW_MAPPING.CREATOR),
+          null, dbRecord.get(NEW_MAPPING.CREATOR),
           mapping
       );
     } catch (JsonProcessingException e) {
