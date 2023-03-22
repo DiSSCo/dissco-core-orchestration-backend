@@ -5,6 +5,8 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SY
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,6 +59,19 @@ class MappingRepositoryIT extends BaseRepositoryIT {
     postMappingRecords(List.of(mappingRecord));
 
     // When
+    var result = repository.getMapping(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(mappingRecord);
+  }
+
+  @Test
+  void testGetMappingIsDeleted() throws Exception {
+    // Given
+    var mappingRecord = new MappingRecord(HANDLE, 1, CREATED, CREATED, OBJECT_CREATOR,
+        givenMapping());
+    postMappingRecords(List.of(mappingRecord));
+
     var result = repository.getMapping(HANDLE);
 
     // Then
@@ -191,6 +206,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
           .set(NEW_MAPPING.MAPPING,
               JSONB.valueOf(MAPPER.writeValueAsString(mappingRecord.mapping().mapping())))
           .set(NEW_MAPPING.CREATED, mappingRecord.created())
+          .set(NEW_MAPPING.DELETED, mappingRecord.deleted())
           .set(NEW_MAPPING.CREATOR, mappingRecord.creator()));
     }
     context.batch(queryList).execute();

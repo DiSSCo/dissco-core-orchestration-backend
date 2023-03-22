@@ -22,7 +22,9 @@ import static org.mockito.Mockito.mockStatic;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Clock;
@@ -120,7 +122,7 @@ class MappingServiceTest {
 
 
   @Test
-  void testGetMappingsById() {
+  void testGetMappingById() {
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
