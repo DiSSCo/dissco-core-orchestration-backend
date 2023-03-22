@@ -51,7 +51,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetMapping() throws Exception{
+  void testGetMapping() throws Exception {
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     postMappingRecords(List.of(mappingRecord));
@@ -64,7 +64,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetActiveMappingIsPresent() throws Exception{
+  void testGetActiveMappingIsPresent() throws Exception {
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     postMappingRecords(List.of(mappingRecord));
@@ -77,7 +77,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetActiveMappingNotPresent() throws Exception{
+  void testGetActiveMappingNotPresent() throws Exception {
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     postMappingRecords(List.of(mappingRecord));
@@ -94,7 +94,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetMappings() throws Exception{
+  void testGetMappings() throws Exception {
     // Given
     int pageNum = 1;
     int pageSize = 10;
@@ -111,12 +111,12 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetMappingsLastPage() throws Exception{
+  void testGetMappingsLastPage() throws Exception {
     // Given
     int pageNum = 2;
     int pageSize = 10;
     List<MappingRecord> mappingRecords = new ArrayList<>();
-    IntStream.range(0, pageSize+1).boxed().toList()
+    IntStream.range(0, pageSize + 1).boxed().toList()
         .forEach(i -> mappingRecords.add(givenMappingRecord(String.valueOf(i), 1)));
     postMappingRecords(mappingRecords);
 
@@ -141,14 +141,14 @@ class MappingRepositoryIT extends BaseRepositoryIT {
     assertThat(result).isEqualTo(CREATED);
   }
 
-  private Instant getDeleted(String id){
+  private Instant getDeleted(String id) {
     return context.select(NEW_MAPPING.ID, NEW_MAPPING.DELETED)
         .from(NEW_MAPPING)
         .where(NEW_MAPPING.ID.eq(id))
         .fetchOne(this::getInstantDeleted);
   }
 
-  private Instant getInstantDeleted(Record dbRecord){
+  private Instant getInstantDeleted(Record dbRecord) {
     return dbRecord.get(NEW_SOURCE_SYSTEM.DELETED);
   }
 
@@ -178,8 +178,6 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
 
-
-
   private void postMappingRecords(List<MappingRecord> mappingRecords)
       throws Exception {
     List<Query> queryList = new ArrayList<>();
@@ -189,6 +187,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
           .set(NEW_MAPPING.VERSION, mappingRecord.version())
           .set(NEW_MAPPING.NAME, mappingRecord.mapping().name())
           .set(NEW_MAPPING.DESCRIPTION, mappingRecord.mapping().description())
+          .set(NEW_MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard())
           .set(NEW_MAPPING.MAPPING,
               JSONB.valueOf(MAPPER.writeValueAsString(mappingRecord.mapping().mapping())))
           .set(NEW_MAPPING.CREATED, mappingRecord.created())

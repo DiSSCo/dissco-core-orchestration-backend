@@ -30,6 +30,7 @@ public class MappingRepository {
           .set(NEW_MAPPING.VERSION, mappingRecord.version())
           .set(NEW_MAPPING.NAME, mappingRecord.mapping().name())
           .set(NEW_MAPPING.DESCRIPTION, mappingRecord.mapping().description())
+          .set(NEW_MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard())
           .set(NEW_MAPPING.MAPPING,
               JSONB.valueOf(mapper.writeValueAsString(mappingRecord.mapping().mapping())))
           .set(NEW_MAPPING.CREATED, mappingRecord.created())

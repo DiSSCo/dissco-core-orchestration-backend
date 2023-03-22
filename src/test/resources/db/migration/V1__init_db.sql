@@ -19,5 +19,6 @@ CREATE TABLE public.new_mapping (
 	created timestamptz NOT NULL,
 	creator text NOT NULL,
 	deleted timestamptz NULL,
+	sourcedatastandard varchar NOT NULL,
 	CONSTRAINT new_mapping_pk PRIMARY KEY (id, version)
 );
