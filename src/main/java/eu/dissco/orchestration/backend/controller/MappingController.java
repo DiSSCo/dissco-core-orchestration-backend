@@ -125,8 +125,4 @@ public class MappingController {
     }
   }
 
-  @ExceptionHandler(NotFoundException.class)
-  private ResponseEntity<String> notFoundException(NotFoundException e){
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-  }
 }
