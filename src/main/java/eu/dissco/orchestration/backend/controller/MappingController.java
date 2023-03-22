@@ -72,7 +72,7 @@ public class MappingController {
 
   @PreAuthorize("isAuthenticated()")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @DeleteMapping(value = "/{prefix}/{postfix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> deleteMapping(
       @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix) throws NotFoundException {
     String id = prefix + "/" + postfix;
