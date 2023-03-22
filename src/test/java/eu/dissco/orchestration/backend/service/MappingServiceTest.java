@@ -7,6 +7,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
@@ -127,6 +128,22 @@ class MappingServiceTest {
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
     var expected = givenMappingSingleJsonApiWrapper();
+
+    // When
+    var result = service.getMappingById(HANDLE, MAPPING_PATH);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetMappingByIdIsDeleted() {
+    // Given
+    var mappingRecord = new MappingRecord(HANDLE,1, CREATED, CREATED, OBJECT_CREATOR, givenMapping());
+    given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
+    var expected = new JsonApiWrapper(
+        new JsonApiData(HANDLE, HandleType.MAPPING, flattenMappingRecord(mappingRecord)),
+        new JsonApiLinks(MAPPING_PATH));
 
     // When
     var result = service.getMappingById(HANDLE, MAPPING_PATH);

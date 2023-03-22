@@ -5,6 +5,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
@@ -20,7 +21,9 @@ import static org.mockito.Mockito.mockStatic;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Clock;
@@ -131,6 +134,24 @@ class SourceSystemServiceTest {
     // Given
     var sourceSystemRecord = givenSourceSystemRecord();
     var expected = givenSourceSystemSingleJsonApiWrapper();
+
+    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystemRecord);
+
+    // When
+    var result = service.getSourceSystemById(HANDLE, SYSTEM_PATH);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetSourceSystemByIdIsDeleted() throws Exception {
+    // Given
+    var sourceSystemRecord = new SourceSystemRecord(
+        HANDLE, CREATED, CREATED, givenSourceSystem());
+    var expected = new JsonApiWrapper(
+        new JsonApiData(HANDLE, HandleType.SOURCE_SYSTEM, flattenSourceSystemRecord(sourceSystemRecord)),
+        new JsonApiLinks(SYSTEM_PATH));
 
     given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystemRecord);
 
