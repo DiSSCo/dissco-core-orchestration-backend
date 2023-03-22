@@ -102,6 +102,9 @@ public class MappingService {
     var mappingNode = (ObjectNode) mapper.valueToTree(mappingRecord.mapping());
     mappingNode.put("version", mappingRecord.version());
     mappingNode.put("created", mappingRecord.created().toString());
+    if (mappingRecord.deleted() != null){
+      mappingNode.put("deleted", mappingRecord.deleted().toString());
+    }
     return mappingNode;
   }
 

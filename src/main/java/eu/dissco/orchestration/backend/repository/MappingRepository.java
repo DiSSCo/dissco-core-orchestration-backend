@@ -79,6 +79,8 @@ public class MappingRepository {
   }
 
   private MappingRecord mapToMappingRecord(Record dbRecord) {
+    var del = dbRecord.get(NEW_MAPPING.DELETED);
+
     try {
       var mapping = new Mapping(
           dbRecord.get(NEW_MAPPING.NAME),
