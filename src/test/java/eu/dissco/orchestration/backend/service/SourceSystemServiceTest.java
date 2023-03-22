@@ -2,7 +2,6 @@ package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
@@ -92,7 +91,7 @@ class SourceSystemServiceTest {
     var prevRecord = Optional.of(new SourceSystemRecord(
         HANDLE,
         CREATED,
-        new SourceSystem("name", "endpoint", "description", "id")
+        null, new SourceSystem("name", "endpoint", "description", "id")
     ));
     var expected = givenSourceSystemSingleJsonApiWrapper();
     given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);

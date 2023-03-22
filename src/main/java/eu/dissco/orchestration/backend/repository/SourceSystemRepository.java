@@ -76,6 +76,7 @@ public class SourceSystemRepository {
     return new SourceSystemRecord(
         row.get(NEW_SOURCE_SYSTEM.ID),
         row.get(NEW_SOURCE_SYSTEM.CREATED),
+        row.get(NEW_SOURCE_SYSTEM.DELETED),
         new SourceSystem(
             row.get(NEW_SOURCE_SYSTEM.NAME),
             row.get(NEW_SOURCE_SYSTEM.ENDPOINT),

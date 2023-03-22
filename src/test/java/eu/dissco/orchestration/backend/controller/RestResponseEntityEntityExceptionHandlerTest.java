@@ -23,7 +23,7 @@ class RestResponseEntityEntityExceptionHandlerTest {
   @Test
   void testNotFoundException() {
     // When
-    var result = exceptionHandler.handleException(new NotFoundException(""));
+    var result = exceptionHandler.notFoundException(new NotFoundException(""));
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -32,7 +32,7 @@ class RestResponseEntityEntityExceptionHandlerTest {
   @Test
   void testIllegalArgumentException() {
     // When
-    var result = exceptionHandler.handleException(new IllegalArgumentException(""));
+    var result = exceptionHandler.illegalArgumentException(new IllegalArgumentException(""));
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);

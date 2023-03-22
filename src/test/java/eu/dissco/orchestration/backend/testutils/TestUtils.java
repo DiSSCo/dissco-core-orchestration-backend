@@ -80,7 +80,7 @@ public class TestUtils {
     return new SourceSystemRecord(
         HANDLE,
         CREATED,
-        givenSourceSystem()
+        null, givenSourceSystem()
     );
   }
 
