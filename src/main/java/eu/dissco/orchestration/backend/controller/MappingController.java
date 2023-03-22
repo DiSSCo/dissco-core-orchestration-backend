@@ -72,9 +72,9 @@ public class MappingController {
 
   @PreAuthorize("isAuthenticated()")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @DeleteMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteMapping(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) throws NotFoundException {
+  @DeleteMapping(value = "/{prefix}/{postfix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> deleteMapping(
+      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix) throws NotFoundException {
     String id = prefix + "/" + postfix;
     service.deleteMapping(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
