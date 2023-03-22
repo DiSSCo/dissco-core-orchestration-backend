@@ -81,10 +81,10 @@ public class HandleService {
     var firstLocation = document.createElement("location");
     firstLocation.setAttribute("id", "0");
     if (type == HandleType.MAPPING) {
-      firstLocation.setAttribute("href", "https://sandbox.dissco.tech/api/v1/mappings/" + handle);
+      firstLocation.setAttribute("href", "https://sandbox.dissco.tech/orchestrator/mapping/" + handle);
     } else {
       firstLocation.setAttribute("href",
-          "https://sandbox.dissco.tech/api/v1/source-systems/" + handle);
+          "https://sandbox.dissco.tech/orchestrator/source-systems/" + handle);
     }
     firstLocation.setAttribute("weight", "0");
     locations.appendChild(firstLocation);
