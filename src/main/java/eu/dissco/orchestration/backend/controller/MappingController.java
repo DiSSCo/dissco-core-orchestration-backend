@@ -11,7 +11,7 @@ import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.MappingService;
 import java.util.ArrayList;
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -112,6 +112,7 @@ public class MappingController {
   }
 
   private String getNameFromToken(Authentication authentication) {
+
     KeycloakPrincipal<? extends KeycloakSecurityContext> principal =
         (KeycloakPrincipal<?>) authentication.getPrincipal();
     AccessToken token = principal.getKeycloakSecurityContext().getToken();

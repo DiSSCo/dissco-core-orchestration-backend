@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>2.7.3</version>
+    <version>3.0.5</version>
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
   <groupId>eu.dissco.core</groupId>
@@ -16,7 +16,7 @@
   <description>Backend for orchestration service</description>
   <properties>
     <java.version>17</java.version>
-		<keycloak-adapter-bom.version>16.1.1</keycloak-adapter-bom.version>
+    <keycloak-adapter-bom.version>16.1.1</keycloak-adapter-bom.version>
     <k8s-client-java.version>16.0.0</k8s-client-java.version>
     <sonar.organization>dissco</sonar.organization>
     <testcontainers.version>1.17.5</testcontainers.version>
@@ -73,10 +73,10 @@
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
-		<dependency>
-			<groupId>org.keycloak</groupId>
-			<artifactId>keycloak-spring-boot-starter</artifactId>
-		</dependency>
+    <dependency>
+      <groupId>org.keycloak</groupId>
+      <artifactId>keycloak-spring-boot-starter</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
@@ -99,6 +99,10 @@
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
     </dependency>
 
     <dependency>
@@ -224,9 +228,9 @@
             <version>${postgresql.version}</version>
           </dependency>
           <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>${javax-jaxb.version}</version>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>${jakarta-xml-bind.version}</version>
           </dependency>
           <dependency>
             <groupId>org.glassfish.jaxb</groupId>
