@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -27,7 +28,7 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
   }
 
   @Override
-  public AbstractAuthenticationToken convert(Jwt jwt) {
+  public AbstractAuthenticationToken convert(@NotNull Jwt jwt) {
     Collection<GrantedAuthority> authorities = Stream.concat(
         jwtGrantedAuthoritiesConverter.convert(jwt).stream(),
         extractResourceRoles(jwt).stream()).collect(Collectors.toSet());

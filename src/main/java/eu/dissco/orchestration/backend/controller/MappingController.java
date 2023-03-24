@@ -23,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -45,7 +46,6 @@ public class MappingController {
   private final ObjectMapper mapper;
   private static final ArrayList<String> sourceDataSystems = new ArrayList<>(List.of("dwc", "abcd", "abcdefg"));
 
-  @PreAuthorize("isAuthenticated()")
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest request)
@@ -70,7 +70,6 @@ public class MappingController {
     return ResponseEntity.ok(result);
   }
 
-  @PreAuthorize("isAuthenticated()")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> deleteMapping(
@@ -112,18 +111,13 @@ public class MappingController {
   }
 
   private String getNameFromToken(Authentication authentication) {
-
-    KeycloakPrincipal<? extends KeycloakSecurityContext> principal =
-        (KeycloakPrincipal<?>) authentication.getPrincipal();
-    AccessToken token = principal.getKeycloakSecurityContext().getToken();
-    return token.getSubject();
+    return authentication.getName();
   }
 
   private void checkSourceStandard(Mapping mapping){
     if (!sourceDataSystems.contains(mapping.sourceDataStandard())){
       throw new IllegalArgumentException("Invalid source data standard" + mapping.sourceDataStandard());
     }
-
   }
 
 }

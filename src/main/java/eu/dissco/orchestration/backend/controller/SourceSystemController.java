@@ -39,7 +39,6 @@ public class SourceSystemController {
   private final SourceSystemService service;
   private final ObjectMapper mapper;
 
-  @PreAuthorize("isAuthenticated()")
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
@@ -51,7 +50,6 @@ public class SourceSystemController {
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
-  @PreAuthorize("isAuthenticated()")
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> updateSourceSystem(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
@@ -65,7 +63,6 @@ public class SourceSystemController {
     return ResponseEntity.ok(result);
   }
 
-  @PreAuthorize("isAuthenticated()")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> deleteSourceSystem(@PathVariable("prefix") String prefix,
