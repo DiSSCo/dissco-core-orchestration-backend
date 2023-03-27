@@ -156,9 +156,7 @@ class MappingControllerTest {
 
   private void givenAuthentication() {
     authentication = new TestingAuthenticationToken(principal, null);
-    given(principal.getKeycloakSecurityContext()).willReturn(securityContext);
-    given(securityContext.getToken()).willReturn(accessToken);
-    given(accessToken.getSubject()).willReturn(OBJECT_CREATOR);
+    given(authentication.getName()).willReturn(OBJECT_CREATOR);
   }
 
 }
