@@ -1,14 +1,11 @@
 package eu.dissco.orchestration.backend.controller;
 
-import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRequest;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;

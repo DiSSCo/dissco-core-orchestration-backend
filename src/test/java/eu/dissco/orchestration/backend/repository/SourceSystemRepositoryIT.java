@@ -5,13 +5,11 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static org.assertj.core.api.Assertions.assertThat;
-
-import org.jooq.Record;
 
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -20,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.jooq.Query;
+import org.jooq.Record;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
