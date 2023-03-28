@@ -19,7 +19,7 @@
     <keycloak-adapter-bom.version>16.1.1</keycloak-adapter-bom.version>
     <k8s-client-java.version>16.0.0</k8s-client-java.version>
     <sonar.organization>dissco</sonar.organization>
-    <testcontainers.version>1.17.5</testcontainers.version>
+    <testcontainers.version>1.17.6</testcontainers.version>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.coverage.jacoco.xmlReportPaths>
       ../app-it/target/site/jacoco-aggregate/jacoco.xml
