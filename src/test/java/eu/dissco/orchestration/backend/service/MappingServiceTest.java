@@ -7,6 +7,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
@@ -22,7 +23,9 @@ import static org.mockito.Mockito.mockStatic;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Clock;
@@ -80,7 +83,7 @@ class MappingServiceTest {
     // Given
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode(),
         "dwc");
-    var prevRecord = Optional.of(new MappingRecord(HANDLE, 0, CREATED, OBJECT_CREATOR, prevMapping));
+    var prevRecord = Optional.of(new MappingRecord(HANDLE, 0, CREATED, null, OBJECT_CREATOR, prevMapping));
     var mapping = givenMapping();
     var expected = givenMappingSingleJsonApiWrapper();
 
@@ -120,11 +123,27 @@ class MappingServiceTest {
 
 
   @Test
-  void testGetMappingsById() {
+  void testGetMappingById() {
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
     var expected = givenMappingSingleJsonApiWrapper();
+
+    // When
+    var result = service.getMappingById(HANDLE, MAPPING_PATH);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetMappingByIdIsDeleted() {
+    // Given
+    var mappingRecord = new MappingRecord(HANDLE,1, CREATED, CREATED, OBJECT_CREATOR, givenMapping());
+    given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
+    var expected = new JsonApiWrapper(
+        new JsonApiData(HANDLE, HandleType.MAPPING, flattenMappingRecord(mappingRecord)),
+        new JsonApiLinks(MAPPING_PATH));
 
     // When
     var result = service.getMappingById(HANDLE, MAPPING_PATH);

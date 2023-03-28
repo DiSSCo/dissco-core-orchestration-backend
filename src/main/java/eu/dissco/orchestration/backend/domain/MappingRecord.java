@@ -6,6 +6,7 @@ public record MappingRecord(
     String id,
     int version,
     Instant created,
+    Instant deleted,
     String creator,
     Mapping mapping
 ) {

@@ -80,7 +80,7 @@ public class TestUtils {
     return new SourceSystemRecord(
         HANDLE,
         CREATED,
-        givenSourceSystem()
+        null, givenSourceSystem()
     );
   }
 
@@ -100,9 +100,12 @@ public class TestUtils {
   }
 
 
-  private static JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord){
+  public static JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord){
     var sourceSystemNode =  (ObjectNode) MAPPER.valueToTree(sourceSystemRecord.sourceSystem());
     sourceSystemNode.put("created", sourceSystemRecord.created().toString());
+    if (sourceSystemRecord.deleted() != null){
+      sourceSystemNode.put("deleted", sourceSystemRecord.deleted().toString());
+    }
     return sourceSystemNode;
   }
 
@@ -112,7 +115,7 @@ public class TestUtils {
         id,
         version,
         CREATED,
-        OBJECT_CREATOR,
+        null, OBJECT_CREATOR,
         givenMapping()
     );
   }
@@ -131,10 +134,13 @@ public class TestUtils {
     return new JsonApiListWrapper(dataNode, linksNode);
   }
 
-  private static JsonNode flattenMappingRecord(MappingRecord mappingRecord){
+  public static JsonNode flattenMappingRecord(MappingRecord mappingRecord){
     var mappingNode = (ObjectNode) MAPPER.valueToTree(mappingRecord.mapping());
     mappingNode.put("version", mappingRecord.version());
     mappingNode.put("created", mappingRecord.created().toString());
+    if (mappingRecord.deleted() != null){
+      mappingNode.put("deleted", mappingRecord.deleted().toString());
+    }
     return mappingNode;
   }
 

@@ -35,7 +35,7 @@ public class SourceSystemService {
     var handle = handleService.createNewHandle(HandleType.SOURCE_SYSTEM);
     validateMappingExists(sourceSystem.mappingId());
 
-    var sourceSystemRecord = new SourceSystemRecord(handle, Instant.now(), sourceSystem);
+    var sourceSystemRecord = new SourceSystemRecord(handle, Instant.now(), null, sourceSystem);
     repository.createSourceSystem(sourceSystemRecord);
     return wrapSingleResponse(handle, sourceSystemRecord, path);
   }
@@ -55,7 +55,7 @@ public class SourceSystemService {
     if ((prevSourceSystem.get().sourceSystem()).equals(sourceSystem)){
       return null;
     }
-    var sourceSystemRecord = new SourceSystemRecord(id, Instant.now(), sourceSystem);
+    var sourceSystemRecord = new SourceSystemRecord(id, Instant.now(), null, sourceSystem);
     repository.updateSourceSystem(sourceSystemRecord);
     return wrapSingleResponse(id, sourceSystemRecord, path);
   }
@@ -106,6 +106,9 @@ public class SourceSystemService {
   private JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord){
     var sourceSystemNode =  (ObjectNode) mapper.valueToTree(sourceSystemRecord.sourceSystem());
     sourceSystemNode.put("created", sourceSystemRecord.created().toString());
+    if (sourceSystemRecord.deleted() != null){
+      sourceSystemNode.put("deleted", sourceSystemRecord.deleted().toString());
+    }
     return sourceSystemNode;
   }
 }

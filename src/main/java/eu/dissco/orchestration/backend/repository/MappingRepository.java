@@ -89,6 +89,7 @@ public class MappingRepository {
           dbRecord.get(NEW_MAPPING.ID),
           dbRecord.get(NEW_MAPPING.VERSION),
           dbRecord.get(NEW_MAPPING.CREATED),
+          dbRecord.get(NEW_MAPPING.DELETED),
           dbRecord.get(NEW_MAPPING.CREATOR),
           mapping
       );

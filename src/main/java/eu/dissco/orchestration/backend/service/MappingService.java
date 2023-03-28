@@ -31,7 +31,7 @@ public class MappingService {
 
   public JsonApiWrapper createMapping(Mapping mapping, String userId, String path) throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.MAPPING);
-    var mappingRecord = new MappingRecord(handle, 1, Instant.now(), userId, mapping);
+    var mappingRecord = new MappingRecord(handle, 1, Instant.now(), null, userId, mapping);
     repository.createMapping(mappingRecord);
     return wrapSingleResponse(handle, mappingRecord, path);
   }
@@ -41,7 +41,8 @@ public class MappingService {
       throw new NotFoundException("Requested mapping does not exist");
     }
     if (!currentVersion.get().mapping().equals(mapping)){
-      var mappingRecord = new MappingRecord(id, currentVersion.get().version() + 1, Instant.now(), userId,
+      var mappingRecord = new MappingRecord(id, currentVersion.get().version() + 1, Instant.now(),
+          null, userId,
           mapping);
       repository.deleteMapping(id, Instant.now());
       repository.createMapping(mappingRecord);
@@ -101,6 +102,9 @@ public class MappingService {
     var mappingNode = (ObjectNode) mapper.valueToTree(mappingRecord.mapping());
     mappingNode.put("version", mappingRecord.version());
     mappingNode.put("created", mappingRecord.created().toString());
+    if (mappingRecord.deleted() != null){
+      mappingNode.put("deleted", mappingRecord.deleted().toString());
+    }
     return mappingNode;
   }
 

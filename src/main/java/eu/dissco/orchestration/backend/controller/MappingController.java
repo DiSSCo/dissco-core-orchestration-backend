@@ -4,9 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
-import eu.dissco.orchestration.backend.domain.jsonapi.*;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.MappingService;
 import java.util.ArrayList;
@@ -122,7 +122,6 @@ public class MappingController {
     if (!sourceDataSystems.contains(mapping.sourceDataStandard())){
       throw new IllegalArgumentException("Invalid source data standard" + mapping.sourceDataStandard());
     }
-
   }
 
 }

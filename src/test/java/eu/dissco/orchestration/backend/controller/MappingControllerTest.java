@@ -11,20 +11,16 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRe
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
-import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.service.MappingService;
 import java.util.Collections;
 import java.util.List;
