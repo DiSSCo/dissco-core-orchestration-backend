@@ -16,7 +16,6 @@
   <description>Backend for orchestration service</description>
   <properties>
     <java.version>17</java.version>
-    <keycloak-adapter-bom.version>16.1.1</keycloak-adapter-bom.version>
     <k8s-client-java.version>16.0.0</k8s-client-java.version>
     <sonar.organization>dissco</sonar.organization>
     <testcontainers.version>1.17.6</testcontainers.version>
@@ -32,13 +31,6 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
         <version>${testcontainers.version}</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
-      <dependency>
-        <groupId>org.keycloak.bom</groupId>
-        <artifactId>keycloak-adapter-bom</artifactId>
-        <version>${keycloak-adapter-bom.version}</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -72,10 +64,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.keycloak</groupId>
-      <artifactId>keycloak-spring-boot-starter</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -154,11 +142,6 @@
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-properties-migrator</artifactId>
-      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>com.zaxxer</groupId>
