@@ -16,6 +16,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
@@ -31,9 +32,6 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.keycloak.KeycloakPrincipal;
-import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.representations.AccessToken;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -48,14 +46,8 @@ class MappingControllerTest {
   private MappingService service;
 
   private MappingController controller;
-
+  @Mock
   private Authentication authentication;
-  @Mock
-  private KeycloakPrincipal<KeycloakSecurityContext> principal;
-  @Mock
-  private KeycloakSecurityContext securityContext;
-  @Mock
-  private AccessToken accessToken;
   private final MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
   @BeforeEach
@@ -155,7 +147,6 @@ class MappingControllerTest {
   }
 
   private void givenAuthentication() {
-    authentication = new TestingAuthenticationToken(principal, null);
     given(authentication.getName()).willReturn(OBJECT_CREATOR);
   }
 
