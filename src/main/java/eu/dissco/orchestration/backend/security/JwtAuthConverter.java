@@ -2,6 +2,7 @@ package eu.dissco.orchestration.backend.security;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,9 +31,14 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
   @Override
   public AbstractAuthenticationToken convert(@NotNull Jwt jwt) {
     Collection<GrantedAuthority> authorities = Stream.concat(
-        jwtGrantedAuthoritiesConverter.convert(jwt).stream(),
+        converterToStream(jwt),
         extractResourceRoles(jwt).stream()).collect(Collectors.toSet());
     return new JwtAuthenticationToken(jwt, authorities, getPrincipalClaimName(jwt));
+  }
+
+  private Stream<GrantedAuthority> converterToStream(Jwt jwt){
+    return Optional.of(jwtGrantedAuthoritiesConverter.convert(jwt)).stream()
+        .flatMap(Collection::stream);
   }
 
   private String getPrincipalClaimName(Jwt jwt) {
