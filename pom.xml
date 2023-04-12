@@ -175,7 +175,7 @@
         <configuration>
           <excludes>
             <exclude>eu.dissco.orchestration.backend.security.*</exclude>
-          </excludes>>
+          </excludes>
         </configuration>
         <executions>
           <execution>
