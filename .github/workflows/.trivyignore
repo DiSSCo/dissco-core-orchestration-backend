@@ -109,6 +109,7 @@ CVE-2022-31690
 # Severity: Critical
 # Status: Jira Ticket DD-243
 CVE-2022-31690
+CVE-2022-31692
 
 # Date: April 13, 2023
 # Package: Spring-web
