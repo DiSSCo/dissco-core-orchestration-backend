@@ -13,9 +13,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
-
-  public static final String ADMIN = "admin";
-  public static final String USER = "user";
   private final JwtAuthConverter jwtAuthConverter;
 
   @Bean
@@ -29,6 +26,4 @@ public class WebSecurityConfig {
     http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
     return http.build();
   }
-
-
 }
