@@ -10,9 +10,6 @@ import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.keycloak.KeycloakPrincipal;
-import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.representations.AccessToken;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -56,7 +53,6 @@ public class TranslatorController {
     }
   }
 
-  @PreAuthorize("isAuthenticated()")
   @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<TranslatorResponse> scheduleTranslator(Authentication authentication,
       @RequestBody TranslatorRequest request)
@@ -73,13 +69,9 @@ public class TranslatorController {
   }
 
   private String getNameFromToken(Authentication authentication) {
-    KeycloakPrincipal<? extends KeycloakSecurityContext> principal =
-        (KeycloakPrincipal<?>) authentication.getPrincipal();
-    AccessToken token = principal.getKeycloakSecurityContext().getToken();
-    return token.getSubject();
+    return authentication.getName();
   }
 
-  @PreAuthorize("isAuthenticated()")
   @DeleteMapping(value = "/{id}")
   public ResponseEntity<Void> deleteTranslator(Authentication authentication,
       @PathVariable String id) {

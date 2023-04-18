@@ -1,7 +1,7 @@
 package eu.dissco.orchestration.backend.properties;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
-import javax.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
