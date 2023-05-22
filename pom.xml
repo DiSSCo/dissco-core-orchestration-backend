@@ -19,6 +19,7 @@
     <apachecommons.version>4.3</apachecommons.version>
     <httpclient5.version>5.2.1</httpclient5.version>
     <k8s-client-java.version>18.0.0</k8s-client-java.version>
+    <mockito-inline.version>5.2.0</mockito-inline.version>
     <snakeyaml.version>2.0</snakeyaml.version>
     <sonar.organization>dissco</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -78,11 +79,6 @@
       <version>${k8s-client-java.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.httpcomponents.client5</groupId>
-      <artifactId>httpclient5</artifactId>
-     <version>${httpclient5.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
       <version>${apachecommons.version}</version>
@@ -130,7 +126,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-inline</artifactId>
-      <version>5.2.0</version>
+      <version>${mockito-inline.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
