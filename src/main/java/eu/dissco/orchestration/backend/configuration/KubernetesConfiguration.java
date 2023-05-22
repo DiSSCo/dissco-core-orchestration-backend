@@ -5,13 +5,15 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.util.Config;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
-import org.apache.http.config.ConnectionConfig;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+
+
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.util.TimeValue;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,13 +28,19 @@ public class KubernetesConfiguration {
   @Bean
   public CloseableHttpClient httpClient() {
     var socketConfig = SocketConfig.custom().setTcpNoDelay(true).build();
-    var connectionConfig = ConnectionConfig.custom()
-        .setCharset(StandardCharsets.UTF_8).build();
-    return HttpClients.custom().evictExpiredConnections()
-        .setDefaultSocketConfig(socketConfig)
-        .setDefaultConnectionConfig(connectionConfig).evictIdleConnections(1L,
-            TimeUnit.MINUTES)
-        .build();
+
+    var connectionConfig = ConnectionConfig.custom().build();
+
+    var connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+            .setDefaultSocketConfig(socketConfig)
+            .setDefaultConnectionConfig(connectionConfig)
+            .build();
+
+    return HttpClients.custom()
+            .evictExpiredConnections()
+            .evictIdleConnections(TimeValue.ofMinutes(1L))
+            .setConnectionManager(connectionManager)
+            .build();
   }
 
   @Bean
