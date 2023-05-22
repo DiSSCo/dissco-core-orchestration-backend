@@ -17,6 +17,7 @@
   <properties>
     <java.version>17</java.version>
     <snakeyaml.version>2.0</snakeyaml.version>
+    <protobuf-java.version>3.21.7</protobuf-java.version>
     <k8s-client-java.version>16.0.0</k8s-client-java.version>
     <sonar.organization>dissco</sonar.organization>
     <testcontainers.version>1.17.6</testcontainers.version>
