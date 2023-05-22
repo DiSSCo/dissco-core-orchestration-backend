@@ -61,3 +61,8 @@ CVE-2022-37434
 CVE-2022-29458
 
 # ** Java Vulnerabilities ** #
+
+# Date May 22, 2023
+# Package: io.kubernetes.client-java (transient vulnerability, vulnerable package is google.protobuf-java)
+# Solution: upgrade from 16.0 -> 18.0
+
