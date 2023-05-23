@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,13 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class TranslatorController {
 
   private final TranslatorService service;
+  private static final String ERROR_MSG = "Application threw error with message: {}";
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<TranslatorResponse>> getAll() {
     try {
       return ResponseEntity.ok(service.getAll());
     } catch (ApiException e) {
-      log.error("Application threw error with message: {}", e.getResponseBody());
+      log.error( ERROR_MSG, e.getResponseBody());
       return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
     }
   }
@@ -48,7 +48,7 @@ public class TranslatorController {
       return optionalResponse.map(ResponseEntity::ok)
           .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     } catch (ApiException e) {
-      log.error("Application threw error with message: {}", e.getResponseBody());
+      log.error(ERROR_MSG, e.getResponseBody());
       return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
     }
   }
@@ -63,7 +63,7 @@ public class TranslatorController {
       var result = service.createTranslator(request);
       return new ResponseEntity<>(result, HttpStatus.CREATED);
     } catch (ApiException e) {
-      log.error("Application threw error with message: {}", e.getResponseBody());
+      log.error(ERROR_MSG, e.getResponseBody());
       return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
     }
   }
@@ -81,7 +81,7 @@ public class TranslatorController {
       service.deleteJob(id);
       return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     } catch (ApiException e) {
-      log.error("Application threw error with message: {}", e.getResponseBody());
+      log.error(ERROR_MSG, e.getResponseBody());
       return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
     } catch (NotFoundException e) {
       log.error("Job was not found on the cluster");
