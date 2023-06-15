@@ -92,6 +92,20 @@ class SourceSystemControllerTest {
   }
 
   @Test
+  void testUpdateSourceSystemNoChanges() throws Exception {
+    // Given
+    var sourceSystem = givenSourceSystemRequest();
+    givenAuthentication();
+
+    // When
+    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, sourceSystem,
+        mockRequest);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+  }
+
+  @Test
   void testGetSourceSystemById() {
     // Given
     // When

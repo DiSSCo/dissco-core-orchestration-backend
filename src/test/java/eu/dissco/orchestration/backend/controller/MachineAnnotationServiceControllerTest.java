@@ -8,7 +8,9 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.exception.NotFoundException;
@@ -51,6 +53,17 @@ class MachineAnnotationServiceControllerTest {
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+  }
+
+  @Test
+  void testCreateMappingBadType() {
+    // Given
+    var requestBody = givenSourceSystemRequest();
+
+    // Then
+    assertThrowsExactly(
+        IllegalArgumentException.class,
+        () -> controller.createMachineAnnotationService(authentication, requestBody, mockRequest));
   }
 
   @Test

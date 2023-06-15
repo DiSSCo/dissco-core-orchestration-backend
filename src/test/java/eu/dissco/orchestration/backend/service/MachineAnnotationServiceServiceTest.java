@@ -88,6 +88,20 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
+  void testUpdateMasEqual() throws Exception {
+    // Given
+    var expected = givenMasSingleJsonApiWrapper(2);
+    var mas = givenMas();
+    given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(Optional.of(givenMasRecord()));
+
+    // When
+    var result = service.updateMachineAnnotationService(HANDLE, mas, OBJECT_CREATOR, MAS_PATH);
+
+    // Then
+    assertThat(result).isNull();
+  }
+
+  @Test
   void testUpdateMasNotFount() {
     // Given
     var mas = givenMas();

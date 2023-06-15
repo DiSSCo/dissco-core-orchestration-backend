@@ -103,11 +103,24 @@ class MappingControllerTest {
     given(service.updateMapping(HANDLE, givenMapping(), OBJECT_CREATOR, "null/mapping")).willReturn(
         givenMappingSingleJsonApiWrapper());
 
-    // Whan
+    // When
     var result = controller.updateMapping(authentication, PREFIX, SUFFIX, requestBody, mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test
+  void testUpdateMappingNoChanges() throws Exception {
+    // Given
+    givenAuthentication();
+    var requestBody = givenMappingRequest();
+
+    // When
+    var result = controller.updateMapping(authentication, PREFIX, SUFFIX, requestBody, mockRequest);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
 
   @Test
