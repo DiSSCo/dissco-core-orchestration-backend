@@ -7,16 +7,20 @@ package eu.dissco.orchestration.backend.database.jooq.tables;
 import eu.dissco.orchestration.backend.database.jooq.Keys;
 import eu.dissco.orchestration.backend.database.jooq.Public;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.NewMappingRecord;
+
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
+import java.util.function.Function;
+
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Function9;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
+import org.jooq.Records;
 import org.jooq.Row9;
 import org.jooq.Schema;
+import org.jooq.SelectField;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.TableOptions;
@@ -90,7 +94,7 @@ public class NewMapping extends TableImpl<NewMappingRecord> {
     /**
      * The column <code>public.new_mapping.sourcedatastandard</code>.
      */
-    public final TableField<NewMappingRecord, String> SOURCEDATASTANDARD = createField(DSL.name("sourcedatastandard"), SQLDataType.VARCHAR.nullable(false).defaultValue(DSL.field("'dwca'::character varying", SQLDataType.VARCHAR)), this, "");
+    public final TableField<NewMappingRecord, String> SOURCEDATASTANDARD = createField(DSL.name("sourcedatastandard"), SQLDataType.VARCHAR.nullable(false), this, "");
 
     private NewMapping(Name alias, Table<NewMappingRecord> aliased) {
         this(alias, aliased, null);
@@ -127,17 +131,12 @@ public class NewMapping extends TableImpl<NewMappingRecord> {
 
     @Override
     public Schema getSchema() {
-        return Public.PUBLIC;
+        return aliased() ? null : Public.PUBLIC;
     }
 
     @Override
     public UniqueKey<NewMappingRecord> getPrimaryKey() {
         return Keys.NEW_MAPPING_PK;
-    }
-
-    @Override
-    public List<UniqueKey<NewMappingRecord>> getKeys() {
-        return Arrays.<UniqueKey<NewMappingRecord>>asList(Keys.NEW_MAPPING_PK);
     }
 
     @Override
@@ -148,6 +147,11 @@ public class NewMapping extends TableImpl<NewMappingRecord> {
     @Override
     public NewMapping as(Name alias) {
         return new NewMapping(alias, this);
+    }
+
+    @Override
+    public NewMapping as(Table<?> alias) {
+        return new NewMapping(alias.getQualifiedName(), this);
     }
 
     /**
@@ -166,6 +170,14 @@ public class NewMapping extends TableImpl<NewMappingRecord> {
         return new NewMapping(name, null);
     }
 
+    /**
+     * Rename this table
+     */
+    @Override
+    public NewMapping rename(Table<?> name) {
+        return new NewMapping(name.getQualifiedName(), null);
+    }
+
     // -------------------------------------------------------------------------
     // Row9 type methods
     // -------------------------------------------------------------------------
@@ -173,5 +185,20 @@ public class NewMapping extends TableImpl<NewMappingRecord> {
     @Override
     public Row9<String, Integer, String, String, JSONB, Instant, String, Instant, String> fieldsRow() {
         return (Row9) super.fieldsRow();
+    }
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     */
+    public <U> SelectField<U> mapping(Function9<? super String, ? super Integer, ? super String, ? super String, ? super JSONB, ? super Instant, ? super String, ? super Instant, ? super String, ? extends U> from) {
+        return convertFrom(Records.mapping(from));
+    }
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Class,
+     * Function)}.
+     */
+    public <U> SelectField<U> mapping(Class<U> toType, Function9<? super String, ? super Integer, ? super String, ? super String, ? super JSONB, ? super Instant, ? super String, ? super Instant, ? super String, ? extends U> from) {
+        return convertFrom(toType, Records.mapping(from));
     }
 }

@@ -103,9 +103,8 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     // Given
     int pageNum = 1;
     int pageSize = 10;
-    List<SourceSystemRecord> ssRecords = new ArrayList<>();
-    IntStream.range(0, pageSize).boxed().toList()
-        .forEach(i -> ssRecords.add(givenSourceSystemRecordWithId(String.valueOf(i))));
+    List<SourceSystemRecord> ssRecords = IntStream.range(0, pageSize).boxed()
+        .map(this::givenSourceSystemRecordWithId).toList();
     postSourceSystem(ssRecords);
 
     // When
@@ -120,9 +119,8 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     int pageNum = 2;
     int pageSize = 10;
 
-    List<SourceSystemRecord> ssRecords = new ArrayList<>();
-    IntStream.range(0, pageSize + 1).boxed().toList()
-        .forEach(i -> ssRecords.add(givenSourceSystemRecordWithId(String.valueOf(i))));
+    List<SourceSystemRecord> ssRecords = IntStream.range(0, pageSize + 1).boxed()
+        .map(this::givenSourceSystemRecordWithId).toList();
     postSourceSystem(ssRecords);
 
     // When
@@ -132,7 +130,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testDeleteMapping() throws Exception {
+  void testDeleteSourceSystem() {
     // Given
     var sourceSystemRecord = givenSourceSystemRecord();
     postSourceSystem(List.of(sourceSystemRecord));
@@ -174,8 +172,9 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     assertThat(result).isEmpty();
   }
 
-  private SourceSystemRecord givenSourceSystemRecordWithId(String id) {
-    return new SourceSystemRecord(id, CREATED, null, givenSourceSystemWithId(id + "a"));
+  private SourceSystemRecord givenSourceSystemRecordWithId(int id) {
+    return new SourceSystemRecord(String.valueOf(id), CREATED, null,
+        givenSourceSystemWithId(id + "a"));
   }
 
   private SourceSystem givenSourceSystemWithId(String endPoint) {

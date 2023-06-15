@@ -1,20 +1,25 @@
 package eu.dissco.orchestration.backend.controller;
 
+import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import java.util.Collections;
 import java.util.List;
@@ -35,12 +40,14 @@ class SourceSystemControllerTest {
   MockHttpServletRequest mockRequest = new MockHttpServletRequest();
   @Mock
   private SourceSystemService service;
+  @Mock
+  private ApplicationProperties appProperties;
   private SourceSystemController controller;
   private Authentication authentication;
 
   @BeforeEach
   void setup() {
-    controller = new SourceSystemController(service, MAPPER);
+    controller = new SourceSystemController(service, MAPPER, appProperties);
     mockRequest.setRequestURI(SYSTEM_URI);
   }
 
@@ -58,7 +65,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testCreateSourceSystemBadType() throws Exception {
+  void testCreateSourceSystemBadType() {
     // Given
     var sourceSystem = givenMappingRequest();
 
@@ -69,11 +76,12 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testUpdateSourceSystem() throws Exception{
+  void testUpdateSourceSystem() throws Exception {
     // Given
     var sourceSystem = givenSourceSystemRequest();
-
     givenAuthentication();
+    given(service.updateSourceSystem(HANDLE, givenSourceSystem(), "null/source-system")).willReturn(
+        givenSourceSystemSingleJsonApiWrapper());
 
     // When
     var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, sourceSystem,
@@ -102,6 +110,7 @@ class SourceSystemControllerTest {
     var linksNode = new JsonApiLinks(pageSize, pageNum, true, SYSTEM_PATH);
     var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
     given(service.getSourceSystemRecords(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
+    given(appProperties.getBaseUrl()).willReturn(SANDBOX_URI);
 
     // When
     var result = controller.getSourceSystems(pageNum, pageSize, mockRequest);
@@ -120,6 +129,7 @@ class SourceSystemControllerTest {
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, SYSTEM_PATH);
     var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
     given(service.getSourceSystemRecords(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
+    given(appProperties.getBaseUrl()).willReturn(SANDBOX_URI);
 
     // When
     var result = controller.getSourceSystems(pageNum, pageSize, mockRequest);

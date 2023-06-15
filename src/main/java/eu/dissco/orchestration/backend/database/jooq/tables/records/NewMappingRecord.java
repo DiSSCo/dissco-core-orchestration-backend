@@ -5,7 +5,9 @@ package eu.dissco.orchestration.backend.database.jooq.tables.records;
 
 
 import eu.dissco.orchestration.backend.database.jooq.tables.NewMapping;
+
 import java.time.Instant;
+
 import org.jooq.Field;
 import org.jooq.JSONB;
 import org.jooq.Record2;
@@ -400,5 +402,6 @@ public class NewMappingRecord extends UpdatableRecordImpl<NewMappingRecord> impl
         setCreator(creator);
         setDeleted(deleted);
         setSourcedatastandard(sourcedatastandard);
+        resetChangedOnNotNull();
     }
 }

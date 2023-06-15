@@ -7,6 +7,6 @@ public record SourceSystemRecord(
     Instant created,
     Instant deleted,
     SourceSystem sourceSystem
-    ) {
+) {
 
 }

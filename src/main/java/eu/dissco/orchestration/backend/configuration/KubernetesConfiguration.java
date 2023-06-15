@@ -6,8 +6,6 @@ import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.util.Config;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
-
-
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -32,15 +30,15 @@ public class KubernetesConfiguration {
     var connectionConfig = ConnectionConfig.custom().build();
 
     var connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
-            .setDefaultSocketConfig(socketConfig)
-            .setDefaultConnectionConfig(connectionConfig)
-            .build();
+        .setDefaultSocketConfig(socketConfig)
+        .setDefaultConnectionConfig(connectionConfig)
+        .build();
 
     return HttpClients.custom()
-            .evictExpiredConnections()
-            .evictIdleConnections(TimeValue.ofMinutes(1L))
-            .setConnectionManager(connectionManager)
-            .build();
+        .evictExpiredConnections()
+        .evictIdleConnections(TimeValue.ofMinutes(1L))
+        .setConnectionManager(connectionManager)
+        .build();
   }
 
   @Bean

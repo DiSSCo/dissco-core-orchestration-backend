@@ -27,7 +27,6 @@ public class SourceSystemService {
   private final SourceSystemRepository repository;
   private final HandleService handleService;
   private final MappingService mappingService;
-
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String path)
@@ -40,19 +39,21 @@ public class SourceSystemService {
     return wrapSingleResponse(handle, sourceSystemRecord, path);
   }
 
-  private void validateMappingExists(String mappingId) throws NotFoundException{
+  private void validateMappingExists(String mappingId) throws NotFoundException {
     var mappingRecord = mappingService.getActiveMapping(mappingId);
-    if (mappingRecord.isEmpty()){
+    if (mappingRecord.isEmpty()) {
       throw new NotFoundException("Unable to locate Mapping record with id " + mappingId);
     }
   }
 
-  public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String path) throws NotFoundException{
+  public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String path)
+      throws NotFoundException {
     var prevSourceSystem = repository.getActiveSourceSystem(id);
-    if (prevSourceSystem.isEmpty()){
-      throw new NotFoundException("Could not update Source System " + id + ". Verify resource exists.");
+    if (prevSourceSystem.isEmpty()) {
+      throw new NotFoundException(
+          "Could not update Source System " + id + ". Verify resource exists.");
     }
-    if ((prevSourceSystem.get().sourceSystem()).equals(sourceSystem)){
+    if ((prevSourceSystem.get().sourceSystem()).equals(sourceSystem)) {
       return null;
     }
     var sourceSystemRecord = new SourceSystemRecord(id, Instant.now(), null, sourceSystem);
@@ -65,26 +66,28 @@ public class SourceSystemService {
     return wrapSingleResponse(id, sourceSystemRecord, path);
   }
 
-
   public JsonApiListWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
-    var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize + 1);
+    var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize);
     return wrapResponse(sourceSystemRecords, pageNum, pageSize, path);
   }
 
-  private JsonApiWrapper wrapSingleResponse(String id, SourceSystemRecord sourceSystemRecord, String path){
+  private JsonApiWrapper wrapSingleResponse(String id, SourceSystemRecord sourceSystemRecord,
+      String path) {
     return new JsonApiWrapper(
-        new JsonApiData(id, HandleType.SOURCE_SYSTEM, flattenSourceSystemRecord(sourceSystemRecord)),
+        new JsonApiData(id, HandleType.SOURCE_SYSTEM,
+            flattenSourceSystemRecord(sourceSystemRecord)),
         new JsonApiLinks(path)
     );
   }
 
   public void deleteSourceSystem(String id) throws NotFoundException {
     var result = repository.getActiveSourceSystem(id);
-    if (result.isPresent()){
-      Instant deleted = Instant.now();
+    if (result.isPresent()) {
+      var deleted = Instant.now();
       repository.deleteSourceSystem(id, deleted);
+    } else {
+      throw new NotFoundException("Requested source system: " + id + " does not exist");
     }
-    else throw new NotFoundException("Requested source system"+id +" does not exist");
   }
 
 
@@ -103,10 +106,10 @@ public class SourceSystemService {
         .toList();
   }
 
-  private JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord){
-    var sourceSystemNode =  (ObjectNode) mapper.valueToTree(sourceSystemRecord.sourceSystem());
+  private JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord) {
+    var sourceSystemNode = (ObjectNode) mapper.valueToTree(sourceSystemRecord.sourceSystem());
     sourceSystemNode.put("created", sourceSystemRecord.created().toString());
-    if (sourceSystemRecord.deleted() != null){
+    if (sourceSystemRecord.deleted() != null) {
       sourceSystemNode.put("deleted", sourceSystemRecord.deleted().toString());
     }
     return sourceSystemNode;

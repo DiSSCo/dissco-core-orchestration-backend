@@ -5,6 +5,7 @@ package eu.dissco.orchestration.backend.database.jooq;
 
 
 import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
+
 import org.jooq.Index;
 import org.jooq.OrderField;
 import org.jooq.impl.DSL;

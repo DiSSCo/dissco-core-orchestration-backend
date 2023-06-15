@@ -15,22 +15,23 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
-    private final JwtAuthConverter jwtAuthConverter;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
-                .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()
-                .requestMatchers(HttpMethod.GET, "**").permitAll()
-                .anyRequest().authenticated());
+  private final JwtAuthConverter jwtAuthConverter;
 
-        http.oauth2ResourceServer(jwtoauth2ResourceServer -> jwtoauth2ResourceServer.jwt((
-                jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)
-        )));
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http.authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
+        .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()
+        .requestMatchers(HttpMethod.GET, "**").permitAll()
+        .anyRequest().authenticated());
 
-        http.sessionManagement(sessionManagement -> sessionManagement
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        return http.build();
-    }
+    http.oauth2ResourceServer(jwtoauth2ResourceServer -> jwtoauth2ResourceServer.jwt((
+        jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)
+    )));
+
+    http.sessionManagement(sessionManagement -> sessionManagement
+        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+    return http.build();
+  }
 
 }

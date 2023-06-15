@@ -60,18 +60,18 @@ public class MappingRepository {
         .fetchOptional(this::mapToMappingRecord);
   }
 
-  public List<MappingRecord> getMappings(int pageNum, int pageSize){
+  public List<MappingRecord> getMappings(int pageNum, int pageSize) {
     int offset = getOffset(pageNum, pageSize);
 
     return context.select(NEW_MAPPING.asterisk())
         .from(NEW_MAPPING)
         .where(NEW_MAPPING.DELETED.isNull())
         .offset(offset)
-        .limit(pageSize)
+        .limit(pageSize + 1)
         .fetch(this::mapToMappingRecord);
   }
 
-  public void deleteMapping(String id, Instant deleted){
+  public void deleteMapping(String id, Instant deleted) {
     context.update(NEW_MAPPING)
         .set(NEW_MAPPING.DELETED, deleted)
         .where(NEW_MAPPING.ID.eq(id))

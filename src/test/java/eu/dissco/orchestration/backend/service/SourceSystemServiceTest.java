@@ -70,7 +70,8 @@ class SourceSystemServiceTest {
     var expected = givenSourceSystemSingleJsonApiWrapper();
     var sourceSystem = givenSourceSystem();
     given(handleService.createNewHandle(HandleType.SOURCE_SYSTEM)).willReturn(HANDLE);
-    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
+    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
+        Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
 
     // When
     var result = service.createSourceSystem(sourceSystem, SYSTEM_PATH);
@@ -80,16 +81,17 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testCreateSourceSystemMappingNotFound() throws Exception {
+  void testCreateSourceSystemMappingNotFound() {
     // Given
     var sourceSystem = givenSourceSystem();
     given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(Optional.empty());
 
-    assertThrowsExactly(NotFoundException.class, () -> service.createSourceSystem(sourceSystem, SYSTEM_PATH));
+    assertThrowsExactly(NotFoundException.class,
+        () -> service.createSourceSystem(sourceSystem, SYSTEM_PATH));
   }
 
   @Test
-  void testUpdateSourceSystem() throws Exception  {
+  void testUpdateSourceSystem() throws Exception {
     var sourceSystem = givenSourceSystem();
     var prevRecord = Optional.of(new SourceSystemRecord(
         HANDLE,
@@ -113,14 +115,16 @@ class SourceSystemServiceTest {
     given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.empty());
 
     // Then
-    assertThrowsExactly(NotFoundException.class, () -> service.updateSourceSystem(HANDLE, sourceSystem, SYSTEM_PATH));
+    assertThrowsExactly(NotFoundException.class,
+        () -> service.updateSourceSystem(HANDLE, sourceSystem, SYSTEM_PATH));
   }
 
   @Test
   void testUpdateSourceSystemNoChanges() throws Exception {
     // Given
     var sourceSystem = givenSourceSystem();
-    given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.of(givenSourceSystemRecord()));
+    given(repository.getActiveSourceSystem(HANDLE)).willReturn(
+        Optional.of(givenSourceSystemRecord()));
 
     // When
     var result = service.updateSourceSystem(HANDLE, sourceSystem, SYSTEM_PATH);
@@ -145,12 +149,13 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testGetSourceSystemByIdIsDeleted() throws Exception {
+  void testGetSourceSystemByIdIsDeleted() {
     // Given
     var sourceSystemRecord = new SourceSystemRecord(
         HANDLE, CREATED, CREATED, givenSourceSystem());
     var expected = new JsonApiWrapper(
-        new JsonApiData(HANDLE, HandleType.SOURCE_SYSTEM, flattenSourceSystemRecord(sourceSystemRecord)),
+        new JsonApiData(HANDLE, HandleType.SOURCE_SYSTEM,
+            flattenSourceSystemRecord(sourceSystemRecord)),
         new JsonApiLinks(SYSTEM_PATH));
 
     given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystemRecord);
@@ -170,7 +175,7 @@ class SourceSystemServiceTest {
     String path = SANDBOX_URI;
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize + 1,
         givenSourceSystemRecord());
-    given(repository.getSourceSystems(pageNum, pageSize + 1)).willReturn(ssRecords);
+    given(repository.getSourceSystems(pageNum, pageSize)).willReturn(ssRecords);
     var linksNode = new JsonApiLinks(pageSize, pageNum, true, path);
     var expected = givenSourceSystemRecordResponse(ssRecords.subList(0, pageSize), linksNode);
 
@@ -188,7 +193,7 @@ class SourceSystemServiceTest {
     int pageSize = 10;
     String path = SANDBOX_URI;
     List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
-    given(repository.getSourceSystems(pageNum, pageSize + 1)).willReturn(ssRecords);
+    given(repository.getSourceSystems(pageNum, pageSize)).willReturn(ssRecords);
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, path);
     var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
 
@@ -200,15 +205,16 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testDeleteSourceSystem(){
+  void testDeleteSourceSystem() {
     // Given
-    given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.of(givenSourceSystemRecord()));
+    given(repository.getActiveSourceSystem(HANDLE)).willReturn(
+        Optional.of(givenSourceSystemRecord()));
     // Then
     assertDoesNotThrow(() -> service.deleteSourceSystem(HANDLE));
   }
 
   @Test
-  void testDeleteSourceSystemNotFound(){
+  void testDeleteSourceSystemNotFound() {
     // Given
     given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.empty());
 

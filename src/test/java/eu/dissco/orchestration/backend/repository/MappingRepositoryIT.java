@@ -113,9 +113,8 @@ class MappingRepositoryIT extends BaseRepositoryIT {
     // Given
     int pageNum = 1;
     int pageSize = 10;
-    List<MappingRecord> mappingRecords = new ArrayList<>();
-    IntStream.range(0, pageSize).boxed().toList()
-        .forEach(i -> mappingRecords.add(givenMappingRecord(String.valueOf(i), 1)));
+    List<MappingRecord> mappingRecords = IntStream.range(0, pageSize).boxed()
+        .map(i -> givenMappingRecord(String.valueOf(i), 1)).toList();
     postMappingRecords(mappingRecords);
 
     // When
@@ -130,9 +129,8 @@ class MappingRepositoryIT extends BaseRepositoryIT {
     // Given
     int pageNum = 2;
     int pageSize = 10;
-    List<MappingRecord> mappingRecords = new ArrayList<>();
-    IntStream.range(0, pageSize + 1).boxed().toList()
-        .forEach(i -> mappingRecords.add(givenMappingRecord(String.valueOf(i), 1)));
+    List<MappingRecord> mappingRecords = IntStream.range(0, pageSize + 1).boxed()
+        .map(i -> givenMappingRecord(String.valueOf(i), 1)).toList();
     postMappingRecords(mappingRecords);
 
     // When

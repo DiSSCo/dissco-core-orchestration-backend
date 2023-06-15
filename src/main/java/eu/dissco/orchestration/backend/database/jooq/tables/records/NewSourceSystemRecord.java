@@ -5,7 +5,9 @@ package eu.dissco.orchestration.backend.database.jooq.tables.records;
 
 
 import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
+
 import java.time.Instant;
+
 import org.jooq.Field;
 import org.jooq.Record1;
 import org.jooq.Record7;
@@ -325,5 +327,6 @@ public class NewSourceSystemRecord extends UpdatableRecordImpl<NewSourceSystemRe
         setCreated(created);
         setDeleted(deleted);
         setMappingId(mappingId);
+        resetChangedOnNotNull();
     }
 }

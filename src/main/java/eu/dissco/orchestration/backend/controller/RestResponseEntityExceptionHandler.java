@@ -14,20 +14,20 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
 
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<String> notFoundException(NotFoundException e){
+  public ResponseEntity<String> notFoundException(NotFoundException e) {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
   }
 
   @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
   @ExceptionHandler(JsonProcessingException.class)
-  public ResponseEntity<String> jsonProcessingException(JsonProcessingException e){
+  public ResponseEntity<String> jsonProcessingException(JsonProcessingException e) {
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(e.getMessage());
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<String> illegalArgumentException(IllegalArgumentException e){
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+  public ResponseEntity<String> illegalArgumentException(IllegalArgumentException e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
   }
 
 }
