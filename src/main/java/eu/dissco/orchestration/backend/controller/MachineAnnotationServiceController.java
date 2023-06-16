@@ -39,8 +39,7 @@ public class MachineAnnotationServiceController {
   private final MachineAnnotationServiceService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
-
-  @PreAuthorize("isAuthenticated()")
+  
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMachineAnnotationService(
       Authentication authentication,
@@ -59,7 +58,6 @@ public class MachineAnnotationServiceController {
     return authentication.getName();
   }
 
-  @PreAuthorize("isAuthenticated()")
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> updateMachineAnnotationService(
       Authentication authentication,
@@ -80,7 +78,6 @@ public class MachineAnnotationServiceController {
     }
   }
 
-  @PreAuthorize("isAuthenticated()")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> deleteMachineAnnotationService(Authentication authentication,
