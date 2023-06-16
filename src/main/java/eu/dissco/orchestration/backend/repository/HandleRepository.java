@@ -38,4 +38,9 @@ public class HandleRepository {
     context.batch(queryList).execute();
   }
 
+  public void rollbackHandleCreation(String pid) {
+    context.deleteFrom(HANDLES)
+        .where(HANDLES.HANDLE.eq(pid.getBytes(StandardCharsets.UTF_8)))
+        .execute();
+  }
 }

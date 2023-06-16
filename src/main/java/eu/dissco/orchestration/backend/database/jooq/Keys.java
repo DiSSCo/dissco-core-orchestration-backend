@@ -6,12 +6,12 @@ package eu.dissco.orchestration.backend.database.jooq;
 
 import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
 import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
-import eu.dissco.orchestration.backend.database.jooq.tables.NewMapping;
-import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
+import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
+import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.HandlesRecord;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.MachineAnnotationServicesRecord;
-import eu.dissco.orchestration.backend.database.jooq.tables.records.NewMappingRecord;
-import eu.dissco.orchestration.backend.database.jooq.tables.records.NewSourceSystemRecord;
+import eu.dissco.orchestration.backend.database.jooq.tables.records.MappingRecord;
+import eu.dissco.orchestration.backend.database.jooq.tables.records.SourceSystemRecord;
 
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
@@ -32,6 +32,6 @@ public class Keys {
 
     public static final UniqueKey<HandlesRecord> HANDLES_PKEY = Internal.createUniqueKey(Handles.HANDLES, DSL.name("handles_pkey"), new TableField[] { Handles.HANDLES.HANDLE, Handles.HANDLES.IDX }, true);
     public static final UniqueKey<MachineAnnotationServicesRecord> MACHINE_ANNOTATION_SERVICES_PKEY = Internal.createUniqueKey(MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES, DSL.name("machine_annotation_services_pkey"), new TableField[] { MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES.ID }, true);
-    public static final UniqueKey<NewMappingRecord> NEW_MAPPING_PK = Internal.createUniqueKey(NewMapping.NEW_MAPPING, DSL.name("new_mapping_pk"), new TableField[] { NewMapping.NEW_MAPPING.ID, NewMapping.NEW_MAPPING.VERSION }, true);
-    public static final UniqueKey<NewSourceSystemRecord> NEW_SOURCE_SYSTEM_PKEY = Internal.createUniqueKey(NewSourceSystem.NEW_SOURCE_SYSTEM, DSL.name("new_source_system_pkey"), new TableField[] { NewSourceSystem.NEW_SOURCE_SYSTEM.ID }, true);
+    public static final UniqueKey<MappingRecord> NEW_MAPPING_PK = Internal.createUniqueKey(Mapping.MAPPING, DSL.name("new_mapping_pk"), new TableField[] { Mapping.MAPPING.ID, Mapping.MAPPING.VERSION }, true);
+    public static final UniqueKey<SourceSystemRecord> NEW_SOURCE_SYSTEM_PKEY = Internal.createUniqueKey(SourceSystem.SOURCE_SYSTEM, DSL.name("new_source_system_pkey"), new TableField[] { SourceSystem.SOURCE_SYSTEM.ID }, true);
 }

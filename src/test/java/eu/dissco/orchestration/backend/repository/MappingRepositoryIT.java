@@ -1,13 +1,14 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MAPPING;
-import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.MAPPING;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,7 +36,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(NEW_MAPPING).execute();
+    context.truncate(MAPPING).execute();
   }
 
   @Test
@@ -53,7 +54,38 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetMapping() throws Exception {
+  void testUpdateMapping() {
+    // Given
+    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    postMappingRecords(List.of(mappingRecord));
+    var updatedRecord = givenUpdatedRecord();
+
+    // When
+    repository.updateMapping(updatedRecord);
+    var result = readAllMappings();
+
+    // Then
+    assertThat(result).containsExactly(updatedRecord);
+  }
+
+  private MappingRecord givenUpdatedRecord() {
+    return new MappingRecord(
+        HANDLE,
+        2,
+        CREATED,
+        null,
+        OBJECT_CREATOR,
+        new Mapping(
+            "An updated name",
+            "With a nice new description",
+            MAPPER.createObjectNode(),
+            "abcd"
+        )
+    );
+  }
+
+  @Test
+  void testGetMapping() {
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     postMappingRecords(List.of(mappingRecord));
@@ -66,7 +98,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetMappingIsDeleted() throws Exception {
+  void testGetMappingIsDeleted() {
     // Given
     var mappingRecord = new MappingRecord(HANDLE, 1, CREATED, CREATED, OBJECT_CREATOR,
         givenMapping());
@@ -79,7 +111,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetActiveMappingIsPresent() throws Exception {
+  void testGetActiveMappingIsPresent() {
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     postMappingRecords(List.of(mappingRecord));
@@ -92,13 +124,13 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetActiveMappingNotPresent() throws Exception {
+  void testGetActiveMappingNotPresent() {
     // Given
     var mappingRecord = givenMappingRecord(HANDLE, 1);
     postMappingRecords(List.of(mappingRecord));
-    context.update(NEW_MAPPING)
-        .set(NEW_MAPPING.DELETED, CREATED)
-        .where(NEW_MAPPING.ID.eq(HANDLE))
+    context.update(MAPPING)
+        .set(MAPPING.DELETED, CREATED)
+        .where(MAPPING.ID.eq(HANDLE))
         .execute();
 
     // When
@@ -109,7 +141,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetMappings() throws Exception {
+  void testGetMappings() {
     // Given
     int pageNum = 1;
     int pageSize = 10;
@@ -125,7 +157,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetMappingsLastPage() throws Exception {
+  void testGetMappingsLastPage() {
     // Given
     int pageNum = 2;
     int pageSize = 10;
@@ -141,7 +173,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testDeleteMapping() throws Exception {
+  void testDeleteMapping() {
     // Given
     MappingRecord mapping = givenMappingRecord(HANDLE, 1);
     postMappingRecords(List.of(mapping));
@@ -155,34 +187,34 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
   private Instant getDeleted(String id) {
-    return context.select(NEW_MAPPING.ID, NEW_MAPPING.DELETED)
-        .from(NEW_MAPPING)
-        .where(NEW_MAPPING.ID.eq(id))
+    return context.select(MAPPING.ID, MAPPING.DELETED)
+        .from(MAPPING)
+        .where(MAPPING.ID.eq(id))
         .fetchOne(this::getInstantDeleted);
   }
 
   private Instant getInstantDeleted(Record dbRecord) {
-    return dbRecord.get(NEW_SOURCE_SYSTEM.DELETED);
+    return dbRecord.get(SOURCE_SYSTEM.DELETED);
   }
 
   List<MappingRecord> readAllMappings() {
-    return context.select(NEW_MAPPING.asterisk())
-        .from(NEW_MAPPING)
+    return context.select(MAPPING.asterisk())
+        .from(MAPPING)
         .fetch(this::mapToMappingRecord);
   }
 
   private MappingRecord mapToMappingRecord(Record dbRecord) {
     try {
       var mapping = new Mapping(
-          dbRecord.get(NEW_MAPPING.NAME),
-          dbRecord.get(NEW_MAPPING.DESCRIPTION),
-          MAPPER.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data()),
-          "dwc");
+          dbRecord.get(MAPPING.NAME),
+          dbRecord.get(MAPPING.DESCRIPTION),
+          MAPPER.readTree(dbRecord.get(MAPPING.MAPPING_).data()),
+          dbRecord.get(MAPPING.SOURCEDATASTANDARD));
       return new MappingRecord(
-          dbRecord.get(NEW_MAPPING.ID),
-          dbRecord.get(NEW_MAPPING.VERSION),
-          dbRecord.get(NEW_MAPPING.CREATED),
-          null, dbRecord.get(NEW_MAPPING.CREATOR),
+          dbRecord.get(MAPPING.ID),
+          dbRecord.get(MAPPING.VERSION),
+          dbRecord.get(MAPPING.CREATED),
+          null, dbRecord.get(MAPPING.CREATOR),
           mapping
       );
     } catch (JsonProcessingException e) {
@@ -191,24 +223,35 @@ class MappingRepositoryIT extends BaseRepositoryIT {
   }
 
 
-  private void postMappingRecords(List<MappingRecord> mappingRecords)
-      throws Exception {
+  private void postMappingRecords(List<MappingRecord> mappingRecords) {
     List<Query> queryList = new ArrayList<>();
     for (var mappingRecord : mappingRecords) {
-      queryList.add(context.insertInto(NEW_MAPPING)
-          .set(NEW_MAPPING.ID, mappingRecord.id())
-          .set(NEW_MAPPING.VERSION, mappingRecord.version())
-          .set(NEW_MAPPING.NAME, mappingRecord.mapping().name())
-          .set(NEW_MAPPING.DESCRIPTION, mappingRecord.mapping().description())
-          .set(NEW_MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard())
-          .set(NEW_MAPPING.MAPPING,
-              JSONB.valueOf(MAPPER.writeValueAsString(mappingRecord.mapping().mapping())))
-          .set(NEW_MAPPING.CREATED, mappingRecord.created())
-          .set(NEW_MAPPING.DELETED, mappingRecord.deleted())
-          .set(NEW_MAPPING.CREATOR, mappingRecord.creator()));
+      queryList.add(context.insertInto(MAPPING)
+          .set(MAPPING.ID, mappingRecord.id())
+          .set(MAPPING.VERSION, mappingRecord.version())
+          .set(MAPPING.NAME, mappingRecord.mapping().name())
+          .set(MAPPING.DESCRIPTION, mappingRecord.mapping().description())
+          .set(MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard())
+          .set(MAPPING.MAPPING_,
+              JSONB.valueOf(mappingRecord.mapping().mapping().toString()))
+          .set(MAPPING.CREATED, mappingRecord.created())
+          .set(MAPPING.DELETED, mappingRecord.deleted())
+          .set(MAPPING.CREATOR, mappingRecord.creator()));
     }
     context.batch(queryList).execute();
   }
 
+  @Test
+  void testRollback() {
+    // Given
+    postMappingRecords(List.of(givenMappingRecord(HANDLE, 1)));
+
+    // When
+    repository.rollbackMappingCreation(HANDLE);
+
+    // Then
+    var result = repository.getMapping(HANDLE);
+    assertThat(result).isNull();
+  }
 
 }

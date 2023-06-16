@@ -8,6 +8,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,18 +46,14 @@ public class MachineAnnotationServiceController {
   public ResponseEntity<JsonApiWrapper> createMachineAnnotationService(
       Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException {
+      throws TransformerException, JsonProcessingException, ProcessingFailedException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = getUserId(authentication);
+    var userId = authentication.getName();
     log.info("Received create request for machine annotation service: {} from user: {}",
         machineAnnotationService, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var result = service.createMachineAnnotationService(machineAnnotationService, userId, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
-  }
-
-  private String getUserId(Authentication authentication) {
-    return authentication.getName();
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -65,9 +62,9 @@ public class MachineAnnotationServiceController {
       Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException {
+      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = getUserId(authentication);
+    var userId = authentication.getName();
     var id = prefix + '/' + suffix;
     log.info("Received update request for machine annotation service: {} from user: {}", id,
         userId);
@@ -88,7 +85,7 @@ public class MachineAnnotationServiceController {
       throws NotFoundException {
     String id = prefix + "/" + postfix;
     log.info("Received delete request for machine annotation service: {} from user: {}", id,
-        getUserId(authentication));
+        authentication.getName());
     service.deleteMachineAnnotationService(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }

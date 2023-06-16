@@ -8,6 +8,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MappingService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,20 +38,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MappingController {
 
+  private static final ArrayList<String> sourceDataSystems = new ArrayList<>(
+      List.of("dwc", "abcd", "abcdefg"));
   private final MappingService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
-  private static final ArrayList<String> sourceDataSystems = new ArrayList<>(
-      List.of("dwc", "abcd", "abcdefg"));
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException {
+      throws TransformerException, JsonProcessingException, ProcessingFailedException {
     var mapping = getMappingFromRequest(requestBody);
-    log.info("Received create request for mapping: {}", mapping);
+    var userId = authentication.getName();
+    log.info("Received create request for mapping: {} from user: {}", mapping, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.createMapping(mapping, getNameFromToken(authentication), path);
+    var result = service.createMapping(mapping, userId, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
@@ -58,12 +60,13 @@ public class MappingController {
   public ResponseEntity<JsonApiWrapper> updateMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException {
+      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
     var mapping = getMappingFromRequest(requestBody);
     var id = prefix + '/' + suffix;
-    log.info("Received update request for mapping: {}", id);
+    var userId = authentication.getName();
+    log.info("Received update request for mapping: {} from user: {}", mapping, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateMapping(id, mapping, getNameFromToken(authentication), path);
+    var result = service.updateMapping(id, mapping, userId, path);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {
@@ -73,10 +76,12 @@ public class MappingController {
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteMapping(
+  public ResponseEntity<Void> deleteMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix)
       throws NotFoundException {
     String id = prefix + "/" + postfix;
+    log.info("Received delete request for mapping: {} from user: {}", id,
+        authentication.getName());
     service.deleteMapping(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
@@ -97,6 +102,8 @@ public class MappingController {
       @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest servletRequest) {
+    log.info("Received get request for mappings with pageNumber: {} and pageSzie: {}: ", pageNum,
+        pageSize);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK).body(service.getMappings(pageNum, pageSize, path));
   }
@@ -109,10 +116,6 @@ public class MappingController {
     var mapping = mapper.treeToValue(requestBody.data().attributes(), Mapping.class);
     checkSourceStandard(mapping);
     return mapping;
-  }
-
-  private String getNameFromToken(Authentication authentication) {
-    return authentication.getName();
   }
 
   private void checkSourceStandard(Mapping mapping) {

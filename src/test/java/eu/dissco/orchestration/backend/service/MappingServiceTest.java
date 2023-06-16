@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.service;
 
+import static eu.dissco.orchestration.backend.service.MappingService.SUBJECT_TYPE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
@@ -18,8 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mockStatic;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
@@ -27,6 +32,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -49,19 +55,23 @@ class MappingServiceTest {
   @Mock
   private HandleService handleService;
   @Mock
+  private KafkaPublisherService kafkaPublisherService;
+  @Mock
   private MappingRepository repository;
 
   private MockedStatic<Instant> mockedStatic;
+  private MockedStatic<Clock> mockedClock;
 
   @BeforeEach
   void setup() {
-    service = new MappingService(handleService, repository, MAPPER);
+    service = new MappingService(handleService, kafkaPublisherService, repository, MAPPER);
     initTime();
   }
 
   @AfterEach
   void destroy() {
     mockedStatic.close();
+    mockedClock.close();
   }
 
   @Test
@@ -76,6 +86,29 @@ class MappingServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
+    then(kafkaPublisherService).should()
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 1)),
+            SUBJECT_TYPE);
+  }
+
+  @Test
+  void testCreateMappingKafkaFails() throws Exception {
+    // Given
+    var mapping = givenMapping();
+    given(handleService.createNewHandle(HandleType.MAPPING)).willReturn(HANDLE);
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 1)),
+            SUBJECT_TYPE);
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH));
+
+    // Then
+    then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
+    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(repository).should().rollbackMappingCreation(HANDLE);
   }
 
   @Test
@@ -84,9 +117,9 @@ class MappingServiceTest {
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode(),
         "dwc");
     var prevRecord = Optional.of(
-        new MappingRecord(HANDLE, 0, CREATED, null, OBJECT_CREATOR, prevMapping));
+        new MappingRecord(HANDLE, 1, CREATED, null, OBJECT_CREATOR, prevMapping));
     var mapping = givenMapping();
-    var expected = givenMappingSingleJsonApiWrapper();
+    var expected = givenMappingSingleJsonApiWrapper(2);
 
     given(repository.getActiveMapping(HANDLE)).willReturn(prevRecord);
 
@@ -95,6 +128,36 @@ class MappingServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(repository).should().updateMapping(givenMappingRecord(HANDLE, 2));
+    then(kafkaPublisherService).should()
+        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 2)),
+            givenJsonPatch(), SUBJECT_TYPE);
+  }
+
+  @Test
+  void testUpdateMappingKafkaFails() throws Exception {
+    // Given
+    var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode(),
+        "dwc");
+    var prevRecord = Optional.of(
+        new MappingRecord(HANDLE, 1, CREATED, null, OBJECT_CREATOR, prevMapping));
+    var mapping = givenMapping();
+    given(repository.getActiveMapping(HANDLE)).willReturn(prevRecord);
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 2)),
+            givenJsonPatch(), SUBJECT_TYPE);
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.updateMapping(HANDLE, mapping, OBJECT_CREATOR, MAPPING_PATH));
+
+    // Then
+    then(repository).should().updateMapping(givenMappingRecord(HANDLE, 2));
+    then(repository).should().updateMapping(prevRecord.get());
+  }
+
+  private JsonNode givenJsonPatch() throws JsonProcessingException {
+    return MAPPER.readTree("[{\"op\":\"replace\",\"path\":\"/name\",\"value\":\"old name\"}]");
   }
 
   @Test
@@ -113,7 +176,7 @@ class MappingServiceTest {
   }
 
   @Test
-  void testUpdateMappingNotFound() throws Exception {
+  void testUpdateMappingNotFound() {
     // Given
     given(repository.getActiveMapping(HANDLE)).willReturn(Optional.empty());
 
@@ -211,6 +274,8 @@ class MappingServiceTest {
 
   private void initTime() {
     Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
+    mockedClock = mockStatic(Clock.class);
+    mockedClock.when(Clock::systemUTC).thenReturn(clock);
     Instant instant = Instant.now(clock);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);

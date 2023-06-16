@@ -6,8 +6,8 @@ package eu.dissco.orchestration.backend.database.jooq;
 
 import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
 import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
-import eu.dissco.orchestration.backend.database.jooq.tables.NewMapping;
-import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
+import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
+import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,14 +41,14 @@ public class Public extends SchemaImpl {
     public final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
 
     /**
-     * The table <code>public.new_mapping</code>.
+     * The table <code>public.mapping</code>.
      */
-    public final NewMapping NEW_MAPPING = NewMapping.NEW_MAPPING;
+    public final Mapping MAPPING = Mapping.MAPPING;
 
     /**
-     * The table <code>public.new_source_system</code>.
+     * The table <code>public.source_system</code>.
      */
-    public final NewSourceSystem NEW_SOURCE_SYSTEM = NewSourceSystem.NEW_SOURCE_SYSTEM;
+    public final SourceSystem SOURCE_SYSTEM = SourceSystem.SOURCE_SYSTEM;
 
     /**
      * No further instances allowed
@@ -68,8 +68,8 @@ public class Public extends SchemaImpl {
         return Arrays.asList(
             Handles.HANDLES,
             MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES,
-            NewMapping.NEW_MAPPING,
-            NewSourceSystem.NEW_SOURCE_SYSTEM
+            Mapping.MAPPING,
+            SourceSystem.SOURCE_SYSTEM
         );
     }
 }

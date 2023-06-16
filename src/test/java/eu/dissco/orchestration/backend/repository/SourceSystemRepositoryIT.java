@@ -1,9 +1,10 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
@@ -34,7 +35,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(NEW_SOURCE_SYSTEM).execute();
+    context.truncate(SOURCE_SYSTEM).execute();
   }
 
   @Test
@@ -56,12 +57,13 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     // Given
     var originalRecord = givenSourceSystemRecord();
     postSourceSystem(List.of(originalRecord));
-    var updatedRecord = new SourceSystemRecord(HANDLE, CREATED, null, new SourceSystem(
-        "new name",
-        SS_ENDPOINT,
-        OBJECT_DESCRIPTION,
-        HANDLE_ALT
-    ));
+    var updatedRecord = new SourceSystemRecord(HANDLE, 1, OBJECT_CREATOR, CREATED, null,
+        new SourceSystem(
+            "new name",
+            SS_ENDPOINT,
+            OBJECT_DESCRIPTION,
+            HANDLE_ALT
+        ));
 
     // When
     repository.updateSourceSystem(updatedRecord);
@@ -88,7 +90,8 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetSourceSystemByIdWasDeleted() {
     // Given
-    var expected = new SourceSystemRecord(HANDLE, CREATED, CREATED, givenSourceSystem());
+    var expected = new SourceSystemRecord(HANDLE, 1, OBJECT_CREATOR, CREATED, CREATED,
+        givenSourceSystem());
     postSourceSystem(List.of(expected));
 
     // When
@@ -160,9 +163,9 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   void testGetActiveSourceSystemWasDeleted() {
     var sourceSystemRecord = givenSourceSystemRecord();
     postSourceSystem(List.of(sourceSystemRecord));
-    context.update(NEW_SOURCE_SYSTEM)
-        .set(NEW_SOURCE_SYSTEM.DELETED, CREATED)
-        .where(NEW_SOURCE_SYSTEM.ID.eq(HANDLE))
+    context.update(SOURCE_SYSTEM)
+        .set(SOURCE_SYSTEM.DELETED, CREATED)
+        .where(SOURCE_SYSTEM.ID.eq(HANDLE))
         .execute();
 
     // When
@@ -172,8 +175,22 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     assertThat(result).isEmpty();
   }
 
+  @Test
+  void testRollback() {
+    // Given
+    var sourceSystemRecord = givenSourceSystemRecord();
+    postSourceSystem(List.of(sourceSystemRecord));
+
+    // When
+    repository.rollbackSourceSystemCreation(HANDLE);
+
+    // Then
+    var result = repository.getSourceSystem(HANDLE);
+    assertThat(result).isNull();
+  }
+
   private SourceSystemRecord givenSourceSystemRecordWithId(int id) {
-    return new SourceSystemRecord(String.valueOf(id), CREATED, null,
+    return new SourceSystemRecord(String.valueOf(id), 1, OBJECT_CREATOR, CREATED, null,
         givenSourceSystemWithId(id + "a"));
   }
 
@@ -187,44 +204,48 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   private List<SourceSystemRecord> getAllSourceSystems() {
-    return context.select(NEW_SOURCE_SYSTEM.asterisk())
-        .from(NEW_SOURCE_SYSTEM)
+    return context.select(SOURCE_SYSTEM.asterisk())
+        .from(SOURCE_SYSTEM)
         .fetch(this::mapToSourceSystemRecord);
   }
 
   private Instant getDeleted(String id) {
-    return context.select(NEW_SOURCE_SYSTEM.ID, NEW_SOURCE_SYSTEM.DELETED)
-        .from(NEW_SOURCE_SYSTEM)
-        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+    return context.select(SOURCE_SYSTEM.ID, SOURCE_SYSTEM.DELETED)
+        .from(SOURCE_SYSTEM)
+        .where(SOURCE_SYSTEM.ID.eq(id))
         .fetchOne(this::getInstantDeleted);
   }
 
   private Instant getInstantDeleted(Record dbRecord) {
-    return dbRecord.get(NEW_SOURCE_SYSTEM.DELETED);
+    return dbRecord.get(SOURCE_SYSTEM.DELETED);
   }
 
   private SourceSystemRecord mapToSourceSystemRecord(Record row) {
     return new SourceSystemRecord(
-        row.get(NEW_SOURCE_SYSTEM.ID),
-        row.get(NEW_SOURCE_SYSTEM.CREATED),
+        row.get(SOURCE_SYSTEM.ID),
+        row.get(SOURCE_SYSTEM.VERSION),
+        row.get(SOURCE_SYSTEM.CREATOR),
+        row.get(SOURCE_SYSTEM.CREATED),
         null, new SourceSystem(
-        row.get(NEW_SOURCE_SYSTEM.NAME),
-        row.get(NEW_SOURCE_SYSTEM.ENDPOINT),
-        row.get(NEW_SOURCE_SYSTEM.DESCRIPTION),
-        row.get(NEW_SOURCE_SYSTEM.MAPPING_ID)));
+        row.get(SOURCE_SYSTEM.NAME),
+        row.get(SOURCE_SYSTEM.ENDPOINT),
+        row.get(SOURCE_SYSTEM.DESCRIPTION),
+        row.get(SOURCE_SYSTEM.MAPPING_ID)));
   }
 
   private void postSourceSystem(List<SourceSystemRecord> ssRecords) {
     List<Query> queryList = new ArrayList<>();
     for (var sourceSystemRecord : ssRecords) {
-      queryList.add(context.insertInto(NEW_SOURCE_SYSTEM)
-          .set(NEW_SOURCE_SYSTEM.ID, sourceSystemRecord.id())
-          .set(NEW_SOURCE_SYSTEM.NAME, sourceSystemRecord.sourceSystem().name())
-          .set(NEW_SOURCE_SYSTEM.ENDPOINT, sourceSystemRecord.sourceSystem().endpoint())
-          .set(NEW_SOURCE_SYSTEM.DESCRIPTION, sourceSystemRecord.sourceSystem().description())
-          .set(NEW_SOURCE_SYSTEM.MAPPING_ID, sourceSystemRecord.sourceSystem().mappingId())
-          .set(NEW_SOURCE_SYSTEM.DELETED, sourceSystemRecord.deleted())
-          .set(NEW_SOURCE_SYSTEM.CREATED, sourceSystemRecord.created()));
+      queryList.add(context.insertInto(SOURCE_SYSTEM)
+          .set(SOURCE_SYSTEM.ID, sourceSystemRecord.id())
+          .set(SOURCE_SYSTEM.VERSION, sourceSystemRecord.version())
+          .set(SOURCE_SYSTEM.CREATOR, sourceSystemRecord.creator())
+          .set(SOURCE_SYSTEM.NAME, sourceSystemRecord.sourceSystem().name())
+          .set(SOURCE_SYSTEM.ENDPOINT, sourceSystemRecord.sourceSystem().endpoint())
+          .set(SOURCE_SYSTEM.DESCRIPTION, sourceSystemRecord.sourceSystem().description())
+          .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystemRecord.sourceSystem().mappingId())
+          .set(SOURCE_SYSTEM.DELETED, sourceSystemRecord.deleted())
+          .set(SOURCE_SYSTEM.CREATED, sourceSystemRecord.created()));
     }
     context.batch(queryList).execute();
   }

@@ -46,7 +46,11 @@ public class TestUtils {
   }
 
   public static JsonApiWrapper givenSourceSystemSingleJsonApiWrapper() {
-    var sourceSystemRecord = givenSourceSystemRecord();
+    return givenSourceSystemSingleJsonApiWrapper(1);
+  }
+
+  public static JsonApiWrapper givenSourceSystemSingleJsonApiWrapper(int version) {
+    var sourceSystemRecord = givenSourceSystemRecord(version);
     return new JsonApiWrapper(new JsonApiData(
         sourceSystemRecord.id(),
         HandleType.SOURCE_SYSTEM,
@@ -68,7 +72,11 @@ public class TestUtils {
   }
 
   public static JsonApiWrapper givenMappingSingleJsonApiWrapper() {
-    var mappingRecord = givenMappingRecord(HANDLE, 1);
+    return givenMappingSingleJsonApiWrapper(1);
+  }
+
+  public static JsonApiWrapper givenMappingSingleJsonApiWrapper(int version) {
+    var mappingRecord = givenMappingRecord(HANDLE, version);
     return new JsonApiWrapper(new JsonApiData(
         mappingRecord.id(),
         HandleType.MAPPING,
@@ -95,8 +103,14 @@ public class TestUtils {
   }
 
   public static SourceSystemRecord givenSourceSystemRecord() {
+    return givenSourceSystemRecord(1);
+  }
+
+  public static SourceSystemRecord givenSourceSystemRecord(int version) {
     return new SourceSystemRecord(
         HANDLE,
+        version,
+        OBJECT_CREATOR,
         CREATED,
         null, givenSourceSystem()
     );
@@ -130,6 +144,7 @@ public class TestUtils {
   public static JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord) {
     var sourceSystemNode = (ObjectNode) MAPPER.valueToTree(sourceSystemRecord.sourceSystem());
     sourceSystemNode.put("created", sourceSystemRecord.created().toString());
+    sourceSystemNode.put("version", sourceSystemRecord.version());
     if (sourceSystemRecord.deleted() != null) {
       sourceSystemNode.put("deleted", sourceSystemRecord.deleted().toString());
     }

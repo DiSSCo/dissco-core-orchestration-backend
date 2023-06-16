@@ -6,8 +6,8 @@ package eu.dissco.orchestration.backend.database.jooq;
 
 import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
 import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
-import eu.dissco.orchestration.backend.database.jooq.tables.NewMapping;
-import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
+import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
+import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 
 
 /**
@@ -27,12 +27,12 @@ public class Tables {
     public static final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
 
     /**
-     * The table <code>public.new_mapping</code>.
+     * The table <code>public.mapping</code>.
      */
-    public static final NewMapping NEW_MAPPING = NewMapping.NEW_MAPPING;
+    public static final Mapping MAPPING = Mapping.MAPPING;
 
     /**
-     * The table <code>public.new_source_system</code>.
+     * The table <code>public.source_system</code>.
      */
-    public static final NewSourceSystem NEW_SOURCE_SYSTEM = NewSourceSystem.NEW_SOURCE_SYSTEM;
+    public static final SourceSystem SOURCE_SYSTEM = SourceSystem.SOURCE_SYSTEM;
 }

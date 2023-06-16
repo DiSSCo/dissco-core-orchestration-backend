@@ -8,6 +8,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,11 +43,12 @@ public class SourceSystemController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException, NotFoundException {
+      throws TransformerException, JsonProcessingException, NotFoundException, ProcessingFailedException {
     var sourceSystem = getSourceSystemFromRequest(requestBody);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    log.info("Received create request for request: {}", sourceSystem);
-    var result = service.createSourceSystem(sourceSystem, path);
+    var userId = authentication.getName();
+    log.info("Received create request for source system: {} from user: {}", sourceSystem, userId);
+    var result = service.createSourceSystem(sourceSystem, userId, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
@@ -54,12 +56,13 @@ public class SourceSystemController {
   public ResponseEntity<JsonApiWrapper> updateSourceSystem(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException {
+      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
     var sourceSystem = getSourceSystemFromRequest(requestBody);
     var id = prefix + '/' + suffix;
-    log.info("Received update request for source system: {}", id);
+    var userId = authentication.getName();
+    log.info("Received update request for source system: {} from user: {}", id, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateSourceSystem(id, sourceSystem, path);
+    var result = service.updateSourceSystem(id, sourceSystem, userId, path);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {
@@ -69,9 +72,11 @@ public class SourceSystemController {
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteSourceSystem(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) throws NotFoundException {
+  public ResponseEntity<Void> deleteSourceSystem(Authentication authentication,
+      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix) throws NotFoundException {
     String id = prefix + "/" + postfix;
+    log.info("Received delete request for mapping: {} from user: {}", id,
+        authentication.getName());
     service.deleteSourceSystem(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
@@ -92,6 +97,8 @@ public class SourceSystemController {
       @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest servletRequest) {
+    log.info("Received get request for source system with pageNumber: {} and pageSzie: {}: ", pageNum,
+        pageSize);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK)
         .body(service.getSourceSystemRecords(pageNum, pageSize, path));

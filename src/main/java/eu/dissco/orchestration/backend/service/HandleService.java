@@ -37,6 +37,7 @@ public class HandleService {
   private final DocumentBuilder documentBuilder;
   private final HandleRepository repository;
   private final ApplicationProperties appProperties;
+  private final TransformerFactory tfFactory;
 
   public String createNewHandle(HandleType type)
       throws TransformerException {
@@ -97,8 +98,7 @@ public class HandleService {
   }
 
   private String documentToString(Document document) throws TransformerException {
-    var tf = TransformerFactory.newInstance();
-    var transformer = tf.newTransformer();
+    var transformer = tfFactory.newTransformer();
     transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
     StringWriter writer = new StringWriter();
     transformer.transform(new DOMSource(document), new StreamResult(writer));
@@ -148,4 +148,8 @@ public class HandleService {
     return Character.digit(hexChar, 16);
   }
 
+  public void rollbackHandleCreation(String pid) {
+    log.error("Rolling back handle creation of handle: {}", pid);
+    repository.rollbackHandleCreation(pid);
+  }
 }

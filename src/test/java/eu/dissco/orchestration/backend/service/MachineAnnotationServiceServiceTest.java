@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.service;
 
+import static eu.dissco.orchestration.backend.service.MachineAnnotationServiceService.SUBJECT_TYPE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
@@ -13,14 +14,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mockStatic;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -42,20 +49,25 @@ class MachineAnnotationServiceServiceTest {
   private HandleService handleService;
   @Mock
   private MachineAnnotationServiceRepository repository;
+  @Mock
+  private KafkaPublisherService kafkaPublisherService;
 
   private MachineAnnotationServiceService service;
 
   private MockedStatic<Instant> mockedStatic;
+  private MockedStatic<Clock> mockedClock;
 
   @BeforeEach
   void setup() {
     initTime();
-    service = new MachineAnnotationServiceService(handleService, repository, MAPPER);
+    service = new MachineAnnotationServiceService(handleService, kafkaPublisherService, repository,
+        MAPPER);
   }
 
   @AfterEach
   void destroy() {
     mockedStatic.close();
+    mockedClock.close();
   }
 
   @Test
@@ -70,6 +82,28 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(repository).should().createMachineAnnotationService(givenMasRecord());
+    then(kafkaPublisherService).should()
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()), SUBJECT_TYPE);
+  }
+
+  @Test
+  void testCreateMasKafkaFails() throws Exception {
+    // Given
+    var mas = givenMas();
+    given(handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE)).willReturn(HANDLE);
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()),
+            SUBJECT_TYPE);
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+
+    // Then
+    then(repository).should().createMachineAnnotationService(givenMasRecord());
+    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(repository).should().rollbackMasCreation(HANDLE);
   }
 
   @Test
@@ -85,6 +119,41 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(repository).should().updateMachineAnnotationService(givenMasRecord(2));
+    then(kafkaPublisherService).should()
+        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord(2)), givenJsonPatch(), SUBJECT_TYPE);
+  }
+
+  @Test
+  void testUpdateMasKafkaFails() throws Exception {
+    // Given
+    var prevRecord = buildOptionalPrevRecord();
+    var mas = givenMas();
+    given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(prevRecord);
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord(2)), givenJsonPatch(),
+            SUBJECT_TYPE);
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.updateMachineAnnotationService(HANDLE, mas, OBJECT_CREATOR, MAS_PATH));
+
+    // Then
+    then(repository).should().updateMachineAnnotationService(givenMasRecord(2));
+    then(repository).should().updateMachineAnnotationService(prevRecord.get());
+  }
+
+  private JsonNode givenJsonPatch() throws JsonProcessingException {
+    return MAPPER.readTree("[{\"op\":\"replace\",\"path\":\"/sourceCodeRepository\","
+        + "\"value\":null},{\"op\":\"replace\",\"path\":\"/supportContact\",\"value\":null},"
+        + "{\"op\":\"replace\",\"path\":\"/dependencies\",\"value\":null},{\"op\":\"replace\","
+        + "\"path\":\"/slaDocumentation\",\"value\":null},{\"op\":\"replace\","
+        + "\"path\":\"/codeLicense\",\"value\":null},{\"op\":\"replace\",\"path\":\"/serviceState\""
+        + ",\"value\":null},{\"op\":\"replace\",\"path\":\"/name\",\"value\":\"Another name\"}"
+        + ",{\"op\":\"replace\",\"path\":\"/codeMaintainer\",\"value\":null},{\"op\":\"replace\","
+        + "\"path\":\"/serviceAvailability\",\"value\":null},{\"op\":\"replace\","
+        + "\"path\":\"/serviceDescription\",\"value\":null},{\"op\":\"replace\","
+        + "\"path\":\"/containerTag\",\"value\":\"less-fancy\"}]");
   }
 
   @Test
@@ -92,7 +161,8 @@ class MachineAnnotationServiceServiceTest {
     // Given
     var expected = givenMasSingleJsonApiWrapper(2);
     var mas = givenMas();
-    given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(Optional.of(givenMasRecord()));
+    given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
+        Optional.of(givenMasRecord()));
 
     // When
     var result = service.updateMachineAnnotationService(HANDLE, mas, OBJECT_CREATOR, MAS_PATH);
@@ -195,6 +265,8 @@ class MachineAnnotationServiceServiceTest {
 
   private void initTime() {
     Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
+    mockedClock = mockStatic(Clock.class);
+    mockedClock.when(Clock::systemUTC).thenReturn(clock);
     Instant instant = Instant.now(clock);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);

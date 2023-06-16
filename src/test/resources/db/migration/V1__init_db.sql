@@ -1,26 +1,31 @@
-CREATE TABLE public.new_source_system (
-	id text NOT NULL,
-	"name" text NOT NULL,
-	endpoint text NOT NULL,
-	description text NULL,
-	created timestamptz NOT NULL,
-	deleted timestamptz NULL,
-	mapping_id text NOT NULL,
-	CONSTRAINT new_source_system_endpoint_key UNIQUE (endpoint),
-	CONSTRAINT new_source_system_pkey PRIMARY KEY (id)
+create table source_system
+(
+    id text not null
+        constraint new_source_system_pkey
+            primary key,
+    name text not null,
+    endpoint text not null,
+    description text,
+    created timestamp with time zone not null,
+    deleted timestamp with time zone,
+    mapping_id text not null,
+    version integer not null,
+    creator text not null
 );
 
-CREATE TABLE public.new_mapping (
-	id text NOT NULL,
-	"version" int4 NOT NULL,
-	"name" text NOT NULL,
-	description text NULL,
-	"mapping" jsonb NOT NULL,
-	created timestamptz NOT NULL,
-	creator text NOT NULL,
-	deleted timestamptz NULL,
-	sourcedatastandard varchar NOT NULL,
-	CONSTRAINT new_mapping_pk PRIMARY KEY (id, version)
+create table mapping
+(
+    id text not null,
+    version integer not null,
+    name text not null,
+    description text,
+    mapping jsonb not null,
+    created timestamp with time zone not null,
+    creator text not null,
+    deleted timestamp with time zone,
+    sourcedatastandard varchar not null,
+    constraint new_mapping_pk
+        primary key (id, version)
 );
 
 create table machine_annotation_services

@@ -1,12 +1,14 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MAPPING;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.MAPPING;
 import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -24,77 +26,98 @@ public class MappingRepository {
   private final DSLContext context;
 
   public void createMapping(MappingRecord mappingRecord) {
-    try {
-      context.insertInto(NEW_MAPPING)
-          .set(NEW_MAPPING.ID, mappingRecord.id())
-          .set(NEW_MAPPING.VERSION, mappingRecord.version())
-          .set(NEW_MAPPING.NAME, mappingRecord.mapping().name())
-          .set(NEW_MAPPING.DESCRIPTION, mappingRecord.mapping().description())
-          .set(NEW_MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard())
-          .set(NEW_MAPPING.MAPPING,
-              JSONB.valueOf(mapper.writeValueAsString(mappingRecord.mapping().mapping())))
-          .set(NEW_MAPPING.CREATED, mappingRecord.created())
-          .set(NEW_MAPPING.CREATOR, mappingRecord.creator())
-          .execute();
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    context.insertInto(MAPPING)
+        .set(MAPPING.ID, mappingRecord.id())
+        .set(MAPPING.VERSION, mappingRecord.version())
+        .set(MAPPING.NAME, mappingRecord.mapping().name())
+        .set(MAPPING.DESCRIPTION, mappingRecord.mapping().description())
+        .set(MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard())
+        .set(MAPPING.MAPPING_, JSONB.valueOf(mappingRecord.mapping().mapping().toString()))
+        .set(MAPPING.CREATED, mappingRecord.created())
+        .set(MAPPING.CREATOR, mappingRecord.creator())
+        .execute();
   }
 
+  public void updateMapping(MappingRecord mappingRecord) {
+    context.update(MAPPING)
+        .set(MAPPING.VERSION, mappingRecord.version())
+        .set(MAPPING.NAME, mappingRecord.mapping().name())
+        .set(MAPPING.DESCRIPTION, mappingRecord.mapping().description())
+        .set(MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard())
+        .set(MAPPING.MAPPING_,
+            JSONB.valueOf(mappingRecord.mapping().mapping().toString()))
+        .set(MAPPING.CREATED, mappingRecord.created())
+        .set(MAPPING.CREATOR, mappingRecord.creator())
+        .where(MAPPING.ID.eq(mappingRecord.id()))
+        .execute();
+  }
+
+
   public MappingRecord getMapping(String id) {
-    return context.select(NEW_MAPPING.asterisk())
-        .distinctOn(NEW_MAPPING.ID)
-        .from(NEW_MAPPING)
-        .where(NEW_MAPPING.ID.eq(id))
-        .orderBy(NEW_MAPPING.ID, NEW_MAPPING.VERSION.desc())
+    return context.select(MAPPING.asterisk())
+        .distinctOn(MAPPING.ID)
+        .from(MAPPING)
+        .where(MAPPING.ID.eq(id))
+        .orderBy(MAPPING.ID, MAPPING.VERSION.desc())
         .fetchOne(this::mapToMappingRecord);
   }
 
   public Optional<MappingRecord> getActiveMapping(String id) {
-    return context.select(NEW_MAPPING.asterisk())
-        .distinctOn(NEW_MAPPING.ID)
-        .from(NEW_MAPPING)
-        .where(NEW_MAPPING.ID.eq(id))
-        .and(NEW_MAPPING.DELETED.isNull())
-        .orderBy(NEW_MAPPING.ID, NEW_MAPPING.VERSION.desc())
+    return context.select(MAPPING.asterisk())
+        .distinctOn(MAPPING.ID)
+        .from(MAPPING)
+        .where(MAPPING.ID.eq(id))
+        .and(MAPPING.DELETED.isNull())
+        .orderBy(MAPPING.ID, MAPPING.VERSION.desc())
         .fetchOptional(this::mapToMappingRecord);
   }
 
   public List<MappingRecord> getMappings(int pageNum, int pageSize) {
     int offset = getOffset(pageNum, pageSize);
 
-    return context.select(NEW_MAPPING.asterisk())
-        .from(NEW_MAPPING)
-        .where(NEW_MAPPING.DELETED.isNull())
+    return context.select(MAPPING.asterisk())
+        .from(MAPPING)
+        .where(MAPPING.DELETED.isNull())
         .offset(offset)
         .limit(pageSize + 1)
         .fetch(this::mapToMappingRecord);
   }
 
   public void deleteMapping(String id, Instant deleted) {
-    context.update(NEW_MAPPING)
-        .set(NEW_MAPPING.DELETED, deleted)
-        .where(NEW_MAPPING.ID.eq(id))
+    context.update(MAPPING)
+        .set(MAPPING.DELETED, deleted)
+        .where(MAPPING.ID.eq(id))
         .execute();
   }
 
   private MappingRecord mapToMappingRecord(Record dbRecord) {
+    var mapping = new Mapping(
+        dbRecord.get(MAPPING.NAME),
+        dbRecord.get(MAPPING.DESCRIPTION),
+        mapToJson(dbRecord.get(MAPPING.MAPPING_)),
+        dbRecord.get(MAPPING.SOURCEDATASTANDARD));
+    return new MappingRecord(
+        dbRecord.get(MAPPING.ID),
+        dbRecord.get(MAPPING.VERSION),
+        dbRecord.get(MAPPING.CREATED),
+        dbRecord.get(MAPPING.DELETED),
+        dbRecord.get(MAPPING.CREATOR),
+        mapping
+    );
+  }
+
+  private JsonNode mapToJson(JSONB jsonb) {
     try {
-      var mapping = new Mapping(
-          dbRecord.get(NEW_MAPPING.NAME),
-          dbRecord.get(NEW_MAPPING.DESCRIPTION),
-          mapper.readTree(dbRecord.get(NEW_MAPPING.MAPPING).data()),
-          dbRecord.get(NEW_MAPPING.SOURCEDATASTANDARD));
-      return new MappingRecord(
-          dbRecord.get(NEW_MAPPING.ID),
-          dbRecord.get(NEW_MAPPING.VERSION),
-          dbRecord.get(NEW_MAPPING.CREATED),
-          dbRecord.get(NEW_MAPPING.DELETED),
-          dbRecord.get(NEW_MAPPING.CREATOR),
-          mapping
-      );
+      return mapper.readTree(jsonb.data());
     } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
+      throw new DisscoJsonBMappingException("Failed to parse jsonb field to json: " + jsonb.data(),
+          e);
     }
+  }
+
+  public void rollbackMappingCreation(String id) {
+    context.deleteFrom(MAPPING)
+        .where(MAPPING.ID.eq(id))
+        .execute();
   }
 }

@@ -138,7 +138,7 @@ class MappingControllerTest {
   @Test
   void testDeleteSourceSystem() throws Exception {
     // When
-    var result = controller.deleteMapping(PREFIX, SUFFIX);
+    var result = controller.deleteMapping(authentication, PREFIX, SUFFIX);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
