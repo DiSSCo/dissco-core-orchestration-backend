@@ -43,6 +43,8 @@ public class MappingController {
   private final MappingService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
+  private static final ArrayList<String> SOURCE_DATA_SYSTEMS = new ArrayList<>(
+      List.of("dwc", "abcd", "abcdefg"));
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
@@ -119,7 +121,7 @@ public class MappingController {
   }
 
   private void checkSourceStandard(Mapping mapping) {
-    if (!sourceDataSystems.contains(mapping.sourceDataStandard())) {
+    if (!SOURCE_DATA_SYSTEMS.contains(mapping.sourceDataStandard())) {
       throw new IllegalArgumentException(
           "Invalid source data standard" + mapping.sourceDataStandard());
     }
