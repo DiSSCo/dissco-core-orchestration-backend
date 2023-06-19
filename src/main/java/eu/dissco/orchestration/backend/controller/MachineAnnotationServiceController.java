@@ -79,11 +79,11 @@ public class MachineAnnotationServiceController {
 
   @PreAuthorize("isAuthenticated()")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> deleteMachineAnnotationService(Authentication authentication,
-      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix)
+      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException {
-    String id = prefix + "/" + postfix;
+    String id = prefix + "/" + suffix;
     log.info("Received delete request for machine annotation service: {} from user: {}", id,
         authentication.getName());
     service.deleteMachineAnnotationService(id);
@@ -91,11 +91,11 @@ public class MachineAnnotationServiceController {
   }
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> getMachineAnnotationService(
-      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix,
+      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       HttpServletRequest servletRequest) {
-    var id = prefix + '/' + postfix;
+    var id = prefix + '/' + suffix;
     log.info("Received get request for machine annotation service with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var result = service.getMachineAnnotationService(id, path);

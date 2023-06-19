@@ -75,11 +75,11 @@ public class MappingController {
   }
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> deleteMapping(Authentication authentication,
-      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix)
+      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException {
-    String id = prefix + "/" + postfix;
+    String id = prefix + "/" + suffix;
     log.info("Received delete request for mapping: {} from user: {}", id,
         authentication.getName());
     service.deleteMapping(id);
@@ -87,10 +87,10 @@ public class MappingController {
   }
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> getMappingById(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix, HttpServletRequest servletRequest) {
-    var id = prefix + '/' + postfix;
+      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest) {
+    var id = prefix + '/' + suffix;
     log.info("Received get request for mapping with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var mapping = service.getMappingById(id, path);
