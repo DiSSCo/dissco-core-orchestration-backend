@@ -36,7 +36,7 @@ public class TranslatorController {
     try {
       return ResponseEntity.ok(service.getAll());
     } catch (ApiException e) {
-      log.error( ERROR_MSG, e.getResponseBody());
+      log.error(ERROR_MSG, e.getResponseBody());
       return new ResponseEntity<>(HttpStatus.valueOf(e.getCode()));
     }
   }

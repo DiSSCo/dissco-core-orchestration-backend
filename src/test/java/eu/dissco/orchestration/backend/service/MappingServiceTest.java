@@ -83,7 +83,8 @@ class MappingServiceTest {
     // Given
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode(),
         "dwc");
-    var prevRecord = Optional.of(new MappingRecord(HANDLE, 0, CREATED, null, OBJECT_CREATOR, prevMapping));
+    var prevRecord = Optional.of(
+        new MappingRecord(HANDLE, 0, CREATED, null, OBJECT_CREATOR, prevMapping));
     var mapping = givenMapping();
     var expected = givenMappingSingleJsonApiWrapper();
 
@@ -118,7 +119,7 @@ class MappingServiceTest {
 
     // Then
     assertThrows(NotFoundException.class,
-        () -> service.updateMapping(HANDLE, givenMapping(),OBJECT_CREATOR , OBJECT_CREATOR));
+        () -> service.updateMapping(HANDLE, givenMapping(), OBJECT_CREATOR, OBJECT_CREATOR));
   }
 
 
@@ -139,7 +140,8 @@ class MappingServiceTest {
   @Test
   void testGetMappingByIdIsDeleted() {
     // Given
-    var mappingRecord = new MappingRecord(HANDLE,1, CREATED, CREATED, OBJECT_CREATOR, givenMapping());
+    var mappingRecord = new MappingRecord(HANDLE, 1, CREATED, CREATED, OBJECT_CREATOR,
+        givenMapping());
     given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
     var expected = new JsonApiWrapper(
         new JsonApiData(HANDLE, HandleType.MAPPING, flattenMappingRecord(mappingRecord)),
@@ -155,7 +157,8 @@ class MappingServiceTest {
   @Test
   void testDeleteMapping() {
     // Given
-    given(repository.getActiveMapping(HANDLE)).willReturn(Optional.of(givenMappingRecord(HANDLE, 1)));
+    given(repository.getActiveMapping(HANDLE)).willReturn(
+        Optional.of(givenMappingRecord(HANDLE, 1)));
 
     // Then
     assertDoesNotThrow(() -> service.deleteMapping(HANDLE));
@@ -177,7 +180,7 @@ class MappingServiceTest {
     int pageNum = 1;
     List<MappingRecord> mappingRecords = Collections.nCopies(pageSize + 1,
         givenMappingRecord(HANDLE, 1));
-    given(repository.getMappings(pageNum, pageSize + 1)).willReturn(mappingRecords);
+    given(repository.getMappings(pageNum, pageSize)).willReturn(mappingRecords);
     var linksNode = new JsonApiLinks(pageSize, pageNum, true, SANDBOX_URI);
     var expected = givenMappingRecordResponse(mappingRecords.subList(0, pageSize), linksNode);
 
@@ -195,7 +198,7 @@ class MappingServiceTest {
     int pageNum = 2;
     List<MappingRecord> mappingRecords = Collections.nCopies(pageSize,
         givenMappingRecord(HANDLE, 1));
-    given(repository.getMappings(pageNum, pageSize + 1)).willReturn(mappingRecords);
+    given(repository.getMappings(pageNum, pageSize)).willReturn(mappingRecords);
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, SANDBOX_URI);
     var expected = givenMappingRecordResponse(mappingRecords, linksNode);
 

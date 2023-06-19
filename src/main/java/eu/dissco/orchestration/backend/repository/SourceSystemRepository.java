@@ -54,7 +54,7 @@ public class SourceSystemRepository {
         .fetchOptional(this::mapToSourceSystemRecord);
   }
 
-  public void deleteSourceSystem(String id, Instant deleted){
+  public void deleteSourceSystem(String id, Instant deleted) {
     context.update(NEW_SOURCE_SYSTEM)
         .set(NEW_SOURCE_SYSTEM.DELETED, deleted)
         .where(NEW_SOURCE_SYSTEM.ID.eq(id))
@@ -66,7 +66,7 @@ public class SourceSystemRepository {
     return context.select(NEW_SOURCE_SYSTEM.asterisk())
         .from(NEW_SOURCE_SYSTEM)
         .where(NEW_SOURCE_SYSTEM.DELETED.isNull())
-        .limit(pageSize)
+        .limit(pageSize + 1)
         .offset(offset)
         .fetch(this::mapToSourceSystemRecord);
   }

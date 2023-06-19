@@ -13,10 +13,7 @@
     <database>
       <name>org.jooq.meta.postgres.PostgresDatabase</name>
       <inputSchema>public</inputSchema>
-      <includes>
-        new_mapping |
-        new_source_system
-      </includes>
+      <includes>new_mapping | new_source_system | handles | machine_annotation_services</includes>
       <forcedTypes>
         <forcedType>
           <name>INSTANT</name>
@@ -25,7 +22,7 @@
       </forcedTypes>
     </database>
     <target>
-      <packageName>eu.dissco.backend.database.jooq</packageName>
+      <packageName>eu.dissco.orchestration.backend.database.jooq</packageName>
       <directory>src/main/java</directory>
     </target>
   </generator>

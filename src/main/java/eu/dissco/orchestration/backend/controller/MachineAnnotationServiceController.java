@@ -3,13 +3,13 @@ package eu.dissco.orchestration.backend.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.HandleType;
-import eu.dissco.orchestration.backend.domain.SourceSystem;
+import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
-import eu.dissco.orchestration.backend.service.SourceSystemService;
+import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
 import jakarta.servlet.http.HttpServletRequest;
 import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,35 +32,45 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("/source-system")
 @RequiredArgsConstructor
-public class SourceSystemController {
+@RequestMapping("/mas")
+public class MachineAnnotationServiceController {
 
-  private final SourceSystemService service;
+  private final MachineAnnotationServiceService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
-
+  
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> createMachineAnnotationService(
+      Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException, NotFoundException {
-    var sourceSystem = getSourceSystemFromRequest(requestBody);
+      throws TransformerException, JsonProcessingException {
+    var machineAnnotationService = getMachineAnnotation(requestBody);
+    var userId = getUserId(authentication);
+    log.info("Received create request for machine annotation service: {} from user: {}",
+        machineAnnotationService, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    log.info("Received create request for request: {}", sourceSystem);
-    var result = service.createSourceSystem(sourceSystem, path);
+    var result = service.createMachineAnnotationService(machineAnnotationService, userId, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
+  private String getUserId(Authentication authentication) {
+    return authentication.getName();
+  }
+
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> updateSourceSystem(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> updateMachineAnnotationService(
+      Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException, NotFoundException {
-    var sourceSystem = getSourceSystemFromRequest(requestBody);
+    var machineAnnotationService = getMachineAnnotation(requestBody);
+    var userId = getUserId(authentication);
     var id = prefix + '/' + suffix;
-    log.info("Received update request for source system: {}", id);
+    log.info("Received update request for machine annotation service: {} from user: {}", id,
+        userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateSourceSystem(id, sourceSystem, path);
+    var result = service.updateMachineAnnotationService(id, machineAnnotationService, userId, path);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {
@@ -69,39 +80,45 @@ public class SourceSystemController {
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteSourceSystem(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) throws NotFoundException {
+  public ResponseEntity<Void> deleteMachineAnnotationService(Authentication authentication,
+      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix)
+      throws NotFoundException {
     String id = prefix + "/" + postfix;
-    service.deleteSourceSystem(id);
+    log.info("Received delete request for machine annotation service: {} from user: {}", id,
+        getUserId(authentication));
+    service.deleteMachineAnnotationService(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> getSourceSystemById(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix, HttpServletRequest servletRequest) {
+  public ResponseEntity<JsonApiWrapper> getMachineAnnotationService(
+      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix,
+      HttpServletRequest servletRequest) {
     var id = prefix + '/' + postfix;
-    log.info("Received get request for source system with id: {}", id);
+    log.info("Received get request for machine annotation service with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var sourceSystem = service.getSourceSystemById(id, path);
-    return ResponseEntity.ok(sourceSystem);
+    var result = service.getMachineAnnotationService(id, path);
+    return ResponseEntity.ok(result);
   }
 
   @GetMapping("")
-  public ResponseEntity<JsonApiListWrapper> getSourceSystems(
+  public ResponseEntity<JsonApiListWrapper> getMachineAnnotationServices(
       @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest servletRequest) {
+    log.info("Received get request for machine annotation services");
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK)
-        .body(service.getSourceSystemRecords(pageNum, pageSize, path));
+        .body(service.getMachineAnnotationServices(pageNum, pageSize, path));
   }
 
-  private SourceSystem getSourceSystemFromRequest(JsonApiRequestWrapper requestBody)
+  private MachineAnnotationService getMachineAnnotation(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
-    if (!requestBody.data().type().equals(HandleType.SOURCE_SYSTEM)) {
+    if (!requestBody.data().type().equals(HandleType.MACHINE_ANNOTATION_SERVICE)) {
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(), SourceSystem.class);
+    return mapper.treeToValue(requestBody.data().attributes(), MachineAnnotationService.class);
   }
+
 }

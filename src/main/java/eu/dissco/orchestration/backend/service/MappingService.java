@@ -29,18 +29,21 @@ public class MappingService {
   private final MappingRepository repository;
   private final ObjectMapper mapper;
 
-  public JsonApiWrapper createMapping(Mapping mapping, String userId, String path) throws TransformerException {
+  public JsonApiWrapper createMapping(Mapping mapping, String userId, String path)
+      throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.MAPPING);
     var mappingRecord = new MappingRecord(handle, 1, Instant.now(), null, userId, mapping);
     repository.createMapping(mappingRecord);
     return wrapSingleResponse(handle, mappingRecord, path);
   }
-  public JsonApiWrapper  updateMapping(String id, Mapping mapping, String userId, String path) throws NotFoundException{
+
+  public JsonApiWrapper updateMapping(String id, Mapping mapping, String userId, String path)
+      throws NotFoundException {
     var currentVersion = repository.getActiveMapping(id);
-    if (currentVersion.isEmpty()){
+    if (currentVersion.isEmpty()) {
       throw new NotFoundException("Requested mapping does not exist");
     }
-    if (!currentVersion.get().mapping().equals(mapping)){
+    if (!currentVersion.get().mapping().equals(mapping)) {
       var mappingRecord = new MappingRecord(id, currentVersion.get().version() + 1, Instant.now(),
           null, userId,
           mapping);
@@ -54,29 +57,29 @@ public class MappingService {
 
   public void deleteMapping(String id) throws NotFoundException {
     var result = repository.getActiveMapping(id);
-    if (result.isPresent()){
+    if (result.isPresent()) {
       Instant deleted = Instant.now();
       repository.deleteMapping(id, deleted);
+    } else {
+      throw new NotFoundException("Requested mapping " + id + " does not exist");
     }
-    else throw new NotFoundException("Requested mapping "+id +" does not exist");
   }
 
-  protected Optional<MappingRecord> getActiveMapping(String id){
+  protected Optional<MappingRecord> getActiveMapping(String id) {
     return repository.getActiveMapping(id);
   }
 
-  public JsonApiListWrapper getMappings(int pageNum, int pageSize, String//When
-     path){
-    var mappingRecords = repository.getMappings(pageNum, pageSize+1);
+  public JsonApiListWrapper getMappings(int pageNum, int pageSize, String path) {
+    var mappingRecords = repository.getMappings(pageNum, pageSize);
     return wrapResponse(mappingRecords, pageNum, pageSize, path);
   }
 
-  public JsonApiWrapper getMappingById(String id, String path){
+  public JsonApiWrapper getMappingById(String id, String path) {
     var mappingRecord = repository.getMapping(id);
     return wrapSingleResponse(id, mappingRecord, path);
   }
 
-  private JsonApiWrapper wrapSingleResponse(String id, MappingRecord mappingRecord, String path){
+  private JsonApiWrapper wrapSingleResponse(String id, MappingRecord mappingRecord, String path) {
     return new JsonApiWrapper(
         new JsonApiData(id, HandleType.MAPPING, flattenMappingRecord(mappingRecord)),
         new JsonApiLinks(path)
@@ -98,11 +101,11 @@ public class MappingService {
         .toList();
   }
 
-  private JsonNode flattenMappingRecord(MappingRecord mappingRecord){
+  private JsonNode flattenMappingRecord(MappingRecord mappingRecord) {
     var mappingNode = (ObjectNode) mapper.valueToTree(mappingRecord.mapping());
     mappingNode.put("version", mappingRecord.version());
     mappingNode.put("created", mappingRecord.created().toString());
-    if (mappingRecord.deleted() != null){
+    if (mappingRecord.deleted() != null) {
       mappingNode.put("deleted", mappingRecord.deleted().toString());
     }
     return mappingNode;

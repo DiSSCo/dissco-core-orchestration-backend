@@ -3,6 +3,7 @@ package eu.dissco.orchestration.backend.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.HandleAttribute;
 import eu.dissco.orchestration.backend.domain.HandleType;
+import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.repository.HandleRepository;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +36,7 @@ public class HandleService {
   private final ObjectMapper mapper;
   private final DocumentBuilder documentBuilder;
   private final HandleRepository repository;
+  private final ApplicationProperties appProperties;
 
   public String createNewHandle(HandleType type)
       throws TransformerException {
@@ -81,10 +83,13 @@ public class HandleService {
     var firstLocation = document.createElement("location");
     firstLocation.setAttribute("id", "0");
     if (type == HandleType.MAPPING) {
-      firstLocation.setAttribute("href", "https://sandbox.dissco.tech/orchestrator/mapping/" + handle);
+      firstLocation.setAttribute("href", appProperties.getBaseUrl() + "/mapping/" + handle);
+    } else if (type == HandleType.MACHINE_ANNOTATION_SERVICE) {
+      firstLocation.setAttribute("href", appProperties.getBaseUrl() + "/mas/" + handle);
+    } else if (type == HandleType.SOURCE_SYSTEM) {
+      firstLocation.setAttribute("href", appProperties.getBaseUrl() + "/source-systems/" + handle);
     } else {
-      firstLocation.setAttribute("href",
-          "https://sandbox.dissco.tech/orchestrator/source-systems/" + handle);
+      throw new UnsupportedOperationException("Type: " + type + " is not a valid handle type");
     }
     firstLocation.setAttribute("weight", "0");
     locations.appendChild(firstLocation);

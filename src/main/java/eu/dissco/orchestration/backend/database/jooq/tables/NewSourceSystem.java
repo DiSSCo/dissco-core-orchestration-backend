@@ -7,15 +7,19 @@ package eu.dissco.orchestration.backend.database.jooq.tables;
 import eu.dissco.orchestration.backend.database.jooq.Keys;
 import eu.dissco.orchestration.backend.database.jooq.Public;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.NewSourceSystemRecord;
+
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
+import java.util.function.Function;
+
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Function7;
 import org.jooq.Name;
 import org.jooq.Record;
+import org.jooq.Records;
 import org.jooq.Row7;
 import org.jooq.Schema;
+import org.jooq.SelectField;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.TableOptions;
@@ -116,17 +120,12 @@ public class NewSourceSystem extends TableImpl<NewSourceSystemRecord> {
 
     @Override
     public Schema getSchema() {
-        return Public.PUBLIC;
+        return aliased() ? null : Public.PUBLIC;
     }
 
     @Override
     public UniqueKey<NewSourceSystemRecord> getPrimaryKey() {
         return Keys.NEW_SOURCE_SYSTEM_PKEY;
-    }
-
-    @Override
-    public List<UniqueKey<NewSourceSystemRecord>> getKeys() {
-        return Arrays.<UniqueKey<NewSourceSystemRecord>>asList(Keys.NEW_SOURCE_SYSTEM_PKEY, Keys.NEW_SOURCE_SYSTEM_ENDPOINT_KEY);
     }
 
     @Override
@@ -137,6 +136,11 @@ public class NewSourceSystem extends TableImpl<NewSourceSystemRecord> {
     @Override
     public NewSourceSystem as(Name alias) {
         return new NewSourceSystem(alias, this);
+    }
+
+    @Override
+    public NewSourceSystem as(Table<?> alias) {
+        return new NewSourceSystem(alias.getQualifiedName(), this);
     }
 
     /**
@@ -155,6 +159,14 @@ public class NewSourceSystem extends TableImpl<NewSourceSystemRecord> {
         return new NewSourceSystem(name, null);
     }
 
+    /**
+     * Rename this table
+     */
+    @Override
+    public NewSourceSystem rename(Table<?> name) {
+        return new NewSourceSystem(name.getQualifiedName(), null);
+    }
+
     // -------------------------------------------------------------------------
     // Row7 type methods
     // -------------------------------------------------------------------------
@@ -162,5 +174,20 @@ public class NewSourceSystem extends TableImpl<NewSourceSystemRecord> {
     @Override
     public Row7<String, String, String, String, Instant, Instant, String> fieldsRow() {
         return (Row7) super.fieldsRow();
+    }
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     */
+    public <U> SelectField<U> mapping(Function7<? super String, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? extends U> from) {
+        return convertFrom(Records.mapping(from));
+    }
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Class,
+     * Function)}.
+     */
+    public <U> SelectField<U> mapping(Class<U> toType, Function7<? super String, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? extends U> from) {
+        return convertFrom(toType, Records.mapping(from));
     }
 }

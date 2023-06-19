@@ -6,7 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 public record Mapping(
     String name,
     String description,
-    @JsonProperty(value="fieldMapping")
+    @JsonProperty(value = "fieldMapping")
     JsonNode mapping,
     String sourceDataStandard) {
+
 }

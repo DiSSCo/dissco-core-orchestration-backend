@@ -5,10 +5,13 @@ package eu.dissco.orchestration.backend.database.jooq;
 
 
 import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
+import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
 import eu.dissco.orchestration.backend.database.jooq.tables.NewMapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
+
 import java.util.Arrays;
 import java.util.List;
+
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
@@ -31,6 +34,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.handles</code>.
      */
     public final Handles HANDLES = Handles.HANDLES;
+
+    /**
+     * The table <code>public.machine_annotation_services</code>.
+     */
+    public final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
 
     /**
      * The table <code>public.new_mapping</code>.
@@ -57,9 +65,11 @@ public class Public extends SchemaImpl {
 
     @Override
     public final List<Table<?>> getTables() {
-        return Arrays.<Table<?>>asList(
+        return Arrays.asList(
             Handles.HANDLES,
+            MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES,
             NewMapping.NEW_MAPPING,
-            NewSourceSystem.NEW_SOURCE_SYSTEM);
+            NewSourceSystem.NEW_SOURCE_SYSTEM
+        );
     }
 }

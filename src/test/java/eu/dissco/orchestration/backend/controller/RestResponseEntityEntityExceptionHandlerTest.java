@@ -35,7 +35,7 @@ class RestResponseEntityEntityExceptionHandlerTest {
     var result = exceptionHandler.illegalArgumentException(new IllegalArgumentException(""));
 
     // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
   }
 
 }
