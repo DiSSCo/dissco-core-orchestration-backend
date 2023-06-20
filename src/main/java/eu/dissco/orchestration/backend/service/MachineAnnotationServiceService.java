@@ -60,8 +60,7 @@ public class MachineAnnotationServiceService {
   }
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
-      String path)
-      throws TransformerException, ProcessingFailedException {
+      String path) throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE);
     var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas, null);
     repository.createMachineAnnotationService(masRecord);
@@ -70,7 +69,7 @@ public class MachineAnnotationServiceService {
     return wrapSingleResponse(handle, masRecord, path);
   }
 
-  private void createDeployment(MachineAnnotationServiceRecord masRecord) {
+  private void publishCreateEvent(String handle, MachineAnnotationServiceRecord masRecord) {
     try {
       deployMasToCluster(masRecord, true);
     } catch (KubernetesFailedException e) {
@@ -151,7 +150,7 @@ public class MachineAnnotationServiceService {
 
   public JsonApiWrapper updateMachineAnnotationService(String id,
       MachineAnnotationService mas, String userId, String path)
-      throws NotFoundException, ProcessingFailedException {
+      throws NotFoundException {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var currentMasRecord = currentMasOptional.get();
@@ -180,7 +179,7 @@ public class MachineAnnotationServiceService {
   }
 
   private void publishUpdateEvent(MachineAnnotationServiceRecord newMasRecord,
-      MachineAnnotationServiceRecord currentMasRecord) throws ProcessingFailedException {
+      MachineAnnotationServiceRecord currentMasRecord) {
     JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newMasRecord.mas()),
         mapper.valueToTree(currentMasRecord.mas()));
     try {

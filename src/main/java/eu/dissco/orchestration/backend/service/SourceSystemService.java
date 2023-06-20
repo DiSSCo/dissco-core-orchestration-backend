@@ -36,7 +36,7 @@ public class SourceSystemService {
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String userId, String path)
-      throws TransformerException, NotFoundException, ProcessingFailedException {
+      throws TransformerException, NotFoundException {
     var handle = handleService.createNewHandle(HandleType.SOURCE_SYSTEM);
     validateMappingExists(sourceSystem.mappingId());
     var sourceSystemRecord = new SourceSystemRecord(handle, 1, userId, Instant.now(), null,
@@ -46,8 +46,7 @@ public class SourceSystemService {
     return wrapSingleResponse(handle, sourceSystemRecord, path);
   }
 
-  private void publishCreateEvent(String handle, SourceSystemRecord sourceSystemRecord)
-      throws ProcessingFailedException {
+  private void publishCreateEvent(String handle, SourceSystemRecord sourceSystemRecord) {
     try {
       kafkaPublisherService.publishCreateEvent(handle, mapper.valueToTree(sourceSystemRecord),
           SUBJECT_TYPE);
@@ -71,8 +70,7 @@ public class SourceSystemService {
   }
 
   public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String userId,
-      String path)
-      throws NotFoundException, ProcessingFailedException {
+      String path) throws NotFoundException {
     var currentSourceSystemOptional = repository.getActiveSourceSystem(id);
     if (currentSourceSystemOptional.isEmpty()) {
       throw new NotFoundException(
@@ -90,7 +88,7 @@ public class SourceSystemService {
   }
 
   private void publishUpdateEvent(SourceSystemRecord newSourceSystemRecord,
-      SourceSystemRecord currentSourceSystemRecord) throws ProcessingFailedException {
+      SourceSystemRecord currentSourceSystemRecord) {
     JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newSourceSystemRecord.sourceSystem()),
         mapper.valueToTree(currentSourceSystemRecord.sourceSystem()));
     try {
