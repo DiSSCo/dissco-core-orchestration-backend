@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.diff.JsonDiff;
 import eu.dissco.orchestration.backend.domain.HandleType;
-import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
@@ -37,7 +36,7 @@ public class MappingService {
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createMapping(Mapping mapping, String userId, String path)
-      throws TransformerException, ProcessingFailedException {
+      throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.MAPPING);
     var mappingRecord = new MappingRecord(handle, 1, Instant.now(), null, userId, mapping);
     repository.createMapping(mappingRecord);
@@ -45,8 +44,7 @@ public class MappingService {
     return wrapSingleResponse(handle, mappingRecord, path);
   }
 
-  private void publishCreateEvent(String handle, MappingRecord mappingRecord)
-      throws ProcessingFailedException {
+  private void publishCreateEvent(String handle, MappingRecord mappingRecord) {
     try {
       kafkaPublisherService.publishCreateEvent(handle, mapper.valueToTree(mappingRecord),
           SUBJECT_TYPE);
@@ -63,7 +61,7 @@ public class MappingService {
   }
 
   public JsonApiWrapper updateMapping(String id, Mapping mapping, String userId, String path)
-      throws NotFoundException, ProcessingFailedException {
+      throws NotFoundException {
     var currentVersion = repository.getActiveMapping(id);
     if (currentVersion.isEmpty()) {
       throw new NotFoundException("Requested mapping does not exist");
@@ -81,7 +79,7 @@ public class MappingService {
   }
 
   private void publishUpdateEvent(MappingRecord newMappingRecord,
-      MappingRecord currentMappingRecord) throws ProcessingFailedException {
+      MappingRecord currentMappingRecord) {
     JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newMappingRecord.mapping()),
         mapper.valueToTree(currentMappingRecord.mapping()));
     try {
@@ -98,6 +96,7 @@ public class MappingService {
   private void rollbackToPreviousVersion(MappingRecord currentMappingRecord) {
     repository.updateMapping(currentMappingRecord);
   }
+
   public void deleteMapping(String id) throws NotFoundException {
     var result = repository.getActiveMapping(id);
     if (result.isPresent()) {

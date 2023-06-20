@@ -8,7 +8,6 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MappingService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,8 +37,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MappingController {
 
-  private static final ArrayList<String> sourceDataSystems = new ArrayList<>(
-      List.of("dwc", "abcd", "abcdefg"));
   private final MappingService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
@@ -49,7 +46,7 @@ public class MappingController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException, ProcessingFailedException {
+      throws TransformerException, JsonProcessingException {
     var mapping = getMappingFromRequest(requestBody);
     var userId = authentication.getName();
     log.info("Received create request for mapping: {} from user: {}", mapping, userId);
@@ -62,7 +59,7 @@ public class MappingController {
   public ResponseEntity<JsonApiWrapper> updateMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
+      throws JsonProcessingException, NotFoundException {
     var mapping = getMappingFromRequest(requestBody);
     var id = prefix + '/' + suffix;
     var userId = authentication.getName();

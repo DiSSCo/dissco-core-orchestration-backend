@@ -35,8 +35,7 @@ public class MachineAnnotationServiceService {
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
-      String path)
-      throws TransformerException, ProcessingFailedException {
+      String path) throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE);
     var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas, null);
     repository.createMachineAnnotationService(masRecord);
@@ -44,8 +43,7 @@ public class MachineAnnotationServiceService {
     return wrapSingleResponse(handle, masRecord, path);
   }
 
-  private void publishCreateEvent(String handle, MachineAnnotationServiceRecord masRecord)
-      throws ProcessingFailedException {
+  private void publishCreateEvent(String handle, MachineAnnotationServiceRecord masRecord) {
     try {
       kafkaPublisherService.publishCreateEvent(handle, mapper.valueToTree(masRecord), SUBJECT_TYPE);
     } catch (JsonProcessingException e) {
@@ -62,7 +60,7 @@ public class MachineAnnotationServiceService {
 
   public JsonApiWrapper updateMachineAnnotationService(String id,
       MachineAnnotationService mas, String userId, String path)
-      throws NotFoundException, ProcessingFailedException {
+      throws NotFoundException {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var currentMasRecord = currentMasOptional.get();
@@ -81,11 +79,12 @@ public class MachineAnnotationServiceService {
   }
 
   private void publishUpdateEvent(MachineAnnotationServiceRecord newMasRecord,
-      MachineAnnotationServiceRecord currentMasRecord) throws ProcessingFailedException {
+      MachineAnnotationServiceRecord currentMasRecord) {
     JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newMasRecord.mas()),
         mapper.valueToTree(currentMasRecord.mas()));
     try {
-      kafkaPublisherService.publishUpdateEvent(newMasRecord.pid(), mapper.valueToTree(newMasRecord), jsonPatch,
+      kafkaPublisherService.publishUpdateEvent(newMasRecord.pid(), mapper.valueToTree(newMasRecord),
+          jsonPatch,
           SUBJECT_TYPE);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);

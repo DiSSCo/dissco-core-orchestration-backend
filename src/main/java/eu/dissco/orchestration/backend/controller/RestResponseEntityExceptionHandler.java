@@ -2,7 +2,6 @@ package eu.dissco.orchestration.backend.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -29,12 +28,5 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<String> illegalArgumentException(IllegalArgumentException e) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-  }
-
-  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-  @ExceptionHandler(ProcessingFailedException.class)
-  public ResponseEntity<String> fatalProcessingException(ProcessingFailedException e) {
-    return ResponseEntity.status(HttpStatus.PROCESSING)
-        .body("Service unavailable due to unknown issue, please contact the support desk");
   }
 }

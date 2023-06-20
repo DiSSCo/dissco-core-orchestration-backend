@@ -8,7 +8,6 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,12 +38,12 @@ public class MachineAnnotationServiceController {
   private final MachineAnnotationServiceService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
-  
+
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMachineAnnotationService(
       Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException, ProcessingFailedException {
+      throws TransformerException, JsonProcessingException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
     var userId = authentication.getName();
     log.info("Received create request for machine annotation service: {} from user: {}",
@@ -55,16 +53,12 @@ public class MachineAnnotationServiceController {
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
-  private String getUserId(Authentication authentication) {
-    return authentication.getName();
-  }
-
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> updateMachineAnnotationService(
       Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
+      throws JsonProcessingException, NotFoundException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
     var userId = authentication.getName();
     var id = prefix + '/' + suffix;

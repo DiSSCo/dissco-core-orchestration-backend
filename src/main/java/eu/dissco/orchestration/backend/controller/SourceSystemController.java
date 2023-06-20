@@ -8,7 +8,6 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,7 +42,7 @@ public class SourceSystemController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException, NotFoundException, ProcessingFailedException {
+      throws TransformerException, JsonProcessingException, NotFoundException {
     var sourceSystem = getSourceSystemFromRequest(requestBody);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var userId = authentication.getName();
@@ -56,7 +55,7 @@ public class SourceSystemController {
   public ResponseEntity<JsonApiWrapper> updateSourceSystem(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
+      throws JsonProcessingException, NotFoundException {
     var sourceSystem = getSourceSystemFromRequest(requestBody);
     var id = prefix + '/' + suffix;
     var userId = authentication.getName();
@@ -73,7 +72,8 @@ public class SourceSystemController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> deleteSourceSystem(Authentication authentication,
-      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix) throws NotFoundException {
+      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
+      throws NotFoundException {
     String id = prefix + "/" + suffix;
     log.info("Received delete request for mapping: {} from user: {}", id,
         authentication.getName());
@@ -97,7 +97,8 @@ public class SourceSystemController {
       @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest servletRequest) {
-    log.info("Received get request for source system with pageNumber: {} and pageSzie: {}: ", pageNum,
+    log.info("Received get request for source system with pageNumber: {} and pageSzie: {}: ",
+        pageNum,
         pageSize);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK)
