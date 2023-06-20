@@ -36,7 +36,9 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE, masRecord.mas().containerImage())
         .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE_TAG, masRecord.mas().containerTag())
         .set(MACHINE_ANNOTATION_SERVICES.TARGET_DIGITAL_OBJECT_FILTERS,
-            JSONB.jsonb(masRecord.mas().targetDigitalObjectFilters().toString()))
+            masRecord.mas().targetDigitalObjectFilters() != null ? JSONB.jsonb(
+                masRecord.mas().targetDigitalObjectFilters().toString()) : null
+        )
         .set(MACHINE_ANNOTATION_SERVICES.SERVICE_DESCRIPTION, masRecord.mas().serviceDescription())
         .set(MACHINE_ANNOTATION_SERVICES.SERVICE_STATE, masRecord.mas().serviceState())
         .set(MACHINE_ANNOTATION_SERVICES.SERVICE_AVAILABILITY,
@@ -46,7 +48,9 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.CODE_MAINTAINER, masRecord.mas().codeMaintainer())
         .set(MACHINE_ANNOTATION_SERVICES.CODE_LICENSE, masRecord.mas().codeLicense())
         .set(MACHINE_ANNOTATION_SERVICES.DEPENDENCIES,
-            masRecord.mas().dependencies().toArray(new String[0]))
+            masRecord.mas().dependencies() != null ? masRecord.mas().dependencies()
+                .toArray(new String[0]) : null
+        )
         .set(MACHINE_ANNOTATION_SERVICES.SUPPORT_CONTACT, masRecord.mas().supportContact())
         .set(MACHINE_ANNOTATION_SERVICES.SLA_DOCUMENTATION, masRecord.mas().slaDocumentation())
         .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, masRecord.deleted())
@@ -78,7 +82,8 @@ public class MachineAnnotationServiceRepository {
             machineAnnotationServicesRecord.getServiceAvailability(),
             machineAnnotationServicesRecord.getCodeMaintainer(),
             machineAnnotationServicesRecord.getCodeLicense(),
-            Arrays.stream(machineAnnotationServicesRecord.getDependencies()).toList(),
+            machineAnnotationServicesRecord.getDependencies() != null ? Arrays.stream(
+                machineAnnotationServicesRecord.getDependencies()).toList() : null,
             machineAnnotationServicesRecord.getSupportContact(),
             machineAnnotationServicesRecord.getSlaDocumentation()
         ),
@@ -88,11 +93,14 @@ public class MachineAnnotationServiceRepository {
 
   private JsonNode mapToJson(JSONB jsonb) {
     try {
-      return mapper.readTree(jsonb.data());
+      if (jsonb != null) {
+        return mapper.readTree(jsonb.data());
+      }
     } catch (JsonProcessingException e) {
       throw new DisscoJsonBMappingException("Failed to parse jsonb field to json: " + jsonb.data(),
           e);
     }
+    return null;
   }
 
   public void deleteMachineAnnotationService(String id, Instant deleted) {
@@ -127,7 +135,9 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE, masRecord.mas().containerImage())
         .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE_TAG, masRecord.mas().containerTag())
         .set(MACHINE_ANNOTATION_SERVICES.TARGET_DIGITAL_OBJECT_FILTERS,
-            JSONB.jsonb(masRecord.mas().targetDigitalObjectFilters().toString()))
+            masRecord.mas().targetDigitalObjectFilters() != null ? JSONB.jsonb(
+                masRecord.mas().targetDigitalObjectFilters().toString()) : null
+        )
         .set(MACHINE_ANNOTATION_SERVICES.SERVICE_DESCRIPTION, masRecord.mas().serviceDescription())
         .set(MACHINE_ANNOTATION_SERVICES.SERVICE_STATE, masRecord.mas().serviceState())
         .set(MACHINE_ANNOTATION_SERVICES.SERVICE_AVAILABILITY,
@@ -137,7 +147,9 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.CODE_MAINTAINER, masRecord.mas().codeMaintainer())
         .set(MACHINE_ANNOTATION_SERVICES.CODE_LICENSE, masRecord.mas().codeLicense())
         .set(MACHINE_ANNOTATION_SERVICES.DEPENDENCIES,
-            masRecord.mas().dependencies().toArray(new String[0]))
+            masRecord.mas().dependencies() != null ? masRecord.mas().dependencies()
+                .toArray(new String[0]) : null
+        )
         .set(MACHINE_ANNOTATION_SERVICES.SUPPORT_CONTACT, masRecord.mas().supportContact())
         .set(MACHINE_ANNOTATION_SERVICES.SLA_DOCUMENTATION, masRecord.mas().slaDocumentation())
         .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, masRecord.deleted())
