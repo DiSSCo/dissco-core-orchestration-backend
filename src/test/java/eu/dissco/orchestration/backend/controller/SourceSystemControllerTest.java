@@ -80,7 +80,7 @@ class SourceSystemControllerTest {
     // Given
     var sourceSystem = givenSourceSystemRequest();
     givenAuthentication();
-    given(service.updateSourceSystem(HANDLE, givenSourceSystem(), "null/source-system")).willReturn(
+    given(service.updateSourceSystem(HANDLE, givenSourceSystem(), "", "null/source-system")).willReturn(
         givenSourceSystemSingleJsonApiWrapper());
 
     // When
@@ -155,8 +155,11 @@ class SourceSystemControllerTest {
 
   @Test
   void testDeleteSourceSystem() throws Exception {
+    // Given
+    givenAuthentication();
+
     // When
-    var result = controller.deleteSourceSystem(PREFIX, SUFFIX);
+    var result = controller.deleteSourceSystem(authentication, PREFIX, SUFFIX);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);

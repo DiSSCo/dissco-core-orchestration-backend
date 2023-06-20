@@ -48,9 +48,10 @@ public class MappingController {
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws TransformerException, JsonProcessingException {
     var mapping = getMappingFromRequest(requestBody);
-    log.info("Received create request for mapping: {}", mapping);
+    var userId = authentication.getName();
+    log.info("Received create request for mapping: {} from user: {}", mapping, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.createMapping(mapping, getNameFromToken(authentication), path);
+    var result = service.createMapping(mapping, userId, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
@@ -61,9 +62,10 @@ public class MappingController {
       throws JsonProcessingException, NotFoundException {
     var mapping = getMappingFromRequest(requestBody);
     var id = prefix + '/' + suffix;
-    log.info("Received update request for mapping: {}", id);
+    var userId = authentication.getName();
+    log.info("Received update request for mapping: {} from user: {}", mapping, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateMapping(id, mapping, getNameFromToken(authentication), path);
+    var result = service.updateMapping(id, mapping, userId, path);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {
@@ -72,20 +74,22 @@ public class MappingController {
   }
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteMapping(
-      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix)
+  @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> deleteMapping(Authentication authentication,
+      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException {
-    String id = prefix + "/" + postfix;
+    String id = prefix + "/" + suffix;
+    log.info("Received delete request for mapping: {} from user: {}", id,
+        authentication.getName());
     service.deleteMapping(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> getMappingById(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix, HttpServletRequest servletRequest) {
-    var id = prefix + '/' + postfix;
+      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest) {
+    var id = prefix + '/' + suffix;
     log.info("Received get request for mapping with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var mapping = service.getMappingById(id, path);
@@ -97,6 +101,8 @@ public class MappingController {
       @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest servletRequest) {
+    log.info("Received get request for mappings with pageNumber: {} and pageSzie: {}: ", pageNum,
+        pageSize);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK).body(service.getMappings(pageNum, pageSize, path));
   }
@@ -109,10 +115,6 @@ public class MappingController {
     var mapping = mapper.treeToValue(requestBody.data().attributes(), Mapping.class);
     checkSourceStandard(mapping);
     return mapping;
-  }
-
-  private String getNameFromToken(Authentication authentication) {
-    return authentication.getName();
   }
 
   private void checkSourceStandard(Mapping mapping) {

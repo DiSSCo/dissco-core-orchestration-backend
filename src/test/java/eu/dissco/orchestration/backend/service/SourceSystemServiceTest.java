@@ -1,8 +1,10 @@
 package eu.dissco.orchestration.backend.service;
 
+import static eu.dissco.orchestration.backend.service.SourceSystemService.SUBJECT_TYPE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenSourceSystemRecord;
@@ -16,8 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mockStatic;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -25,6 +31,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -47,21 +54,26 @@ class SourceSystemServiceTest {
   @Mock
   private HandleService handleService;
   @Mock
+  private KafkaPublisherService kafkaPublisherService;
+  @Mock
   private SourceSystemRepository repository;
   @Mock
   private MappingService mappingService;
 
   private MockedStatic<Instant> mockedStatic;
+  private MockedStatic<Clock> mockedClock;
 
   @BeforeEach
   void setup() {
-    service = new SourceSystemService(repository, handleService, mappingService, MAPPER);
+    service = new SourceSystemService(repository, handleService, mappingService,
+        kafkaPublisherService, MAPPER);
     initTime();
   }
 
   @AfterEach
   void destroy() {
     mockedStatic.close();
+    mockedClock.close();
   }
 
   @Test
@@ -74,10 +86,13 @@ class SourceSystemServiceTest {
         Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
 
     // When
-    var result = service.createSourceSystem(sourceSystem, SYSTEM_PATH);
+    var result = service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(repository).should().createSourceSystem(givenSourceSystemRecord());
+    then(kafkaPublisherService).should()
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord()), SUBJECT_TYPE);
   }
 
   @Test
@@ -87,7 +102,27 @@ class SourceSystemServiceTest {
     given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(Optional.empty());
 
     assertThrowsExactly(NotFoundException.class,
-        () -> service.createSourceSystem(sourceSystem, SYSTEM_PATH));
+        () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+  }
+
+  @Test
+  void testCreateSourceSystemKafakFails() throws Exception {
+    // Given
+    var sourceSystem = givenSourceSystem();
+    given(handleService.createNewHandle(HandleType.SOURCE_SYSTEM)).willReturn(HANDLE);
+    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
+        Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord()), SUBJECT_TYPE);
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+
+    // Then
+    then(repository).should().createSourceSystem(givenSourceSystemRecord());
+    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(repository).should().rollbackSourceSystemCreation(HANDLE);
   }
 
   @Test
@@ -95,17 +130,54 @@ class SourceSystemServiceTest {
     var sourceSystem = givenSourceSystem();
     var prevRecord = Optional.of(new SourceSystemRecord(
         HANDLE,
+        1,
+        OBJECT_CREATOR,
         CREATED,
         null, new SourceSystem("name", "endpoint", "description", "id")
     ));
-    var expected = givenSourceSystemSingleJsonApiWrapper();
+    var expected = givenSourceSystemSingleJsonApiWrapper(2);
     given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);
 
     // When
-    var result = service.updateSourceSystem(HANDLE, sourceSystem, SYSTEM_PATH);
+    var result = service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(repository).should().updateSourceSystem(givenSourceSystemRecord(2));
+    then(kafkaPublisherService).should()
+        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord(2)),
+            givenJsonPatch(), SUBJECT_TYPE);
+  }
+
+  @Test
+  void testUpdateSourceSystemKafkaFails() throws Exception {
+    var sourceSystem = givenSourceSystem();
+    var prevRecord = Optional.of(new SourceSystemRecord(
+        HANDLE,
+        1,
+        OBJECT_CREATOR,
+        CREATED,
+        null, new SourceSystem("name", "endpoint", "description", "id")
+    ));
+    given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord(2)), givenJsonPatch(),
+            SUBJECT_TYPE);
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+
+    // Then
+    then(repository).should().updateSourceSystem(givenSourceSystemRecord(2));
+    then(repository).should().updateSourceSystem(prevRecord.get());
+  }
+
+  private JsonNode givenJsonPatch() throws JsonProcessingException {
+    return MAPPER.readTree("[{\"op\":\"replace\",\"path\":\"/mappingId\",\"value\":\"id\"},"
+        + "{\"op\":\"replace\",\"path\":\"/endpoint\",\"value\":\"endpoint\"},{\"op\":\"replace\""
+        + ",\"path\":\"/name\",\"value\":\"name\"},{\"op\":\"replace\",\"path\":\"/description\""
+        + ",\"value\":\"description\"}]");
   }
 
   @Test
@@ -116,7 +188,7 @@ class SourceSystemServiceTest {
 
     // Then
     assertThrowsExactly(NotFoundException.class,
-        () -> service.updateSourceSystem(HANDLE, sourceSystem, SYSTEM_PATH));
+        () -> service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
   }
 
   @Test
@@ -127,7 +199,7 @@ class SourceSystemServiceTest {
         Optional.of(givenSourceSystemRecord()));
 
     // When
-    var result = service.updateSourceSystem(HANDLE, sourceSystem, SYSTEM_PATH);
+    var result = service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
 
     // Then
     assertThat(result).isNull();
@@ -152,7 +224,7 @@ class SourceSystemServiceTest {
   void testGetSourceSystemByIdIsDeleted() {
     // Given
     var sourceSystemRecord = new SourceSystemRecord(
-        HANDLE, CREATED, CREATED, givenSourceSystem());
+        HANDLE, 1, OBJECT_CREATOR, CREATED, CREATED, givenSourceSystem());
     var expected = new JsonApiWrapper(
         new JsonApiData(HANDLE, HandleType.SOURCE_SYSTEM,
             flattenSourceSystemRecord(sourceSystemRecord)),
@@ -224,6 +296,8 @@ class SourceSystemServiceTest {
 
   private void initTime() {
     Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
+    mockedClock = mockStatic(Clock.class);
+    mockedClock.when(Clock::systemUTC).thenReturn(clock);
     Instant instant = Instant.now(clock);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);

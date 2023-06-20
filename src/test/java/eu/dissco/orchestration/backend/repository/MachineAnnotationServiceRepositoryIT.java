@@ -151,6 +151,20 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     assertThat(result).isEmpty();
   }
 
+  @Test
+  void testRollback() {
+    // Given
+    var expected = givenMasRecord();
+    postMass(List.of(expected));
+
+    // When
+    repository.rollbackMasCreation(HANDLE);
+
+    // Then
+    var result = repository.getMachineAnnotationService(HANDLE);
+    assertThat(result).isNull();
+  }
+
   private MachineAnnotationServiceRecord givenUpdatedRecord() {
     return new MachineAnnotationServiceRecord(
         HANDLE,

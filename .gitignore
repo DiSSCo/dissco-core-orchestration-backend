@@ -4,6 +4,3 @@ target
 .idea
 
 src/main/resources/application.properties
-src/main/resources/jooq-configuration.xml
-
-

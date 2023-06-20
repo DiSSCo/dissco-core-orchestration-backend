@@ -24,10 +24,9 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(e.getMessage());
   }
 
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ResponseStatus(HttpStatus.CONFLICT)
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<String> illegalArgumentException(IllegalArgumentException e) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
   }
-
 }

@@ -1,8 +1,10 @@
 package eu.dissco.orchestration.backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.fge.jsonpatch.diff.JsonDiff;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -11,6 +13,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import java.time.Instant;
 import java.util.List;
@@ -24,19 +27,39 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SourceSystemService {
 
+  public static final String SUBJECT_TYPE = "SourceSystem";
+
   private final SourceSystemRepository repository;
   private final HandleService handleService;
   private final MappingService mappingService;
+  private final KafkaPublisherService kafkaPublisherService;
   private final ObjectMapper mapper;
 
-  public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String path)
+  public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String userId, String path)
       throws TransformerException, NotFoundException {
     var handle = handleService.createNewHandle(HandleType.SOURCE_SYSTEM);
     validateMappingExists(sourceSystem.mappingId());
-
-    var sourceSystemRecord = new SourceSystemRecord(handle, Instant.now(), null, sourceSystem);
+    var sourceSystemRecord = new SourceSystemRecord(handle, 1, userId, Instant.now(), null,
+        sourceSystem);
     repository.createSourceSystem(sourceSystemRecord);
+    publishCreateEvent(handle, sourceSystemRecord);
     return wrapSingleResponse(handle, sourceSystemRecord, path);
+  }
+
+  private void publishCreateEvent(String handle, SourceSystemRecord sourceSystemRecord) {
+    try {
+      kafkaPublisherService.publishCreateEvent(handle, mapper.valueToTree(sourceSystemRecord),
+          SUBJECT_TYPE);
+    } catch (JsonProcessingException e) {
+      log.error("Unable to publish message to Kafka", e);
+      rollbackSourceSystemCreation(sourceSystemRecord);
+      throw new ProcessingFailedException("Failed to create new machine annotation service", e);
+    }
+  }
+
+  private void rollbackSourceSystemCreation(SourceSystemRecord sourceSystemRecord) {
+    handleService.rollbackHandleCreation(sourceSystemRecord.id());
+    repository.rollbackSourceSystemCreation(sourceSystemRecord.id());
   }
 
   private void validateMappingExists(String mappingId) throws NotFoundException {
@@ -46,19 +69,41 @@ public class SourceSystemService {
     }
   }
 
-  public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String path)
-      throws NotFoundException {
-    var prevSourceSystem = repository.getActiveSourceSystem(id);
-    if (prevSourceSystem.isEmpty()) {
+  public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String userId,
+      String path) throws NotFoundException {
+    var currentSourceSystemOptional = repository.getActiveSourceSystem(id);
+    if (currentSourceSystemOptional.isEmpty()) {
       throw new NotFoundException(
           "Could not update Source System " + id + ". Verify resource exists.");
     }
-    if ((prevSourceSystem.get().sourceSystem()).equals(sourceSystem)) {
+    if ((currentSourceSystemOptional.get().sourceSystem()).equals(sourceSystem)) {
       return null;
     }
-    var sourceSystemRecord = new SourceSystemRecord(id, Instant.now(), null, sourceSystem);
+    var currentSourceSystem = currentSourceSystemOptional.get();
+    var sourceSystemRecord = new SourceSystemRecord(id, currentSourceSystem.version() + 1, userId,
+        Instant.now(), null, sourceSystem);
     repository.updateSourceSystem(sourceSystemRecord);
+    publishUpdateEvent(sourceSystemRecord, currentSourceSystem);
     return wrapSingleResponse(id, sourceSystemRecord, path);
+  }
+
+  private void publishUpdateEvent(SourceSystemRecord newSourceSystemRecord,
+      SourceSystemRecord currentSourceSystemRecord) {
+    JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newSourceSystemRecord.sourceSystem()),
+        mapper.valueToTree(currentSourceSystemRecord.sourceSystem()));
+    try {
+      kafkaPublisherService.publishUpdateEvent(newSourceSystemRecord.id(),
+          mapper.valueToTree(newSourceSystemRecord),
+          jsonPatch, SUBJECT_TYPE);
+    } catch (JsonProcessingException e) {
+      log.error("Unable to publish message to Kafka", e);
+      rollbackToPreviousVersion(currentSourceSystemRecord);
+      throw new ProcessingFailedException("Failed to create new machine annotation service", e);
+    }
+  }
+
+  private void rollbackToPreviousVersion(SourceSystemRecord currentSourceSystemRecord) {
+    repository.updateSourceSystem(currentSourceSystemRecord);
   }
 
   public JsonApiWrapper getSourceSystemById(String id, String path) {
@@ -109,6 +154,7 @@ public class SourceSystemService {
   private JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord) {
     var sourceSystemNode = (ObjectNode) mapper.valueToTree(sourceSystemRecord.sourceSystem());
     sourceSystemNode.put("created", sourceSystemRecord.created().toString());
+    sourceSystemNode.put("version", sourceSystemRecord.version());
     if (sourceSystemRecord.deleted() != null) {
       sourceSystemNode.put("deleted", sourceSystemRecord.deleted().toString());
     }

@@ -144,4 +144,10 @@ public class MachineAnnotationServiceRepository {
         .where(MACHINE_ANNOTATION_SERVICES.ID.eq(masRecord.pid()))
         .execute();
   }
+
+  public void rollbackMasCreation(String pid) {
+    context.deleteFrom(MACHINE_ANNOTATION_SERVICES)
+        .where(MACHINE_ANNOTATION_SERVICES.ID.eq(pid))
+        .execute();
+  }
 }

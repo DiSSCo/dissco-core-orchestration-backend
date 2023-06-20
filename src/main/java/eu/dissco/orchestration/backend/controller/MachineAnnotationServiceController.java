@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,23 +38,19 @@ public class MachineAnnotationServiceController {
   private final MachineAnnotationServiceService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
-  
+
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMachineAnnotationService(
       Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws TransformerException, JsonProcessingException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = getUserId(authentication);
+    var userId = authentication.getName();
     log.info("Received create request for machine annotation service: {} from user: {}",
         machineAnnotationService, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var result = service.createMachineAnnotationService(machineAnnotationService, userId, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
-  }
-
-  private String getUserId(Authentication authentication) {
-    return authentication.getName();
   }
 
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -65,7 +60,7 @@ public class MachineAnnotationServiceController {
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException, NotFoundException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = getUserId(authentication);
+    var userId = authentication.getName();
     var id = prefix + '/' + suffix;
     log.info("Received update request for machine annotation service: {} from user: {}", id,
         userId);
@@ -79,23 +74,23 @@ public class MachineAnnotationServiceController {
   }
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> deleteMachineAnnotationService(Authentication authentication,
-      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix)
+      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException {
-    String id = prefix + "/" + postfix;
+    String id = prefix + "/" + suffix;
     log.info("Received delete request for machine annotation service: {} from user: {}", id,
-        getUserId(authentication));
+        authentication.getName());
     service.deleteMachineAnnotationService(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> getMachineAnnotationService(
-      @PathVariable("prefix") String prefix, @PathVariable("postfix") String postfix,
+      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       HttpServletRequest servletRequest) {
-    var id = prefix + '/' + postfix;
+    var id = prefix + '/' + suffix;
     log.info("Received get request for machine annotation service with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var result = service.getMachineAnnotationService(id, path);

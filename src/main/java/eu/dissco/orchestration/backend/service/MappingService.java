@@ -1,8 +1,10 @@
 package eu.dissco.orchestration.backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.fge.jsonpatch.diff.JsonDiff;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
@@ -11,6 +13,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import java.time.Instant;
 import java.util.List;
@@ -25,7 +28,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MappingService {
 
+  public static final String SUBJECT_TYPE = "Mapping";
+
   private final HandleService handleService;
+  private final KafkaPublisherService kafkaPublisherService;
   private final MappingRepository repository;
   private final ObjectMapper mapper;
 
@@ -34,7 +40,24 @@ public class MappingService {
     var handle = handleService.createNewHandle(HandleType.MAPPING);
     var mappingRecord = new MappingRecord(handle, 1, Instant.now(), null, userId, mapping);
     repository.createMapping(mappingRecord);
+    publishCreateEvent(handle, mappingRecord);
     return wrapSingleResponse(handle, mappingRecord, path);
+  }
+
+  private void publishCreateEvent(String handle, MappingRecord mappingRecord) {
+    try {
+      kafkaPublisherService.publishCreateEvent(handle, mapper.valueToTree(mappingRecord),
+          SUBJECT_TYPE);
+    } catch (JsonProcessingException e) {
+      log.error("Unable to publish message to Kafka", e);
+      rollbackMappingCreation(mappingRecord);
+      throw new ProcessingFailedException("Failed to create new machine annotation service", e);
+    }
+  }
+
+  private void rollbackMappingCreation(MappingRecord mappingRecord) {
+    handleService.rollbackHandleCreation(mappingRecord.id());
+    repository.rollbackMappingCreation(mappingRecord.id());
   }
 
   public JsonApiWrapper updateMapping(String id, Mapping mapping, String userId, String path)
@@ -44,15 +67,34 @@ public class MappingService {
       throw new NotFoundException("Requested mapping does not exist");
     }
     if (!currentVersion.get().mapping().equals(mapping)) {
-      var mappingRecord = new MappingRecord(id, currentVersion.get().version() + 1, Instant.now(),
-          null, userId,
-          mapping);
-      repository.deleteMapping(id, Instant.now());
-      repository.createMapping(mappingRecord);
-      return wrapSingleResponse(id, mappingRecord, path);
+      var newMappingRecord = new MappingRecord(id, currentVersion.get().version() + 1,
+          Instant.now(),
+          null, userId, mapping);
+      repository.updateMapping(newMappingRecord);
+      publishUpdateEvent(newMappingRecord, currentVersion.get());
+      return wrapSingleResponse(id, newMappingRecord, path);
     } else {
       return null;
     }
+  }
+
+  private void publishUpdateEvent(MappingRecord newMappingRecord,
+      MappingRecord currentMappingRecord) {
+    JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newMappingRecord.mapping()),
+        mapper.valueToTree(currentMappingRecord.mapping()));
+    try {
+      kafkaPublisherService.publishUpdateEvent(newMappingRecord.id(),
+          mapper.valueToTree(newMappingRecord), jsonPatch,
+          SUBJECT_TYPE);
+    } catch (JsonProcessingException e) {
+      log.error("Unable to publish message to Kafka", e);
+      rollbackToPreviousVersion(currentMappingRecord);
+      throw new ProcessingFailedException("Failed to create new machine annotation service", e);
+    }
+  }
+
+  private void rollbackToPreviousVersion(MappingRecord currentMappingRecord) {
+    repository.updateMapping(currentMappingRecord);
   }
 
   public void deleteMapping(String id) throws NotFoundException {

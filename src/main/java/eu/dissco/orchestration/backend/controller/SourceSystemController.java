@@ -45,8 +45,9 @@ public class SourceSystemController {
       throws TransformerException, JsonProcessingException, NotFoundException {
     var sourceSystem = getSourceSystemFromRequest(requestBody);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    log.info("Received create request for request: {}", sourceSystem);
-    var result = service.createSourceSystem(sourceSystem, path);
+    var userId = authentication.getName();
+    log.info("Received create request for source system: {} from user: {}", sourceSystem, userId);
+    var result = service.createSourceSystem(sourceSystem, userId, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
@@ -57,9 +58,10 @@ public class SourceSystemController {
       throws JsonProcessingException, NotFoundException {
     var sourceSystem = getSourceSystemFromRequest(requestBody);
     var id = prefix + '/' + suffix;
-    log.info("Received update request for source system: {}", id);
+    var userId = authentication.getName();
+    log.info("Received update request for source system: {} from user: {}", id, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateSourceSystem(id, sourceSystem, path);
+    var result = service.updateSourceSystem(id, sourceSystem, userId, path);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {
@@ -68,19 +70,22 @@ public class SourceSystemController {
   }
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @DeleteMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteSourceSystem(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) throws NotFoundException {
-    String id = prefix + "/" + postfix;
+  @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> deleteSourceSystem(Authentication authentication,
+      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
+      throws NotFoundException {
+    String id = prefix + "/" + suffix;
+    log.info("Received delete request for mapping: {} from user: {}", id,
+        authentication.getName());
     service.deleteSourceSystem(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{prefix}/{postfix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> getSourceSystemById(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix, HttpServletRequest servletRequest) {
-    var id = prefix + '/' + postfix;
+      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest) {
+    var id = prefix + '/' + suffix;
     log.info("Received get request for source system with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var sourceSystem = service.getSourceSystemById(id, path);
@@ -92,6 +97,9 @@ public class SourceSystemController {
       @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest servletRequest) {
+    log.info("Received get request for source system with pageNumber: {} and pageSzie: {}: ",
+        pageNum,
+        pageSize);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK)
         .body(service.getSourceSystemRecords(pageNum, pageSize, path));
