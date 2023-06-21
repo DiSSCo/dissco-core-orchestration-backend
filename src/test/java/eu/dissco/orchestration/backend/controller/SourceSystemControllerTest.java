@@ -80,7 +80,8 @@ class SourceSystemControllerTest {
     // Given
     var sourceSystem = givenSourceSystemRequest();
     givenAuthentication();
-    given(service.updateSourceSystem(HANDLE, givenSourceSystem(), "", "null/source-system")).willReturn(
+    given(service.updateSourceSystem(HANDLE, givenSourceSystem(), "",
+        "null/source-system")).willReturn(
         givenSourceSystemSingleJsonApiWrapper());
 
     // When

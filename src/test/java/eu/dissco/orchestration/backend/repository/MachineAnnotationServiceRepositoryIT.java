@@ -184,7 +184,9 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
             "https://www.apache.org/licenses/LICENSE-2.0",
             List.of(),
             "dontmail@dissco.eu",
-            "https://www.know.dissco.tech/no_sla"
+            "https://www.know.dissco.tech/no_sla",
+            "fancy-topic-name",
+            2
         ),
         null
     );

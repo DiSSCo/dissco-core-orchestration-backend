@@ -1,6 +1,5 @@
 package eu.dissco.orchestration.backend.properties;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import lombok.Getter;
@@ -26,6 +25,4 @@ public class KubernetesProperties {
   @NotNull
   private Duration apiConnectTimeout = Duration.ofSeconds(15L);
 
-  @NotBlank
-  private String masNamespace = "machine-annotation-services";
 }

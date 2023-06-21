@@ -16,7 +16,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.KubernetesFailedException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
-import eu.dissco.orchestration.backend.properties.KubernetesProperties;
+import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
@@ -41,10 +41,11 @@ import org.springframework.stereotype.Service;
 public class MachineAnnotationServiceService {
 
   public static final String SUBJECT_TYPE = "MachineAnnotationService";
-  public static final String DEPLOYMENT = "-deployment";
-  public static final String KEDA_GROUP = "keda.sh";
-  public static final String KEDA_VERSION = "v1alpha1";
-  public static final String KEDA_RESOURCE = "scaledObjects";
+  private static final String DEPLOYMENT = "-deployment";
+  private static final String SCALED_OBJECT = "-scaled-object";
+  private static final String KEDA_GROUP = "keda.sh";
+  private static final String KEDA_VERSION = "v1alpha1";
+  private static final String KEDA_RESOURCE = "scaledobjects";
 
   private final HandleService handleService;
   private final KafkaPublisherService kafkaPublisherService;
@@ -53,15 +54,16 @@ public class MachineAnnotationServiceService {
   private final CustomObjectsApi customObjectsApi;
   private final Configuration configuration;
   private final ObjectMapper mapper;
-  private final KubernetesProperties kubernetesProperties;
+  private final MachineAnnotationServiceProperties properties;
 
-  private static String getName(MachineAnnotationServiceRecord masRecord) {
-    return masRecord.pid().substring(masRecord.pid().indexOf('/') + 1).toLowerCase();
+  private static String getName(String pid) {
+    return pid.substring(pid.indexOf('/') + 1).toLowerCase();
   }
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
       String path) throws TransformerException {
     var handle = handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE);
+    setDefaultMas(mas, handle);
     var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas, null);
     repository.createMachineAnnotationService(masRecord);
     createDeployment(masRecord);
@@ -69,24 +71,34 @@ public class MachineAnnotationServiceService {
     return wrapSingleResponse(handle, masRecord, path);
   }
 
+  private void setDefaultMas(MachineAnnotationService mas, String handle) {
+    if (mas.getTopicName() == null) {
+      mas.setTopicName(getName(handle));
+    }
+    if (mas.getMaxReplicas() <= 0) {
+      mas.setMaxReplicas(1);
+    }
+  }
+
   private void createDeployment(MachineAnnotationServiceRecord masRecord) {
     var successfulDeployment = false;
     var successfulKeda = false;
     try {
       successfulDeployment = deployMasToCluster(masRecord, true);
-      successfulKeda = deployKedaToCluster(masRecord);
+      deployKedaToCluster(masRecord);
     } catch (KubernetesFailedException e) {
       rollbackMasCreation(masRecord, successfulDeployment, successfulKeda);
+      throw new ProcessingFailedException("Failed to create kubernetes resources", e);
     }
   }
 
-  private boolean deployKedaToCluster(MachineAnnotationServiceRecord masRecord)
+  private void deployKedaToCluster(MachineAnnotationServiceRecord masRecord)
       throws KubernetesFailedException {
-    var name = getName(masRecord);
+    var name = getName(masRecord.pid());
     try {
-      var keda = createKedaFiles(name);
+      var keda = createKedaFiles(masRecord, name);
       customObjectsApi.createNamespacedCustomObject(KEDA_GROUP, KEDA_VERSION,
-          kubernetesProperties.getMasNamespace(), KEDA_RESOURCE, keda, null, null, null);
+          properties.getNamespace(), KEDA_RESOURCE, keda, null, null, null);
     } catch (TemplateException | IOException e) {
       log.error("Failed to create keda scaledObject files for: {}", masRecord, e);
       throw new KubernetesFailedException("Failed to deploy keda to cluster");
@@ -95,20 +107,19 @@ public class MachineAnnotationServiceService {
           e.getCode(), e.getResponseBody());
       throw new KubernetesFailedException("Failed to deploy keda to cluster");
     }
-    return true;
   }
 
   private boolean deployMasToCluster(MachineAnnotationServiceRecord masRecord, boolean create)
       throws KubernetesFailedException {
-    var name = getName(masRecord);
+    var name = getName(masRecord.pid());
     try {
       var deployment = getV1Deployment(masRecord, name);
       if (create) {
-        appsV1Api.createNamespacedDeployment(kubernetesProperties.getMasNamespace(),
+        appsV1Api.createNamespacedDeployment(properties.getNamespace(),
             deployment, null, null, null, null);
       } else {
         appsV1Api.replaceNamespacedDeployment(name + DEPLOYMENT,
-            kubernetesProperties.getMasNamespace(), deployment, null, null, null, null);
+            properties.getNamespace(), deployment, null, null, null, null);
       }
     } catch (IOException | TemplateException e) {
       log.error("Failed to create deployment files for: {}", masRecord, e);
@@ -128,16 +139,20 @@ public class MachineAnnotationServiceService {
     return mapper.readValue(deploymentString.toString(), V1Deployment.class);
   }
 
-  private Object createKedaFiles(String name)
+  private Object createKedaFiles(MachineAnnotationServiceRecord masRecord, String name)
       throws TemplateException, IOException {
-    var templateProperties = getKedaTemplateProperties(name);
+    var templateProperties = getKedaTemplateProperties(masRecord, name);
     var kedaString = fillKedaTemplate(templateProperties);
     return JsonParser.parseString(kedaString.toString()).getAsJsonObject();
   }
 
-  private Map<String, Object> getKedaTemplateProperties(String name) {
+  private Map<String, Object> getKedaTemplateProperties(MachineAnnotationServiceRecord masRecord,
+      String name) {
     var map = new HashMap<String, Object>();
     map.put("name", name);
+    map.put("kafkaHost", properties.getKafkaHost());
+    map.put("maxReplicas", masRecord.mas().getMaxReplicas());
+    map.put("topicName", masRecord.mas().getTopicName());
     return map;
   }
 
@@ -153,9 +168,11 @@ public class MachineAnnotationServiceService {
       MachineAnnotationServiceRecord masRecord,
       String name) {
     var map = new HashMap<String, Object>();
-    map.put("image", masRecord.mas().containerImage());
-    map.put("imageTag", masRecord.mas().containerTag());
+    map.put("image", masRecord.mas().getContainerImage());
+    map.put("imageTag", masRecord.mas().getContainerTag());
     map.put("name", name);
+    map.put("kafkaHost", properties.getKafkaHost());
+    map.put("topicName", masRecord.mas().getTopicName());
     return map;
   }
 
@@ -181,11 +198,11 @@ public class MachineAnnotationServiceService {
       boolean rollbackDeployment, boolean rollbackKeda) {
     handleService.rollbackHandleCreation(masRecord.pid());
     repository.rollbackMasCreation(masRecord.pid());
-    var name = getName(masRecord);
+    var name = getName(masRecord.pid());
     if (rollbackDeployment) {
       try {
         appsV1Api.deleteNamespacedDeployment(name + DEPLOYMENT,
-            kubernetesProperties.getMasNamespace(), null, null, null, null, null, null);
+            properties.getNamespace(), null, null, null, null, null, null);
       } catch (ApiException e) {
         log.error(
             "Fatal exception, unable to rollback kubernetes deployment for: {} error message with code: {} and message: {}",
@@ -195,7 +212,7 @@ public class MachineAnnotationServiceService {
     if (rollbackKeda) {
       try {
         customObjectsApi.deleteNamespacedCustomObject(KEDA_GROUP, KEDA_VERSION,
-            kubernetesProperties.getMasNamespace(), KEDA_RESOURCE, name + "-scaled-object", null,
+            properties.getNamespace(), KEDA_RESOURCE, name + SCALED_OBJECT, null,
             null, null, null, null);
       } catch (ApiException e) {
         log.error(
@@ -211,6 +228,7 @@ public class MachineAnnotationServiceService {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var currentMasRecord = currentMasOptional.get();
+      setDefaultMas(mas, id);
       if (mas.equals(currentMasRecord.mas())) {
         return null;
       } else {
@@ -228,10 +246,44 @@ public class MachineAnnotationServiceService {
 
   private void updateDeployment(MachineAnnotationServiceRecord newMasRecord,
       MachineAnnotationServiceRecord currentMasRecord) {
+    var successfulDeployment = false;
     try {
-      deployMasToCluster(newMasRecord, false);
+      successfulDeployment = deployMasToCluster(newMasRecord, false);
+      updateKedaResource(newMasRecord, currentMasRecord);
     } catch (KubernetesFailedException e) {
-      rollbackToPreviousVersion(currentMasRecord, false);
+      rollbackToPreviousVersion(currentMasRecord, successfulDeployment, false);
+      throw new ProcessingFailedException("Failed to update kubernetes resources", e);
+    }
+  }
+
+  private void updateKedaResource(MachineAnnotationServiceRecord masRecord,
+      MachineAnnotationServiceRecord rollbackRecord)
+      throws KubernetesFailedException {
+    var name = getName(masRecord.pid());
+    try {
+      customObjectsApi.deleteNamespacedCustomObject(KEDA_GROUP, KEDA_VERSION,
+          properties.getNamespace(), KEDA_RESOURCE, name + SCALED_OBJECT, null,
+          null, null, null, null);
+    } catch (ApiException e) {
+      log.error(
+          "Deletion of kubernetes keda failed for record: {}, with code: {} and message: {}",
+          masRecord, e.getCode(), e.getResponseBody());
+      throw new KubernetesFailedException("Failed to remove keda from cluster");
+    }
+    try {
+      deployKedaToCluster(masRecord);
+    } catch (KubernetesFailedException e) {
+      log.error(
+          "Failed to deploy new version of keda to the cluster. Trying to rollback to previous version",
+          e);
+      if (rollbackRecord != null) {
+        try {
+          deployKedaToCluster(rollbackRecord);
+        } catch (KubernetesFailedException ex) {
+          log.error("Fatal error, unable to redeploy previous keda configuration");
+        }
+      }
+      throw new KubernetesFailedException("Failed to remove keda from cluster");
     }
   }
 
@@ -245,13 +297,13 @@ public class MachineAnnotationServiceService {
           SUBJECT_TYPE);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);
-      rollbackToPreviousVersion(currentMasRecord, true);
+      rollbackToPreviousVersion(currentMasRecord, true, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
   }
 
   private void rollbackToPreviousVersion(MachineAnnotationServiceRecord currentMasRecord,
-      boolean rollbackDeployment) {
+      boolean rollbackDeployment, boolean rollbackKeda) {
     repository.updateMachineAnnotationService(currentMasRecord);
     if (rollbackDeployment) {
       try {
@@ -259,6 +311,15 @@ public class MachineAnnotationServiceService {
       } catch (KubernetesFailedException e) {
         log.error(
             "Fatal exception, unable to rollback kubernetes deployment for: {} ",
+            currentMasRecord.pid(), e);
+      }
+    }
+    if (rollbackKeda) {
+      try {
+        updateKedaResource(currentMasRecord, null);
+      } catch (KubernetesFailedException e) {
+        log.error(
+            "Fatal exception, unable to rollback keda for: {} ",
             currentMasRecord.pid(), e);
       }
     }
@@ -275,29 +336,29 @@ public class MachineAnnotationServiceService {
     }
   }
 
-  private void deleteDeployment(MachineAnnotationServiceRecord currentMasOptional) {
-    var name = getName(currentMasOptional);
+  private void deleteDeployment(MachineAnnotationServiceRecord currentMasRecord) {
+    var name = getName(currentMasRecord.pid());
     try {
       appsV1Api.deleteNamespacedDeployment(name + DEPLOYMENT,
-          kubernetesProperties.getMasNamespace(), null, null, null, null, null, null);
+          properties.getNamespace(), null, null, null, null, null, null);
     } catch (ApiException e) {
       log.error(
           "Deletion of kubernetes deployment failed for record: {}, with code: {} and message: {}",
-          currentMasOptional, e.getCode(), e.getResponseBody());
-      repository.createMachineAnnotationService(currentMasOptional);
+          currentMasRecord, e.getCode(), e.getResponseBody());
+      repository.createMachineAnnotationService(currentMasRecord);
       throw new ProcessingFailedException("Failed to delete kubernetes resources", e);
     }
     try {
       customObjectsApi.deleteNamespacedCustomObject(KEDA_GROUP, KEDA_VERSION,
-          kubernetesProperties.getMasNamespace(), KEDA_RESOURCE, name + "-scaled-object", null,
+          properties.getNamespace(), KEDA_RESOURCE, name + SCALED_OBJECT, null,
           null, null, null, null);
     } catch (ApiException e) {
       log.error(
           "Deletion of kubernetes keda failed for record: {}, with code: {} and message: {}",
-          currentMasOptional, e.getCode(), e.getResponseBody());
-      repository.createMachineAnnotationService(currentMasOptional);
+          currentMasRecord, e.getCode(), e.getResponseBody());
+      repository.createMachineAnnotationService(currentMasRecord);
       try {
-        deployMasToCluster(currentMasOptional, true);
+        deployMasToCluster(currentMasRecord, true);
       } catch (KubernetesFailedException ex) {
         log.error("Failed error, unable to create deployment after failed keda deletion");
       }

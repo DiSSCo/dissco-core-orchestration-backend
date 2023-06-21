@@ -30,7 +30,8 @@ create table mapping
 
 create table machine_annotation_services
 (
-    id text not null primary key,
+    id text not null
+        primary key,
     version integer not null,
     name varchar not null,
     created timestamp with time zone not null,
@@ -47,5 +48,7 @@ create table machine_annotation_services
     dependencies text[],
     support_contact text,
     sla_documentation text,
+    topicname text,
+    maxreplicas integer,
     deleted_on timestamp with time zone
 );

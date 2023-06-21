@@ -2,10 +2,8 @@ package eu.dissco.orchestration.backend.configuration;
 
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import io.kubernetes.client.openapi.ApiClient;
-import io.kubernetes.client.openapi.apis.ApiregistrationV1Api;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.util.Config;
 import java.io.IOException;
