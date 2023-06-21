@@ -13,26 +13,26 @@ import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 /**
  * Convenience access to all tables in public.
  */
-@SuppressWarnings({"all", "unchecked", "rawtypes"})
+@SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
 
-  /**
-   * The table <code>public.handles</code>.
-   */
-  public static final Handles HANDLES = Handles.HANDLES;
+    /**
+     * The table <code>public.handles</code>.
+     */
+    public static final Handles HANDLES = Handles.HANDLES;
 
-  /**
-   * The table <code>public.machine_annotation_services</code>.
-   */
-  public static final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
+    /**
+     * The table <code>public.machine_annotation_services</code>.
+     */
+    public static final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
 
-  /**
-   * The table <code>public.mapping</code>.
-   */
-  public static final Mapping MAPPING = Mapping.MAPPING;
+    /**
+     * The table <code>public.mapping</code>.
+     */
+    public static final Mapping MAPPING = Mapping.MAPPING;
 
-  /**
-   * The table <code>public.source_system</code>.
-   */
-  public static final SourceSystem SOURCE_SYSTEM = SourceSystem.SOURCE_SYSTEM;
+    /**
+     * The table <code>public.source_system</code>.
+     */
+    public static final SourceSystem SOURCE_SYSTEM = SourceSystem.SOURCE_SYSTEM;
 }
