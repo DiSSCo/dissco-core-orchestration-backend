@@ -1,9 +1,14 @@
 package eu.dissco.orchestration.backend.web;
 
+import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.expectedHandleRollbackUpdate;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingHandleRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasHandleRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemHandleRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,7 +35,7 @@ class FdoRecordBuilderTest {
     var result = builder.buildCreateRequest(givenSourceSystem(), ObjectType.SOURCE_SYSTEM);
 
     // Then
-    assertThat(result).isEqualTo(expectedSourceSystemResponse());
+    assertThat(result).isEqualTo(givenSourceSystemHandleRequest());
   }
 
   @Test
@@ -39,7 +44,7 @@ class FdoRecordBuilderTest {
     var result = builder.buildCreateRequest(givenMapping(), ObjectType.MAPPING);
 
     // Then
-    assertThat(result).isEqualTo(expectedMappingResponse());
+    assertThat(result).isEqualTo(givenMappingHandleRequest());
   }
 
   @Test
@@ -48,50 +53,33 @@ class FdoRecordBuilderTest {
     var result = builder.buildCreateRequest(givenMas(), ObjectType.MAS);
 
     // Then
-    assertThat(result).isEqualTo(expectedMasResponse());
+    assertThat(result).isEqualTo(givenMasHandleRequest());
   }
 
-  private static JsonNode expectedMasResponse() throws Exception {
-    return MAPPER.readTree("""
-        {
-          "data": {
-            "type": "machineAnnotationService",
-            "attributes": {
-              "fdoProfile": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-              "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267"
-            }
-          }
-        }""");
+  @Test
+  void testRollbackHandleUpdate() throws Exception{
+    // When
+    var result = builder.buildRollbackUpdateRequest(givenMas(), ObjectType.MAS, HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expectedHandleRollbackUpdate());
   }
 
-  private static JsonNode expectedSourceSystemResponse() throws Exception{
-    return MAPPER.readTree("""
+  @Test
+  void testRollbackHandleCreation() throws Exception {
+    // Given
+    var expected = MAPPER.readTree("""
         {
-          "data": {
-            "type": "sourceSystem",
-            "attributes": {
-              "fdoProfile": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-              "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-              "sourceSystemName":"Naturalis Tunicate DWCA endpoint"
-            }
-          }
+          "data":
+            [{"id":"20.5000.1025/GW0-POP-XSL"}]
         }""");
+
+    // when
+    var result = builder.buildRollbackCreateRequest(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+
   }
 
-  private static JsonNode expectedMappingResponse() throws Exception {
-    return MAPPER.readTree("""
-        {
-          "data": {
-            "type": "mapping",
-            "attributes": {
-              "fdoProfile": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-              "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-              "sourceDataStandard": "dwc"
-            }
-          }
-        }""");
-  }
 }

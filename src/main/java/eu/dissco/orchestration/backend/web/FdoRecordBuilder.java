@@ -8,11 +8,13 @@ import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +24,7 @@ public class FdoRecordBuilder {
 
   private final ObjectMapper mapper;
 
-  public JsonNode buildCreateRequest(Object object, ObjectType type){
+  public JsonNode buildCreateRequest(Object object, ObjectType type) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     data.put("type", type.getObjectType());
@@ -32,8 +34,20 @@ public class FdoRecordBuilder {
     return request;
   }
 
-  private JsonNode buildRequestAttributes(Object object, ObjectType type){
-    switch (type){
+  public JsonNode buildRollbackUpdateRequest(Object object, ObjectType type, String handle) {
+    var subRequest = (ObjectNode) buildCreateRequest(object, type);
+    ((ObjectNode) subRequest.get("data")).put("id", handle);
+    return subRequest;
+  }
+
+  public JsonNode buildRollbackCreateRequest(String handle) {
+    var dataNode = List.of(mapper.createObjectNode().put("id", handle));
+    ArrayNode dataArrayNode= mapper.valueToTree(dataNode);
+    return mapper.createObjectNode().set("data", dataArrayNode);
+  }
+
+  private JsonNode buildRequestAttributes(Object object, ObjectType type) {
+    switch (type) {
       case MAPPING -> {
         return buildMappingAttributes(((Mapping) object));
       }
@@ -47,23 +61,23 @@ public class FdoRecordBuilder {
     throw new IllegalStateException("Invalid Object type " + type.getObjectType());
   }
 
-  private JsonNode buildMappingAttributes(Mapping mapping){
+  private JsonNode buildMappingAttributes(Mapping mapping) {
     var attributes = buildGeneralAttributes(ObjectType.MAPPING);
     attributes.put(SOURCE_DATA_STANDARD.getAttribute(), mapping.sourceDataStandard());
     return attributes;
   }
 
-  private JsonNode buildMasAttributes(MachineAnnotationService mas){
+  private JsonNode buildMasAttributes(MachineAnnotationService mas) {
     return buildGeneralAttributes(ObjectType.MAS);
   }
 
-  private JsonNode buildSourceSystemAttributes(SourceSystem sourceSystem){
+  private JsonNode buildSourceSystemAttributes(SourceSystem sourceSystem) {
     var attributes = buildGeneralAttributes(ObjectType.SOURCE_SYSTEM);
     attributes.put(SOURCE_SYSTEM_NAME.getAttribute(), sourceSystem.name());
     return attributes;
   }
 
-  private ObjectNode buildGeneralAttributes(ObjectType type){
+  private ObjectNode buildGeneralAttributes(ObjectType type) {
     var attributes = mapper.createObjectNode();
     attributes.put(FDO_PROFILE.getAttribute(), FDO_PROFILE.getDefaultValue());
     attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT.getDefaultValue());

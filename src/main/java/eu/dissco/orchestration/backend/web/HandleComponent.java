@@ -85,15 +85,10 @@ public class HandleComponent {
       }
       throw new PidCreationException(e.getCause().getMessage());
     } catch (NullPointerException e) {
-      String responseStr = "{Unprocessable}";
-      try {
-        responseStr = response.toFuture().get().asText();
-      } catch (ExecutionException | InterruptedException ex){
-        Thread.currentThread().interrupt();
-      }
-      log.error("Response received from Handle API, but it is not in JsonApi format. Unable to retrieve handle from response : {}", responseStr);
-      throw new PidCreationException("Unable to parse response from Handle API.");
+
+      log.error("Response received from Handle API, but it is not in JsonApi format. Unable to retrieve handle from response");
     }
+    throw new PidCreationException("Unable to parse response from Handle API.");
   }
 
 
