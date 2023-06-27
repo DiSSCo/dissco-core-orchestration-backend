@@ -81,7 +81,7 @@ class MachineAnnotationServiceServiceTest {
     // Given
     var expected = givenMasSingleJsonApiWrapper();
     var mas = givenMas();
-    given(handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
 
     // When
     var result = service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH);
@@ -97,7 +97,7 @@ class MachineAnnotationServiceServiceTest {
   void testCreateMasKafkaFails() throws Exception {
     // Given
     var mas = givenMas();
-    given(handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()),
             SUBJECT_TYPE);

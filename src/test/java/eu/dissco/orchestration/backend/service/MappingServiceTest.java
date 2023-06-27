@@ -85,7 +85,8 @@ class MappingServiceTest {
     // Given
     var mapping = givenMapping();
     var expected = givenMappingSingleJsonApiWrapper();
-    given(handleService.createNewHandle(HandleType.MAPPING)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
+
 
     // When
     var result = service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH);
@@ -102,7 +103,7 @@ class MappingServiceTest {
   void testCreateMappingKafkaFails() throws Exception {
     // Given
     var mapping = givenMapping();
-    given(handleService.createNewHandle(HandleType.MAPPING)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 1)),
             SUBJECT_TYPE);
