@@ -8,13 +8,18 @@ import com.github.fge.jsonpatch.diff.JsonDiff;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
+import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
+import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
 import java.util.List;
 import javax.xml.transform.TransformerException;
@@ -30,13 +35,16 @@ public class MachineAnnotationServiceService {
   public static final String SUBJECT_TYPE = "MachineAnnotationService";
 
   private final HandleService handleService;
+  private final HandleComponent handleComponent;
+  private final FdoRecordBuilder fdoRecordBuilder;
   private final KafkaPublisherService kafkaPublisherService;
   private final MachineAnnotationServiceRepository repository;
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
-      String path) throws TransformerException {
-    var handle = handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE);
+      String path) throws PidAuthenticationException, PidCreationException {
+    var requestBody = fdoRecordBuilder.buildCreateRequest(mas, ObjectType.MAPPING);
+    var handle = handleComponent.postHandle(requestBody);
     var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas, null);
     repository.createMachineAnnotationService(masRecord);
     publishCreateEvent(handle, masRecord);

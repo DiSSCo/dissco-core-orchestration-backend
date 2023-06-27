@@ -29,6 +29,8 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
+import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -51,6 +53,10 @@ class MachineAnnotationServiceServiceTest {
   private MachineAnnotationServiceRepository repository;
   @Mock
   private KafkaPublisherService kafkaPublisherService;
+  @Mock
+  private HandleComponent handleComponent;
+  @Mock
+  private FdoRecordBuilder fdoRecordBuilder;
 
   private MachineAnnotationServiceService service;
 
@@ -60,8 +66,8 @@ class MachineAnnotationServiceServiceTest {
   @BeforeEach
   void setup() {
     initTime();
-    service = new MachineAnnotationServiceService(handleService, kafkaPublisherService, repository,
-        MAPPER);
+    service = new MachineAnnotationServiceService(handleService, handleComponent, fdoRecordBuilder,
+        kafkaPublisherService, repository, MAPPER);
   }
 
   @AfterEach

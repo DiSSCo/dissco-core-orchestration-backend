@@ -34,6 +34,8 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
+import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -55,6 +57,10 @@ class MappingServiceTest {
   @Mock
   private HandleService handleService;
   @Mock
+  private FdoRecordBuilder fdoRecordBuilder;
+  @Mock
+  private HandleComponent handleComponent;
+  @Mock
   private KafkaPublisherService kafkaPublisherService;
   @Mock
   private MappingRepository repository;
@@ -64,7 +70,7 @@ class MappingServiceTest {
 
   @BeforeEach
   void setup() {
-    service = new MappingService(handleService, kafkaPublisherService, repository, MAPPER);
+    service = new MappingService(handleService, fdoRecordBuilder,handleComponent, kafkaPublisherService, repository, MAPPER);
     initTime();
   }
 
