@@ -28,6 +28,19 @@ spec:
               value: dissco
             - name: keycloak.resource
               value: orchestration-service
+            - name: token.secret
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-client
+                  key: keycloak-secret
+            - name: token.id
+              value: demo-api-client
+            - name: token.grant-type
+              value: client_credentials
+            - name: endpoint.token-endpoint
+              value: https://login-demo.dissco.eu/auth/realms/dissco/protocol/openid-connect/token
+            - name: endpoint.handle-endpoint
+              value: https://sandbox.dissco.tech/handle-manager/api/v1/pids/
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
