@@ -5,6 +5,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
@@ -13,6 +14,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingSingleJsonApiWrapper;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -118,6 +120,17 @@ class MappingServiceTest {
     then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMappingCreation(HANDLE);
+  }
+
+  @Test
+  void testCreateMasHandleFails() throws Exception {
+    // Given
+    var mapping = givenMapping();
+    willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
+
+    // Then
+    assertThrowsExactly(ProcessingFailedException.class, () ->
+        service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH));
   }
 
   @Test

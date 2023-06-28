@@ -41,9 +41,14 @@ public class SourceSystemService {
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String userId, String path)
-      throws NotFoundException, PidAuthenticationException, PidCreationException {
+      throws NotFoundException {
+    String handle = null;
     var request = fdoRecordBuilder.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM);
-    var handle = handleComponent.postHandle(request);
+    try {
+      handle = handleComponent.postHandle(request);
+    } catch (PidAuthenticationException | PidCreationException e){
+      throw new ProcessingFailedException(e.getMessage(), e);
+    }
     validateMappingExists(sourceSystem.mappingId());
     var sourceSystemRecord = new SourceSystemRecord(handle, 1, userId, Instant.now(), null,
         sourceSystem);

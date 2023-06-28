@@ -40,10 +40,14 @@ public class MappingService {
   private final MappingRepository repository;
   private final ObjectMapper mapper;
 
-  public JsonApiWrapper createMapping(Mapping mapping, String userId, String path)
-      throws PidCreationException, PidAuthenticationException {
+  public JsonApiWrapper createMapping(Mapping mapping, String userId, String path) {
     var requestBody = fdoRecordBuilder.buildCreateRequest(mapping, ObjectType.MAPPING);
-    var handle = handleComponent.postHandle(requestBody);
+    String handle = null;
+    try {
+      handle = handleComponent.postHandle(requestBody);
+    } catch (PidAuthenticationException | PidCreationException e) {
+      throw new ProcessingFailedException(e.getMessage(), e);
+    }
     var mappingRecord = new MappingRecord(handle, 1, Instant.now(), null, userId, mapping);
     repository.createMapping(mappingRecord);
     publishCreateEvent(handle, mappingRecord);

@@ -96,6 +96,17 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
+  void testCreateMasHandleFails() throws Exception {
+    // Given
+    var mas = givenMas();
+    willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
+
+    // Then
+    assertThrowsExactly(ProcessingFailedException.class, () ->
+        service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+  }
+
+  @Test
   void testCreateMasKafkaFails() throws Exception {
     // Given
     var mas = givenMas();

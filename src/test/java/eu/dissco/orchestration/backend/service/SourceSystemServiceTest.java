@@ -4,10 +4,12 @@ import static eu.dissco.orchestration.backend.service.SourceSystemService.SUBJEC
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenSourceSystemRecord;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
@@ -129,6 +131,17 @@ class SourceSystemServiceTest {
     then(builder).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackSourceSystemCreation(HANDLE);
+  }
+
+  @Test
+  void testCreateMasHandleFails() throws Exception {
+    // Given
+    var sourceSystem = givenSourceSystem();
+    willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
+
+    // Then
+    assertThrowsExactly(ProcessingFailedException.class, () ->
+        service.createSourceSystem(sourceSystem, OBJECT_CREATOR, MAPPING_PATH));
   }
 
   @Test
