@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,8 +26,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
 import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
@@ -86,6 +89,7 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(fdoRecordBuilder).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMasRecord());
     then(kafkaPublisherService).should()
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()), SUBJECT_TYPE);
@@ -105,6 +109,29 @@ class MachineAnnotationServiceServiceTest {
         () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
 
     // Then
+    then(fdoRecordBuilder).should().buildCreateRequest(mas, ObjectType.MAS);
+    then(repository).should().createMachineAnnotationService(givenMasRecord());
+    then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
+    then(repository).should().rollbackMasCreation(HANDLE);
+  }
+
+  @Test
+  void testCreateMasKafkaAndRollbackFails() throws Exception {
+    // Given
+    var mas = givenMas();
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()),
+            SUBJECT_TYPE);
+    willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+
+    // Then
+    then(fdoRecordBuilder).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMasRecord());
     then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
@@ -164,7 +191,6 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testUpdateMasEqual() throws Exception {
     // Given
-    var expected = givenMasSingleJsonApiWrapper(2);
     var mas = givenMas();
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
         Optional.of(givenMasRecord()));
@@ -202,7 +228,7 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
-  void testGetMass() {
+  void testGetMas() {
     // Given
     int pageNum = 1;
     int pageSize = 10;
@@ -219,7 +245,7 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
-  void testGetMassSecondPage() {
+  void testGetMasSecondPage() {
     // Given
     int pageNum = 2;
     int pageSize = 10;

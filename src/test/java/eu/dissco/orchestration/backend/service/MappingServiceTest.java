@@ -28,10 +28,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
 import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
@@ -85,12 +87,12 @@ class MappingServiceTest {
     var expected = givenMappingSingleJsonApiWrapper();
     given(handleComponent.postHandle(any())).willReturn(HANDLE);
 
-
     // When
     var result = service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(fdoRecordBuilder).should().buildCreateRequest(mapping, ObjectType.MAPPING);
     then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
     then(kafkaPublisherService).should()
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 1)),
@@ -111,11 +113,35 @@ class MappingServiceTest {
         () -> service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH));
 
     // Then
+    then(fdoRecordBuilder).should().buildCreateRequest(mapping, ObjectType.MAPPING);
     then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
     then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMappingCreation(HANDLE);
   }
+
+  @Test
+  void testCreateMappingKafkaAndRollbackFails() throws Exception {
+    // Given
+    var mapping = givenMapping();
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 1)),
+            SUBJECT_TYPE);
+    willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH));
+
+    // Then
+    then(fdoRecordBuilder).should().buildCreateRequest(mapping, ObjectType.MAPPING);
+    then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
+    then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
+    then(repository).should().rollbackMappingCreation(HANDLE);
+  }
+
 
   @Test
   void testUpdateMapping() throws Exception {

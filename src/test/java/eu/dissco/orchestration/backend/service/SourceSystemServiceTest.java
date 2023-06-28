@@ -31,6 +31,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
@@ -118,6 +119,28 @@ class SourceSystemServiceTest {
         Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord()), SUBJECT_TYPE);
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+
+    // Then
+    then(repository).should().createSourceSystem(givenSourceSystemRecord());
+    then(builder).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
+    then(repository).should().rollbackSourceSystemCreation(HANDLE);
+  }
+
+  @Test
+  void testCreateSourceSystemKafkaAndRollbackFails() throws Exception {
+    // Given
+    var sourceSystem = givenSourceSystem();
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
+    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
+        Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord()), SUBJECT_TYPE);
+    willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,

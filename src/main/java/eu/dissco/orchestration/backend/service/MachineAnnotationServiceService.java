@@ -42,7 +42,7 @@ public class MachineAnnotationServiceService {
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
       String path) throws PidAuthenticationException, PidCreationException {
-    var requestBody = fdoRecordBuilder.buildCreateRequest(mas, ObjectType.MAPPING);
+    var requestBody = fdoRecordBuilder.buildCreateRequest(mas, ObjectType.MAS);
     var handle = handleComponent.postHandle(requestBody);
     var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas, null);
     repository.createMachineAnnotationService(masRecord);
