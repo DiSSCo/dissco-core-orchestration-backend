@@ -34,7 +34,6 @@ import org.springframework.stereotype.Service;
 public class MappingService {
 
   public static final String SUBJECT_TYPE = "Mapping";
-  private final HandleService handleService;
   private final FdoRecordBuilder fdoRecordBuilder;
   private final HandleComponent handleComponent;
   private final KafkaPublisherService kafkaPublisherService;
@@ -63,7 +62,12 @@ public class MappingService {
   }
 
   private void rollbackMappingCreation(MappingRecord mappingRecord) {
-    handleService.rollbackHandleCreation(mappingRecord.id());
+    var request = fdoRecordBuilder.buildRollbackCreateRequest(mappingRecord.id());
+    try {
+      handleComponent.rollbackHandleCreation(request);
+    } catch (PidAuthenticationException | PidCreationException e){
+      log.error("Unable to rollback handle creation for mapping. Manually delete the following handle: {}. Cause of error: ", mappingRecord.id(), e);
+    }
     repository.rollbackMappingCreation(mappingRecord.id());
   }
 

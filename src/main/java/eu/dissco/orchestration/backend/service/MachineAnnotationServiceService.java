@@ -34,7 +34,6 @@ public class MachineAnnotationServiceService {
 
   public static final String SUBJECT_TYPE = "MachineAnnotationService";
 
-  private final HandleService handleService;
   private final HandleComponent handleComponent;
   private final FdoRecordBuilder fdoRecordBuilder;
   private final KafkaPublisherService kafkaPublisherService;
@@ -62,7 +61,12 @@ public class MachineAnnotationServiceService {
   }
 
   private void rollbackMasCreation(MachineAnnotationServiceRecord masRecord) {
-    handleService.rollbackHandleCreation(masRecord.pid());
+    var request = fdoRecordBuilder.buildRollbackCreateRequest(masRecord.pid());
+    try {
+      handleComponent.rollbackHandleCreation(request);
+    } catch (PidAuthenticationException | PidCreationException e){
+      log.error("Unable to rollback handle creation for MAS. Manually delete the following handle: {}. Cause of error: ", masRecord.pid(), e);
+    }
     repository.rollbackMasCreation(masRecord.pid());
   }
 

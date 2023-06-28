@@ -48,8 +48,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MachineAnnotationServiceServiceTest {
 
   @Mock
-  private HandleService handleService;
-  @Mock
   private MachineAnnotationServiceRepository repository;
   @Mock
   private KafkaPublisherService kafkaPublisherService;
@@ -66,7 +64,7 @@ class MachineAnnotationServiceServiceTest {
   @BeforeEach
   void setup() {
     initTime();
-    service = new MachineAnnotationServiceService(handleService, handleComponent, fdoRecordBuilder,
+    service = new MachineAnnotationServiceService(handleComponent, fdoRecordBuilder,
         kafkaPublisherService, repository, MAPPER);
   }
 
@@ -108,7 +106,8 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     then(repository).should().createMachineAnnotationService(givenMasRecord());
-    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
   }
 

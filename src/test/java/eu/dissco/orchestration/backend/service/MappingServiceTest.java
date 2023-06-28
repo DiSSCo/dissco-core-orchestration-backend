@@ -55,8 +55,6 @@ class MappingServiceTest {
 
   private MappingService service;
   @Mock
-  private HandleService handleService;
-  @Mock
   private FdoRecordBuilder fdoRecordBuilder;
   @Mock
   private HandleComponent handleComponent;
@@ -70,7 +68,7 @@ class MappingServiceTest {
 
   @BeforeEach
   void setup() {
-    service = new MappingService(handleService, fdoRecordBuilder,handleComponent, kafkaPublisherService, repository, MAPPER);
+    service = new MappingService(fdoRecordBuilder,handleComponent, kafkaPublisherService, repository, MAPPER);
     initTime();
   }
 
@@ -114,7 +112,8 @@ class MappingServiceTest {
 
     // Then
     then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
-    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMappingCreation(HANDLE);
   }
 

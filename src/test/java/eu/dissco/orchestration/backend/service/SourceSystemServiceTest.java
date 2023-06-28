@@ -33,6 +33,8 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
+import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -52,11 +54,13 @@ class SourceSystemServiceTest {
 
   private SourceSystemService service;
   @Mock
-  private HandleService handleService;
-  @Mock
   private KafkaPublisherService kafkaPublisherService;
   @Mock
   private SourceSystemRepository repository;
+  @Mock
+  private FdoRecordBuilder builder;
+  @Mock
+  private HandleComponent handleComponent;
   @Mock
   private MappingService mappingService;
 
@@ -65,7 +69,7 @@ class SourceSystemServiceTest {
 
   @BeforeEach
   void setup() {
-    service = new SourceSystemService(repository, handleService, mappingService,
+    service = new SourceSystemService(builder, handleComponent, repository, mappingService,
         kafkaPublisherService, MAPPER);
     initTime();
   }
@@ -81,7 +85,7 @@ class SourceSystemServiceTest {
     // Given
     var expected = givenSourceSystemSingleJsonApiWrapper();
     var sourceSystem = givenSourceSystem();
-    given(handleService.createNewHandle(HandleType.SOURCE_SYSTEM)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
         Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
 
@@ -106,10 +110,10 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testCreateSourceSystemKafakFails() throws Exception {
+  void testCreateSourceSystemKafkaFails() throws Exception {
     // Given
     var sourceSystem = givenSourceSystem();
-    given(handleService.createNewHandle(HandleType.SOURCE_SYSTEM)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
         Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
@@ -121,7 +125,8 @@ class SourceSystemServiceTest {
 
     // Then
     then(repository).should().createSourceSystem(givenSourceSystemRecord());
-    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(builder).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackSourceSystemCreation(HANDLE);
   }
 
