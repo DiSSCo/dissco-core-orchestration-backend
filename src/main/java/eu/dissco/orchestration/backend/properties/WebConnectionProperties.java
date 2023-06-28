@@ -13,6 +13,7 @@ public class WebConnectionProperties {
   @NotBlank
   private String tokenEndpoint;
 
+  @NotBlank
   private String handleEndpoint;
 
 }

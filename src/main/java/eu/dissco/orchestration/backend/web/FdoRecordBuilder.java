@@ -3,6 +3,7 @@ package eu.dissco.orchestration.backend.web;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.DIGITAL_OBJECT_TYPE;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.FDO_PROFILE;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
+import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.MAS_NAME;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_DATA_STANDARD;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_SYSTEM_NAME;
 
@@ -34,12 +35,6 @@ public class FdoRecordBuilder {
     return request;
   }
 
-  public JsonNode buildRollbackUpdateRequest(Object object, ObjectType type, String handle) {
-    var subRequest = (ObjectNode) buildCreateRequest(object, type);
-    ((ObjectNode) subRequest.get("data")).put("id", handle);
-    return subRequest;
-  }
-
   public JsonNode buildRollbackCreateRequest(String handle) {
     var dataNode = List.of(mapper.createObjectNode().put("id", handle));
     ArrayNode dataArrayNode= mapper.valueToTree(dataNode);
@@ -68,7 +63,9 @@ public class FdoRecordBuilder {
   }
 
   private JsonNode buildMasAttributes(MachineAnnotationService mas) {
-    return buildGeneralAttributes(ObjectType.MAS);
+    var attributes = buildGeneralAttributes(ObjectType.MAS);
+    attributes.put(MAS_NAME.getAttribute(), mas.name());
+    return attributes;
   }
 
   private JsonNode buildSourceSystemAttributes(SourceSystem sourceSystem) {

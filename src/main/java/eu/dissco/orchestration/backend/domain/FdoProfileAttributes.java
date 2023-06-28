@@ -8,7 +8,8 @@ public enum FdoProfileAttributes {
   // Mapping
   SOURCE_DATA_STANDARD("sourceDataStandard", null),
   // Source System
-  SOURCE_SYSTEM_NAME("sourceSystemName", null);
+  SOURCE_SYSTEM_NAME("sourceSystemName", null),
+  MAS_NAME("machineAnnotationServiceName", null);
 
   private final String attribute;
   private final String defaultValue;

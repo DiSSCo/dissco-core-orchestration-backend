@@ -48,7 +48,7 @@ public class MappingController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, PidAuthenticationException, PidCreationException {
+      throws JsonProcessingException {
     var mapping = getMappingFromRequest(requestBody);
     var userId = authentication.getName();
     log.info("Received create request for mapping: {} from user: {}", mapping, userId);
