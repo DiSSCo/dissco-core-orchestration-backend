@@ -2,16 +2,15 @@ package eu.dissco.orchestration.backend.web;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.expectedHandleRollbackUpdate;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingHandleRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasHandleRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenRollbackCreationRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemHandleRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,22 +56,9 @@ class FdoRecordBuilderTest {
   }
 
   @Test
-  void testRollbackHandleUpdate() throws Exception{
-    // When
-    var result = builder.buildRollbackUpdateRequest(givenMas(), ObjectType.MAS, HANDLE);
-
-    // Then
-    assertThat(result).isEqualTo(expectedHandleRollbackUpdate());
-  }
-
-  @Test
   void testRollbackHandleCreation() throws Exception {
     // Given
-    var expected = MAPPER.readTree("""
-        {
-          "data":
-            [{"id":"20.5000.1025/GW0-POP-XSL"}]
-        }""");
+    var expected = givenRollbackCreationRequest();
 
     // when
     var result = builder.buildRollbackCreateRequest(HANDLE);

@@ -41,13 +41,17 @@ public class MachineAnnotationServiceService {
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
-      String path) throws PidAuthenticationException, PidCreationException {
+      String path)  {
     var requestBody = fdoRecordBuilder.buildCreateRequest(mas, ObjectType.MAS);
-    var handle = handleComponent.postHandle(requestBody);
-    var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas, null);
-    repository.createMachineAnnotationService(masRecord);
-    publishCreateEvent(handle, masRecord);
-    return wrapSingleResponse(handle, masRecord, path);
+    try {
+      var handle = handleComponent.postHandle(requestBody);
+      var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas, null);
+      repository.createMachineAnnotationService(masRecord);
+      publishCreateEvent(handle, masRecord);
+      return wrapSingleResponse(handle, masRecord, path);
+    } catch (PidCreationException | PidAuthenticationException e){
+      throw new ProcessingFailedException(e.getMessage(), e);
+    }
   }
 
   private void publishCreateEvent(String handle, MachineAnnotationServiceRecord masRecord) {

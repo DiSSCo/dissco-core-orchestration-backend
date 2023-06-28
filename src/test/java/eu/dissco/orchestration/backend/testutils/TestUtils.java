@@ -291,18 +291,11 @@ public class TestUtils {
         }""");
   }
 
-  public static JsonNode expectedHandleRollbackUpdate() throws Exception {
+  public  static JsonNode givenRollbackCreationRequest() throws Exception{
     return MAPPER.readTree("""
         {
-          "data": {
-            "type": "machineAnnotationService",
-            "id":"20.5000.1025/GW0-POP-XSL",
-            "attributes": {
-              "fdoProfile": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-              "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267"
-            }
-          }
+          "data":
+            [{"id":"20.5000.1025/GW0-POP-XSL"}]
         }""");
   }
 

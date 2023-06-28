@@ -34,19 +34,14 @@ public class HandleComponent {
       throws PidAuthenticationException, PidCreationException {
     var requestBody = BodyInserters.fromValue(List.of(request));
     var response = sendRequest(HttpMethod.PATCH, requestBody, "upsert");
-    return parseResponse(response);
+    var responseJson = validateResponse(response);
+    return parseResponse(responseJson);
   }
 
   public void rollbackHandleCreation(JsonNode request) throws PidCreationException, PidAuthenticationException {
     var requestBody = BodyInserters.fromValue(request);
     var response = sendRequest(HttpMethod.DELETE, requestBody, "rollback");
-    parseResponse(response);
-  }
-
-  public void rollbackHandleUpdate(List<JsonNode> request) throws PidCreationException, PidAuthenticationException {
-    var requestBody = BodyInserters.fromValue(request);
-    var response = sendRequest(HttpMethod.DELETE, requestBody, "rollback/update");
-    parseResponse(response);
+    validateResponse(response);
   }
 
   private <T> Mono<JsonNode> sendRequest(HttpMethod httpMethod, BodyInserter<T, ReactiveHttpOutputMessage> requestBody, String endpoint) throws PidAuthenticationException {
@@ -69,14 +64,14 @@ public class HandleComponent {
                     "External Service failed to process after max retries")));
   }
 
-  private String parseResponse (Mono<JsonNode> response) throws PidCreationException, PidAuthenticationException {
+  private JsonNode validateResponse (Mono<JsonNode> response) throws PidCreationException, PidAuthenticationException {
     try {
-      return response.toFuture().get().get("data").get("id").asText();
-    }
-    catch (InterruptedException e) {
+      return response.toFuture().get();
+    } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       log.error("Interrupted exception has occurred.");
-      throw new PidCreationException("Interrupted execution: A connection error has occurred in creating a handle.");
+      throw new PidCreationException(
+          "Interrupted execution: A connection error has occurred in creating a handle.");
     } catch (ExecutionException e) {
       if (e.getCause().getClass().equals(PidAuthenticationException.class)) {
         log.error(
@@ -84,11 +79,16 @@ public class HandleComponent {
         throw new PidAuthenticationException(e.getCause().getMessage());
       }
       throw new PidCreationException(e.getCause().getMessage());
-    } catch (NullPointerException e) {
-
-      log.error("Response received from Handle API, but it is not in JsonApi format. Unable to retrieve handle from response");
     }
-    throw new PidCreationException("Unable to parse response from Handle API.");
+  }
+
+  private String parseResponse(JsonNode apiResponse) throws PidCreationException{
+    try {
+      return apiResponse.get("data").get("id").asText();
+    } catch (NullPointerException e){
+      log.error("Unable to parse response from handle server. Received response does not contain  \"id\" field");
+      throw new PidCreationException("Unable to parse response from handle server");
+    }
   }
 
 

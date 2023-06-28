@@ -3,6 +3,7 @@ package eu.dissco.orchestration.backend.web;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasHandleRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -67,6 +68,19 @@ class HandleComponentTest {
 
     // Then
     assertThat(response).isEqualTo(HANDLE);
+  }
+
+  @Test
+  void testRollbackHandleCreation() throws  Exception{
+    // Given
+    var requestbody = givenRollbackCreationRequest();
+
+    mockHandleServer.enqueue(new MockResponse()
+        .setResponseCode(200)
+        .addHeader("Content-Type", "application/json"));
+
+    // Then
+    assertDoesNotThrow(() -> handleComponent.rollbackHandleCreation(requestbody));
   }
 
   @Test
