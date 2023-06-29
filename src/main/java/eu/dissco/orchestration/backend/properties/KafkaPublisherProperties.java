@@ -12,5 +12,4 @@ public class KafkaPublisherProperties {
 
   @NotBlank
   private String host;
-
 }

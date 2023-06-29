@@ -48,5 +48,4 @@ public class ApplicationConfiguration {
     return factory;
   }
 
-
 }

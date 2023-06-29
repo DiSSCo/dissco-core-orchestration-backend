@@ -16,9 +16,11 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.KubernetesFailedException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
+import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
 import freemarker.template.Configuration;
+import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
@@ -33,6 +35,7 @@ import java.util.Map;
 import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -43,18 +46,19 @@ public class MachineAnnotationServiceService {
   public static final String SUBJECT_TYPE = "MachineAnnotationService";
   private static final String DEPLOYMENT = "-deployment";
   private static final String SCALED_OBJECT = "-scaled-object";
-  private static final String KEDA_GROUP = "keda.sh";
-  private static final String KEDA_VERSION = "v1alpha1";
-  private static final String KEDA_RESOURCE = "scaledobjects";
 
   private final HandleService handleService;
   private final KafkaPublisherService kafkaPublisherService;
   private final MachineAnnotationServiceRepository repository;
   private final AppsV1Api appsV1Api;
   private final CustomObjectsApi customObjectsApi;
-  private final Configuration configuration;
+  @Qualifier("keda-template")
+  private final Template kedaTemplate;
+  @Qualifier("deployment-template")
+  private final Template deploymentTemplate;
   private final ObjectMapper mapper;
   private final MachineAnnotationServiceProperties properties;
+  private final KubernetesProperties kubernetesProperties;
 
   private static String getName(String pid) {
     return pid.substring(pid.indexOf('/') + 1).toLowerCase();
@@ -82,12 +86,11 @@ public class MachineAnnotationServiceService {
 
   private void createDeployment(MachineAnnotationServiceRecord masRecord) {
     var successfulDeployment = false;
-    var successfulKeda = false;
     try {
       successfulDeployment = deployMasToCluster(masRecord, true);
       deployKedaToCluster(masRecord);
     } catch (KubernetesFailedException e) {
-      rollbackMasCreation(masRecord, successfulDeployment, successfulKeda);
+      rollbackMasCreation(masRecord, successfulDeployment, false);
       throw new ProcessingFailedException("Failed to create kubernetes resources", e);
     }
   }
@@ -97,8 +100,9 @@ public class MachineAnnotationServiceService {
     var name = getName(masRecord.pid());
     try {
       var keda = createKedaFiles(masRecord, name);
-      customObjectsApi.createNamespacedCustomObject(KEDA_GROUP, KEDA_VERSION,
-          properties.getNamespace(), KEDA_RESOURCE, keda, null, null, null);
+      customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
+          kubernetesProperties.getKedaVersion(), properties.getNamespace(),
+          kubernetesProperties.getKedaResource(), keda, null, null, null);
     } catch (TemplateException | IOException e) {
       log.error("Failed to create keda scaledObject files for: {}", masRecord, e);
       throw new KubernetesFailedException("Failed to deploy keda to cluster");
@@ -159,8 +163,7 @@ public class MachineAnnotationServiceService {
   private StringWriter fillKedaTemplate(Map<String, Object> templateProperties)
       throws IOException, TemplateException {
     var writer = new StringWriter();
-    var template = configuration.getTemplate("keda-template.ftl");
-    template.process(templateProperties, writer);
+    kedaTemplate.process(templateProperties, writer);
     return writer;
   }
 
@@ -179,8 +182,7 @@ public class MachineAnnotationServiceService {
   private StringWriter fillDeploymentTemplate(Map<String, Object> templateProperties)
       throws IOException, TemplateException {
     var writer = new StringWriter();
-    var template = configuration.getTemplate("mas-template.ftl");
-    template.process(templateProperties, writer);
+    deploymentTemplate.process(templateProperties, writer);
     return writer;
   }
 
@@ -211,8 +213,9 @@ public class MachineAnnotationServiceService {
     }
     if (rollbackKeda) {
       try {
-        customObjectsApi.deleteNamespacedCustomObject(KEDA_GROUP, KEDA_VERSION,
-            properties.getNamespace(), KEDA_RESOURCE, name + SCALED_OBJECT, null,
+        customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
+            kubernetesProperties.getKedaVersion(), properties.getNamespace(),
+            kubernetesProperties.getKedaResource(), name + SCALED_OBJECT, null,
             null, null, null, null);
       } catch (ApiException e) {
         log.error(
@@ -261,8 +264,9 @@ public class MachineAnnotationServiceService {
       throws KubernetesFailedException {
     var name = getName(masRecord.pid());
     try {
-      customObjectsApi.deleteNamespacedCustomObject(KEDA_GROUP, KEDA_VERSION,
-          properties.getNamespace(), KEDA_RESOURCE, name + SCALED_OBJECT, null,
+      customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
+          kubernetesProperties.getKedaVersion(), properties.getNamespace(),
+          kubernetesProperties.getKedaResource(), name + SCALED_OBJECT, null,
           null, null, null, null);
     } catch (ApiException e) {
       log.error(
@@ -349,9 +353,10 @@ public class MachineAnnotationServiceService {
       throw new ProcessingFailedException("Failed to delete kubernetes resources", e);
     }
     try {
-      customObjectsApi.deleteNamespacedCustomObject(KEDA_GROUP, KEDA_VERSION,
-          properties.getNamespace(), KEDA_RESOURCE, name + SCALED_OBJECT, null,
-          null, null, null, null);
+      customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
+          kubernetesProperties.getKedaVersion(), properties.getNamespace(),
+          kubernetesProperties.getKedaResource(), name + SCALED_OBJECT,
+          null, null, null, null, null);
     } catch (ApiException e) {
       log.error(
           "Deletion of kubernetes keda failed for record: {}, with code: {} and message: {}",

@@ -31,6 +31,7 @@ import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
+import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
 import freemarker.template.Configuration;
@@ -57,6 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MachineAnnotationServiceServiceTest {
 
   private final Configuration configuration = new Configuration(Configuration.VERSION_2_3_32);
+  private final KubernetesProperties kubernetesProperties = new KubernetesProperties();
   @Mock
   private HandleService handleService;
   @Mock
@@ -78,8 +80,11 @@ class MachineAnnotationServiceServiceTest {
   void setup() throws IOException {
     initTime();
     initFreeMaker();
+    var kedaTemplate = configuration.getTemplate("keda-template.ftl");
+    var deploymentTemplate = configuration.getTemplate("mas-template.ftl");
     service = new MachineAnnotationServiceService(handleService, kafkaPublisherService, repository,
-        appsV1Api, customObjectsApi, configuration, MAPPER, properties);
+        appsV1Api, customObjectsApi, kedaTemplate, deploymentTemplate, MAPPER, properties,
+        kubernetesProperties);
   }
 
   private void initFreeMaker() throws IOException {
