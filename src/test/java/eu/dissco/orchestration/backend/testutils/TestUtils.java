@@ -253,9 +253,9 @@ public class TestUtils {
           "data": {
             "type": "machineAnnotationService",
             "attributes": {
-              "fdoProfile": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
               "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
               "machineAnnotationServiceName":"A Machine Annotation Service"
             }
           }
@@ -268,9 +268,9 @@ public class TestUtils {
           "data": {
             "type": "sourceSystem",
             "attributes": {
-              "fdoProfile": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
               "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
               "sourceSystemName":"Naturalis Tunicate DWCA endpoint"
             }
           }
@@ -283,9 +283,9 @@ public class TestUtils {
           "data": {
             "type": "mapping",
             "attributes": {
-              "fdoProfile": "http://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
               "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "http://hdl.handle.net/21.T11148/b3f1045d8524d863ccfb",
+              "digitalObjectType": "https://hdl.handle.net/21.T11148/b3f1045d8524d863ccfb",
               "sourceDataStandard": "dwc"
             }
           }

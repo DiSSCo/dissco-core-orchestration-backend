@@ -58,8 +58,7 @@ class HandleComponentTest {
     // Given
     var requestBody = givenMasHandleRequest();
     var responseBody = givenHandleApiResponse();
-    mockHandleServer.enqueue(new MockResponse()
-        .setResponseCode(HttpStatus.CREATED.value())
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.CREATED.value())
         .setBody(MAPPER.writeValueAsString(responseBody))
         .addHeader("Content-Type", "application/json"));
 
@@ -71,13 +70,12 @@ class HandleComponentTest {
   }
 
   @Test
-  void testRollbackHandleCreation() throws  Exception{
+  void testRollbackHandleCreation() throws Exception {
     // Given
     var requestbody = givenRollbackCreationRequest();
 
-    mockHandleServer.enqueue(new MockResponse()
-        .setResponseCode(200)
-        .addHeader("Content-Type", "application/json"));
+    mockHandleServer.enqueue(
+        new MockResponse().setResponseCode(200).addHeader("Content-Type", "application/json"));
 
     // Then
     assertDoesNotThrow(() -> handleComponent.rollbackHandleCreation(requestbody));
@@ -88,8 +86,7 @@ class HandleComponentTest {
     // Given
     var requestBody = givenMasHandleRequest();
 
-    mockHandleServer.enqueue(new MockResponse()
-        .setResponseCode(HttpStatus.UNAUTHORIZED.value())
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.UNAUTHORIZED.value())
         .addHeader("Content-Type", "application/json"));
 
     // Then
@@ -101,8 +98,7 @@ class HandleComponentTest {
     // Given
     var requestBody = MAPPER.createObjectNode();
 
-    mockHandleServer.enqueue(new MockResponse()
-        .setResponseCode(HttpStatus.BAD_REQUEST.value())
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.BAD_REQUEST.value())
         .addHeader("Content-Type", "application/json"));
 
     // Then
@@ -117,8 +113,7 @@ class HandleComponentTest {
     int requestCount = mockHandleServer.getRequestCount();
 
     mockHandleServer.enqueue(new MockResponse().setResponseCode(501));
-    mockHandleServer.enqueue(new MockResponse()
-        .setResponseCode(HttpStatus.CREATED.value())
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.CREATED.value())
         .setBody(MAPPER.writeValueAsString(responseBody))
         .addHeader("Content-Type", "application/json"));
 
@@ -136,8 +131,7 @@ class HandleComponentTest {
     var requestBody = givenMasHandleRequest();
     var responseBody = givenHandleApiResponse();
 
-    mockHandleServer.enqueue(new MockResponse()
-        .setResponseCode(HttpStatus.OK.value())
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
         .setBody(MAPPER.writeValueAsString(responseBody))
         .addHeader("Content-Type", "application/json"));
 
@@ -180,11 +174,10 @@ class HandleComponentTest {
                     }
                   }
                 }""
-        
+                
         """);
 
-    mockHandleServer.enqueue(new MockResponse()
-        .setResponseCode(HttpStatus.CREATED.value())
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.CREATED.value())
         .setBody(MAPPER.writeValueAsString(responseBody))
         .addHeader("Content-Type", "application/json"));
     // Then
@@ -197,8 +190,7 @@ class HandleComponentTest {
     var requestBody = givenMasHandleRequest();
     var responseBody = MAPPER.createObjectNode();
 
-    mockHandleServer.enqueue(new MockResponse()
-        .setResponseCode(HttpStatus.CREATED.value())
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.CREATED.value())
         .setBody(MAPPER.writeValueAsString(responseBody))
         .addHeader("Content-Type", "application/json"));
     // Then
@@ -208,12 +200,15 @@ class HandleComponentTest {
   private JsonNode givenHandleApiResponse() throws Exception {
     return MAPPER.readTree("""
         {
-          "data": {
-            "type": "machineAnnotationService",
-            "id":"20.5000.1025/GW0-POP-XSL",
-            "attributes":{
+          "data":
+          [
+            {
+              "type": "machineAnnotationService",
+              "id":"20.5000.1025/GW0-POP-XSL",
+              "attributes":{
+              }
             }
-          }
+          ]
         }""");
 
   }
