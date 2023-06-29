@@ -1,7 +1,7 @@
 package eu.dissco.orchestration.backend.domain;
 
 public enum FdoProfileAttributes {
-  FDO_PROFILE("fdoProfile", "http://hdl.handle.net/21.T11148/64396cf36b976ad08267"),
+  FDO_PROFILE("fdoProfile", "https://hdl.handle.net/21.T11148/64396cf36b976ad08267"),
   DIGITAL_OBJECT_TYPE("digitalObjectType", null),
   // Issued for agent should be DiSSCo PID; currently it's set as Naturalis's ROR
   ISSUED_FOR_AGENT ("issuedForAgent","https://ror.org/0566bfb96"),

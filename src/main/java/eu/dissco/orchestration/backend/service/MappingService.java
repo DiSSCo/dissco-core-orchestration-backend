@@ -42,6 +42,7 @@ public class MappingService {
 
   public JsonApiWrapper createMapping(Mapping mapping, String userId, String path) {
     var requestBody = fdoRecordBuilder.buildCreateRequest(mapping, ObjectType.MAPPING);
+    log.info(requestBody.toString());
     String handle = null;
     try {
       handle = handleComponent.postHandle(requestBody);

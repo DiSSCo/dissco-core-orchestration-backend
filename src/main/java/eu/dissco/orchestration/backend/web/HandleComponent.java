@@ -33,7 +33,7 @@ public class HandleComponent {
   public String postHandle(JsonNode request)
       throws PidAuthenticationException, PidCreationException {
     var requestBody = BodyInserters.fromValue(List.of(request));
-    var response = sendRequest(HttpMethod.PATCH, requestBody, "upsert");
+    var response = sendRequest(HttpMethod.POST, requestBody, "batch");
     var responseJson = validateResponse(response);
     return parseResponse(responseJson);
   }
@@ -49,7 +49,7 @@ public class HandleComponent {
     return handleClient
         .method(httpMethod)
         .uri(uriBuilder -> uriBuilder.path(endpoint).build())
-        .body(BodyInserters.fromValue(requestBody))
+        .body(requestBody)
         .header("Authorization", token)
         .acceptCharset(StandardCharsets.UTF_8)
         .retrieve()
@@ -84,7 +84,7 @@ public class HandleComponent {
 
   private String parseResponse(JsonNode apiResponse) throws PidCreationException{
     try {
-      return apiResponse.get("data").get("id").asText();
+      return apiResponse.get("data").get(0).get("id").asText();
     } catch (NullPointerException e){
       log.error("Unable to parse response from handle server. Received response does not contain  \"id\" field");
       throw new PidCreationException("Unable to parse response from handle server");
