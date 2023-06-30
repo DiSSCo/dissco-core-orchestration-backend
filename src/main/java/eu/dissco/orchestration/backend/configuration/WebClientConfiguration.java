@@ -26,7 +26,7 @@ public class WebClientConfiguration {
   }
 
   @Bean(name = "handleClient")
-  public WebClient handleClient(){
+  public WebClient handleClient() {
     return WebClient.builder()
         .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
         .baseUrl(properties.getHandleEndpoint())

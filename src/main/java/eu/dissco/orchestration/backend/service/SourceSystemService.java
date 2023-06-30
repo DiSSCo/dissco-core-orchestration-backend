@@ -29,7 +29,6 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class SourceSystemService {
-
   public static final String SUBJECT_TYPE = "SourceSystem";
   private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
@@ -44,7 +43,7 @@ public class SourceSystemService {
     var request = fdoRecordService.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM);
     try {
       handle = handleComponent.postHandle(request);
-    } catch (PidAuthenticationException | PidCreationException e){
+    } catch (PidAuthenticationException | PidCreationException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }
     validateMappingExists(sourceSystem.mappingId());
@@ -150,7 +149,6 @@ public class SourceSystemService {
       throw new NotFoundException("Requested source system: " + id + " does not exist");
     }
   }
-
 
   private JsonApiListWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,
       int pageSize, String path) {

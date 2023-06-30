@@ -22,6 +22,7 @@ import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
@@ -30,12 +31,10 @@ import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.V1Deployment;
 import java.io.IOException;
 import java.io.StringWriter;
-import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -80,7 +79,7 @@ public class MachineAnnotationServiceService {
       createDeployment(masRecord);
       publishCreateEvent(handle, masRecord);
       return wrapSingleResponse(handle, masRecord, path);
-    } catch (PidCreationException | PidAuthenticationException e){
+    } catch (PidCreationException | PidAuthenticationException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }
 
@@ -212,8 +211,10 @@ public class MachineAnnotationServiceService {
     var request = fdoRecordService.buildRollbackCreateRequest(masRecord.id());
     try {
       handleComponent.rollbackHandleCreation(request);
-    } catch (PidAuthenticationException | PidCreationException e){
-      log.error("Unable to rollback handle creation for MAS. Manually delete the following handle: {}. Cause of error: ", masRecord.id(), e);
+    } catch (PidAuthenticationException | PidCreationException e) {
+      log.error(
+          "Unable to rollback handle creation for MAS. Manually delete the following handle: {}. Cause of error: ",
+          masRecord.id(), e);
     }
     repository.rollbackMasCreation(masRecord.id());
     var name = getName(masRecord.id());

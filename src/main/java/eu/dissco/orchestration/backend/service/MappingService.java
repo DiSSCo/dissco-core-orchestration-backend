@@ -67,8 +67,10 @@ public class MappingService {
     var request = fdoRecordService.buildRollbackCreateRequest(mappingRecord.id());
     try {
       handleComponent.rollbackHandleCreation(request);
-    } catch (PidAuthenticationException | PidCreationException e){
-      log.error("Unable to rollback handle creation for mapping. Manually delete the following handle: {}. Cause of error: ", mappingRecord.id(), e);
+    } catch (PidAuthenticationException | PidCreationException e) {
+      log.error(
+          "Unable to rollback handle creation for mapping. Manually delete the following handle: {}. Cause of error: ",
+          mappingRecord.id(), e);
     }
     repository.rollbackMappingCreation(mappingRecord.id());
   }

@@ -20,6 +20,7 @@ import reactor.util.retry.Retry;
 @RequiredArgsConstructor
 @Slf4j
 public class TokenAuthenticator {
+
   private final TokenProperties properties;
 
   @Qualifier("tokenClient")
@@ -45,7 +46,8 @@ public class TokenAuthenticator {
       return getToken(tokenNode);
     } catch (InterruptedException | ExecutionException e) {
       Thread.currentThread().interrupt();
-      log.info("Unable to authenticate processing service with Keycloak. Verify client secret is up to-date");
+      log.info(
+          "Unable to authenticate processing service with Keycloak. Verify client secret is up to-date");
       throw new PidAuthenticationException(
           "Unable to authenticate processing service with Keycloak. More information: "
               + e.getMessage());
@@ -60,5 +62,4 @@ public class TokenAuthenticator {
     throw new PidAuthenticationException(
         "Unable to authenticate processing service with Keycloak. An error has occurred parsing keycloak response");
   }
-
 }

@@ -38,13 +38,16 @@ public class HandleComponent {
     return parseResponse(responseJson);
   }
 
-  public void rollbackHandleCreation(JsonNode request) throws PidCreationException, PidAuthenticationException {
+  public void rollbackHandleCreation(JsonNode request)
+      throws PidCreationException, PidAuthenticationException {
     var requestBody = BodyInserters.fromValue(request);
     var response = sendRequest(HttpMethod.DELETE, requestBody, "rollback");
     validateResponse(response);
   }
 
-  private <T> Mono<JsonNode> sendRequest(HttpMethod httpMethod, BodyInserter<T, ReactiveHttpOutputMessage> requestBody, String endpoint) throws PidAuthenticationException {
+  private <T> Mono<JsonNode> sendRequest(HttpMethod httpMethod,
+      BodyInserter<T, ReactiveHttpOutputMessage> requestBody, String endpoint)
+      throws PidAuthenticationException {
     var token = "Bearer " + tokenAuthenticator.getToken();
     return handleClient
         .method(httpMethod)
@@ -64,7 +67,8 @@ public class HandleComponent {
                     "External Service failed to process after max retries")));
   }
 
-  private JsonNode validateResponse (Mono<JsonNode> response) throws PidCreationException, PidAuthenticationException {
+  private JsonNode validateResponse(Mono<JsonNode> response)
+      throws PidCreationException, PidAuthenticationException {
     try {
       return response.toFuture().get();
     } catch (InterruptedException e) {
@@ -82,14 +86,13 @@ public class HandleComponent {
     }
   }
 
-  private String parseResponse(JsonNode apiResponse) throws PidCreationException{
+  private String parseResponse(JsonNode apiResponse) throws PidCreationException {
     try {
       return apiResponse.get("data").get(0).get("id").asText();
-    } catch (NullPointerException e){
-      log.error("Unable to parse response from handle server. Received response does not contain  \"id\" field");
+    } catch (NullPointerException e) {
+      log.error(
+          "Unable to parse response from handle server. Received response does not contain  \"id\" field");
       throw new PidCreationException("Unable to parse response from handle server");
     }
   }
-
-
 }
