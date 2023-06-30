@@ -7,9 +7,13 @@ import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties("kafka.publisher")
-public class KafkaPublisherProperties {
+@ConfigurationProperties("mas")
+public class MachineAnnotationServiceProperties {
 
   @NotBlank
-  private String host;
+  private String namespace = "machine-annotation-services";
+
+  @NotBlank
+  private String kafkaHost;
+
 }

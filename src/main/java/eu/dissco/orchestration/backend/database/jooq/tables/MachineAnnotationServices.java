@@ -13,12 +13,12 @@ import java.util.function.Function;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Function18;
+import org.jooq.Function20;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Records;
-import org.jooq.Row18;
+import org.jooq.Row20;
 import org.jooq.Schema;
 import org.jooq.SelectField;
 import org.jooq.Table;
@@ -146,6 +146,16 @@ public class MachineAnnotationServices extends TableImpl<MachineAnnotationServic
     public final TableField<MachineAnnotationServicesRecord, String> SLA_DOCUMENTATION = createField(DSL.name("sla_documentation"), SQLDataType.CLOB, this, "");
 
     /**
+     * The column <code>public.machine_annotation_services.topicname</code>.
+     */
+    public final TableField<MachineAnnotationServicesRecord, String> TOPICNAME = createField(DSL.name("topicname"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.machine_annotation_services.maxreplicas</code>.
+     */
+    public final TableField<MachineAnnotationServicesRecord, Integer> MAXREPLICAS = createField(DSL.name("maxreplicas"), SQLDataType.INTEGER, this, "");
+
+    /**
      * The column <code>public.machine_annotation_services.deleted_on</code>.
      */
     public final TableField<MachineAnnotationServicesRecord, Instant> DELETED_ON = createField(DSL.name("deleted_on"), SQLDataType.INSTANT, this, "");
@@ -235,18 +245,18 @@ public class MachineAnnotationServices extends TableImpl<MachineAnnotationServic
     }
 
     // -------------------------------------------------------------------------
-    // Row18 type methods
+    // Row20 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row18<String, Integer, String, Instant, String, String, String, JSONB, String, String, String, String, String, String, String[], String, String, Instant> fieldsRow() {
-        return (Row18) super.fieldsRow();
+    public Row20<String, Integer, String, Instant, String, String, String, JSONB, String, String, String, String, String, String, String[], String, String, String, Integer, Instant> fieldsRow() {
+        return (Row20) super.fieldsRow();
     }
 
     /**
      * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
      */
-    public <U> SelectField<U> mapping(Function18<? super String, ? super Integer, ? super String, ? super Instant, ? super String, ? super String, ? super String, ? super JSONB, ? super String, ? super String, ? super String, ? super String, ? super String, ? super String, ? super String[], ? super String, ? super String, ? super Instant, ? extends U> from) {
+    public <U> SelectField<U> mapping(Function20<? super String, ? super Integer, ? super String, ? super Instant, ? super String, ? super String, ? super String, ? super JSONB, ? super String, ? super String, ? super String, ? super String, ? super String, ? super String, ? super String[], ? super String, ? super String, ? super String, ? super Integer, ? super Instant, ? extends U> from) {
         return convertFrom(Records.mapping(from));
     }
 
@@ -254,7 +264,7 @@ public class MachineAnnotationServices extends TableImpl<MachineAnnotationServic
      * Convenience mapping calling {@link SelectField#convertFrom(Class,
      * Function)}.
      */
-    public <U> SelectField<U> mapping(Class<U> toType, Function18<? super String, ? super Integer, ? super String, ? super Instant, ? super String, ? super String, ? super String, ? super JSONB, ? super String, ? super String, ? super String, ? super String, ? super String, ? super String, ? super String[], ? super String, ? super String, ? super Instant, ? extends U> from) {
+    public <U> SelectField<U> mapping(Class<U> toType, Function20<? super String, ? super Integer, ? super String, ? super Instant, ? super String, ? super String, ? super String, ? super JSONB, ? super String, ? super String, ? super String, ? super String, ? super String, ? super String, ? super String[], ? super String, ? super String, ? super String, ? super Integer, ? super Instant, ? extends U> from) {
         return convertFrom(toType, Records.mapping(from));
     }
 }

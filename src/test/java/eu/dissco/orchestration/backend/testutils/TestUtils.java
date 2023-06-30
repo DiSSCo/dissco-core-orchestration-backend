@@ -68,7 +68,7 @@ public class TestUtils {
   public static JsonApiWrapper givenMasSingleJsonApiWrapper(int version) {
     var masRecord = givenMasRecord(version);
     return new JsonApiWrapper(new JsonApiData(
-        masRecord.pid(),
+        masRecord.id(),
         HandleType.MACHINE_ANNOTATION_SERVICE,
         flattenMasRecord(masRecord)
     ), new JsonApiLinks(MAS_PATH));
@@ -139,7 +139,7 @@ public class TestUtils {
   public static JsonApiListWrapper givenMasRecordResponse(
       List<MachineAnnotationServiceRecord> masRecords, JsonApiLinks linksNode) {
     var dataNode = masRecords.stream().map(
-        mas -> new JsonApiData(mas.pid(), HandleType.MACHINE_ANNOTATION_SERVICE,
+        mas -> new JsonApiData(mas.id(), HandleType.MACHINE_ANNOTATION_SERVICE,
             flattenMasRecord(mas))).toList();
     return new JsonApiListWrapper(dataNode, linksNode);
   }
@@ -237,7 +237,9 @@ public class TestUtils {
         "https://www.apache.org/licenses/LICENSE-2.0",
         List.of(),
         "dontmail@dissco.eu",
-        "https://www.know.dissco.tech/no_sla"
+        "https://www.know.dissco.tech/no_sla",
+        "fancy-topic-name",
+        5
     );
   }
 
