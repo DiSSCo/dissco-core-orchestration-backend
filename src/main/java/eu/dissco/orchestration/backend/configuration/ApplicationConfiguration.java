@@ -9,7 +9,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerFactory;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -24,8 +23,7 @@ public class ApplicationConfiguration {
     return new ObjectMapper().findAndRegisterModules();
   }
 
-  @Bean("yaml-mapper")
-  @Qualifier("yaml-mapper")
+  @Bean(name = "yaml-mapper")
   public ObjectMapper yamlObjectMapper() {
     return new ObjectMapper(new YAMLFactory()).findAndRegisterModules();
   }
@@ -49,6 +47,5 @@ public class ApplicationConfiguration {
     factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
     return factory;
   }
-
 
 }

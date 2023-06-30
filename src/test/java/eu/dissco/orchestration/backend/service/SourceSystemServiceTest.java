@@ -161,8 +161,8 @@ class SourceSystemServiceTest {
     ));
     given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord(2)), givenJsonPatch(),
-            SUBJECT_TYPE);
+        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord(2)),
+            givenJsonPatch(), SUBJECT_TYPE);
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
