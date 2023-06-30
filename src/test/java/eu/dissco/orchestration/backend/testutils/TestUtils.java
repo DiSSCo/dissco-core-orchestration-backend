@@ -258,7 +258,7 @@ public class TestUtils {
               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
               "issuedForAgent": "https://ror.org/0566bfb96",
               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-              "machineAnnotationServiceName":"A Machine Annotation Service"
+              "machineAnnotationServiceName":"fancy-topic-name"
             }
           }
         }""");

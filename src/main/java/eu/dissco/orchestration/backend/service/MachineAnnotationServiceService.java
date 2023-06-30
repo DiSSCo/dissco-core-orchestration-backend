@@ -69,7 +69,7 @@ public class MachineAnnotationServiceService {
   }
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
-      String path) throws TransformerException {
+      String path) {
     var requestBody = fdoRecordService.buildCreateRequest(mas, ObjectType.MAS);
     try {
       var handle = handleComponent.postHandle(requestBody);
@@ -209,11 +209,11 @@ public class MachineAnnotationServiceService {
 
   private void rollbackMasCreation(MachineAnnotationServiceRecord masRecord,
       boolean rollbackDeployment, boolean rollbackKeda) {
-    var request = fdoRecordService.buildRollbackCreateRequest(masRecord.pid());
+    var request = fdoRecordService.buildRollbackCreateRequest(masRecord.id());
     try {
       handleComponent.rollbackHandleCreation(request);
     } catch (PidAuthenticationException | PidCreationException e){
-      log.error("Unable to rollback handle creation for MAS. Manually delete the following handle: {}. Cause of error: ", masRecord.pid(), e);
+      log.error("Unable to rollback handle creation for MAS. Manually delete the following handle: {}. Cause of error: ", masRecord.id(), e);
     }
     repository.rollbackMasCreation(masRecord.id());
     var name = getName(masRecord.id());
