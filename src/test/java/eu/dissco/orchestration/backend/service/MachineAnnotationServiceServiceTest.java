@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -32,7 +31,6 @@ import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
-import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Clock;
 import java.time.Instant;
@@ -57,7 +55,7 @@ class MachineAnnotationServiceServiceTest {
   @Mock
   private HandleComponent handleComponent;
   @Mock
-  private FdoRecordBuilder fdoRecordBuilder;
+  private FdoRecordService fdoRecordService;
 
   private MachineAnnotationServiceService service;
 
@@ -67,7 +65,7 @@ class MachineAnnotationServiceServiceTest {
   @BeforeEach
   void setup() {
     initTime();
-    service = new MachineAnnotationServiceService(handleComponent, fdoRecordBuilder,
+    service = new MachineAnnotationServiceService(handleComponent, fdoRecordService,
         kafkaPublisherService, repository, MAPPER);
   }
 
@@ -89,7 +87,7 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
-    then(fdoRecordBuilder).should().buildCreateRequest(mas, ObjectType.MAS);
+    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMasRecord());
     then(kafkaPublisherService).should()
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()), SUBJECT_TYPE);
@@ -120,9 +118,9 @@ class MachineAnnotationServiceServiceTest {
         () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
 
     // Then
-    then(fdoRecordBuilder).should().buildCreateRequest(mas, ObjectType.MAS);
+    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMasRecord());
-    then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
   }
@@ -142,9 +140,9 @@ class MachineAnnotationServiceServiceTest {
         () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
 
     // Then
-    then(fdoRecordBuilder).should().buildCreateRequest(mas, ObjectType.MAS);
+    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMasRecord());
-    then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
   }

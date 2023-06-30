@@ -5,7 +5,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
@@ -14,7 +13,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecordResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingSingleJsonApiWrapper;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,7 +36,6 @@ import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
-import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Clock;
 import java.time.Instant;
@@ -59,7 +56,7 @@ class MappingServiceTest {
 
   private MappingService service;
   @Mock
-  private FdoRecordBuilder fdoRecordBuilder;
+  private FdoRecordService fdoRecordService;
   @Mock
   private HandleComponent handleComponent;
   @Mock
@@ -72,7 +69,7 @@ class MappingServiceTest {
 
   @BeforeEach
   void setup() {
-    service = new MappingService(fdoRecordBuilder,handleComponent, kafkaPublisherService, repository, MAPPER);
+    service = new MappingService(fdoRecordService,handleComponent, kafkaPublisherService, repository, MAPPER);
     initTime();
   }
 
@@ -94,7 +91,7 @@ class MappingServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
-    then(fdoRecordBuilder).should().buildCreateRequest(mapping, ObjectType.MAPPING);
+    then(fdoRecordService).should().buildCreateRequest(mapping, ObjectType.MAPPING);
     then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
     then(kafkaPublisherService).should()
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 1)),
@@ -115,9 +112,9 @@ class MappingServiceTest {
         () -> service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH));
 
     // Then
-    then(fdoRecordBuilder).should().buildCreateRequest(mapping, ObjectType.MAPPING);
+    then(fdoRecordService).should().buildCreateRequest(mapping, ObjectType.MAPPING);
     then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
-    then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMappingCreation(HANDLE);
   }
@@ -148,9 +145,9 @@ class MappingServiceTest {
         () -> service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH));
 
     // Then
-    then(fdoRecordBuilder).should().buildCreateRequest(mapping, ObjectType.MAPPING);
+    then(fdoRecordService).should().buildCreateRequest(mapping, ObjectType.MAPPING);
     then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
-    then(fdoRecordBuilder).should().buildRollbackCreateRequest(HANDLE);
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMappingCreation(HANDLE);
   }

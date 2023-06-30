@@ -18,11 +18,9 @@ import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
-import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
 import java.util.List;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,14 +33,14 @@ public class MachineAnnotationServiceService {
   public static final String SUBJECT_TYPE = "MachineAnnotationService";
 
   private final HandleComponent handleComponent;
-  private final FdoRecordBuilder fdoRecordBuilder;
+  private final FdoRecordService fdoRecordService;
   private final KafkaPublisherService kafkaPublisherService;
   private final MachineAnnotationServiceRepository repository;
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
       String path)  {
-    var requestBody = fdoRecordBuilder.buildCreateRequest(mas, ObjectType.MAS);
+    var requestBody = fdoRecordService.buildCreateRequest(mas, ObjectType.MAS);
     try {
       var handle = handleComponent.postHandle(requestBody);
       var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas, null);
@@ -65,7 +63,7 @@ public class MachineAnnotationServiceService {
   }
 
   private void rollbackMasCreation(MachineAnnotationServiceRecord masRecord) {
-    var request = fdoRecordBuilder.buildRollbackCreateRequest(masRecord.pid());
+    var request = fdoRecordService.buildRollbackCreateRequest(masRecord.pid());
     try {
       handleComponent.rollbackHandleCreation(request);
     } catch (PidAuthenticationException | PidCreationException e){

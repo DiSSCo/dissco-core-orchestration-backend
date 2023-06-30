@@ -1,4 +1,4 @@
-package eu.dissco.orchestration.backend.web;
+package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
@@ -12,6 +12,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.orchestration.backend.domain.ObjectType;
+import eu.dissco.orchestration.backend.service.FdoRecordService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,13 +21,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @Slf4j
-class FdoRecordBuilderTest {
+class FdoRecordServiceTest {
 
-  private FdoRecordBuilder builder;
+  private FdoRecordService builder;
 
   @BeforeEach
   void setup() {
-    this.builder = new FdoRecordBuilder(MAPPER);
+    this.builder = new FdoRecordService(MAPPER);
   }
   @Test
   void testCreateRequestSourceSystem() throws Exception {

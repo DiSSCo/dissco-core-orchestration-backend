@@ -18,12 +18,10 @@ import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
-import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,14 +32,14 @@ import org.springframework.stereotype.Service;
 public class MappingService {
 
   public static final String SUBJECT_TYPE = "Mapping";
-  private final FdoRecordBuilder fdoRecordBuilder;
+  private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
   private final KafkaPublisherService kafkaPublisherService;
   private final MappingRepository repository;
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createMapping(Mapping mapping, String userId, String path) {
-    var requestBody = fdoRecordBuilder.buildCreateRequest(mapping, ObjectType.MAPPING);
+    var requestBody = fdoRecordService.buildCreateRequest(mapping, ObjectType.MAPPING);
     String handle = null;
     try {
       handle = handleComponent.postHandle(requestBody);
@@ -66,7 +64,7 @@ public class MappingService {
   }
 
   private void rollbackMappingCreation(MappingRecord mappingRecord) {
-    var request = fdoRecordBuilder.buildRollbackCreateRequest(mappingRecord.id());
+    var request = fdoRecordService.buildRollbackCreateRequest(mappingRecord.id());
     try {
       handleComponent.rollbackHandleCreation(request);
     } catch (PidAuthenticationException | PidCreationException e){

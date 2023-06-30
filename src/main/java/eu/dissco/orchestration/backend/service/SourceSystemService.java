@@ -18,11 +18,9 @@ import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
-import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
 import java.util.List;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,7 +31,7 @@ import org.springframework.stereotype.Service;
 public class SourceSystemService {
 
   public static final String SUBJECT_TYPE = "SourceSystem";
-  private final FdoRecordBuilder fdoRecordBuilder;
+  private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
   private final SourceSystemRepository repository;
   private final MappingService mappingService;
@@ -43,7 +41,7 @@ public class SourceSystemService {
   public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String userId, String path)
       throws NotFoundException {
     String handle = null;
-    var request = fdoRecordBuilder.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM);
+    var request = fdoRecordService.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM);
     try {
       handle = handleComponent.postHandle(request);
     } catch (PidAuthenticationException | PidCreationException e){
@@ -69,7 +67,7 @@ public class SourceSystemService {
   }
 
   private void rollbackSourceSystemCreation(SourceSystemRecord sourceSystemRecord) {
-    var request = fdoRecordBuilder.buildRollbackCreateRequest(sourceSystemRecord.id());
+    var request = fdoRecordService.buildRollbackCreateRequest(sourceSystemRecord.id());
     try {
       handleComponent.rollbackHandleCreation(request);
     } catch (PidAuthenticationException | PidCreationException e) {

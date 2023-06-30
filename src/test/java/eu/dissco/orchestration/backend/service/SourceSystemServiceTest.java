@@ -9,7 +9,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenSourceSystemRecord;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
@@ -36,7 +35,6 @@ import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
-import eu.dissco.orchestration.backend.web.FdoRecordBuilder;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Clock;
 import java.time.Instant;
@@ -61,7 +59,7 @@ class SourceSystemServiceTest {
   @Mock
   private SourceSystemRepository repository;
   @Mock
-  private FdoRecordBuilder builder;
+  private FdoRecordService builder;
   @Mock
   private HandleComponent handleComponent;
   @Mock

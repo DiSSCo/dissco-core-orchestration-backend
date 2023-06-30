@@ -1,4 +1,4 @@
-package eu.dissco.orchestration.backend.web;
+package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.DIGITAL_OBJECT_TYPE;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.FDO_PROFILE;
@@ -17,11 +17,11 @@ import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 @RequiredArgsConstructor
-public class FdoRecordBuilder {
+public class FdoRecordService {
 
   private final ObjectMapper mapper;
 
