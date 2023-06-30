@@ -7,7 +7,7 @@ import java.time.Instant;
 
 public record MachineAnnotationServiceRecord(
     @NotBlank
-    String pid,
+    String id,
     @Positive
     int version,
     @NotNull

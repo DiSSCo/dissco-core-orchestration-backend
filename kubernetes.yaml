@@ -1,33 +1,51 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: orchestration-backend
+  name: dissco-orchestration-backend
   labels:
-    app: orchestration-backend
+    app: dissco-orchestration-backend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: orchestration-backend
+      app: dissco-orchestration-backend
   template:
     metadata:
       labels:
-        app: orchestration-backend
+        app: dissco-orchestration-backend
     spec:
-      serviceAccountName: orchestration-backend-sa
+      serviceAccountName: dissco-orchestration-backend-sa
       containers:
-        - name: orchestration-backend
-          image: leeflangjs/orchestration-backend:latest
+        - name: dissco-orchestration-backend
+          image: public.ecr.aws/dissco/dissco-core-orchestration-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
-            - name: keycloak.auth-server-url
-              value: https://login-demo.dissco.eu/auth
-            - name: keycloak.realm
-              value: dissco
-            - name: keycloak.resource
-              value: orchestration-service
+            - name: spring.datasource.url
+              value: jdbc:postgresql://database-1.cbppwfnjypll.eu-west-2.rds.amazonaws.com/dissco
+            - name: spring.datasource.username
+              valueFrom:
+                secretKeyRef:
+                  name: db-user-pass
+                  key: username
+            - name: spring.datasource.password
+              valueFrom:
+                secretKeyRef:
+                  name: db-user-pass
+                  key: password
+            - name: spring.security.oauth2.resourceserver.jwt.issuer-uri
+              value: https://login-demo.dissco.eu/auth/realms/dissco
+            - name: spring.security.oauth2.authorizationserver.endpoint.jwk-set-uri
+              value: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+            - name: jwt.auth.converter.resource-id
+              value: springboot-keycloak-client
+            - name: kafka.publisher.host
+              value: kafka.kafka.svc.cluster.local:9092
+            - name: mas.kafkaHost
+              value: kafka.kafka.svc.cluster.local:9092
+            - name: application.baseUrl
+              value: sandbox.dissco.tech
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
