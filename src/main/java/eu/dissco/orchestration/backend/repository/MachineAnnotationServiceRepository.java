@@ -28,7 +28,7 @@ public class MachineAnnotationServiceRepository {
 
   public void createMachineAnnotationService(MachineAnnotationServiceRecord masRecord) {
     context.insertInto(MACHINE_ANNOTATION_SERVICES)
-        .set(MACHINE_ANNOTATION_SERVICES.ID, masRecord.pid())
+        .set(MACHINE_ANNOTATION_SERVICES.ID, masRecord.id())
         .set(MACHINE_ANNOTATION_SERVICES.VERSION, masRecord.version())
         .set(MACHINE_ANNOTATION_SERVICES.NAME, masRecord.mas().getName())
         .set(MACHINE_ANNOTATION_SERVICES.CREATED, masRecord.created())
@@ -161,7 +161,7 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.TOPICNAME, masRecord.mas().getTopicName())
         .set(MACHINE_ANNOTATION_SERVICES.MAXREPLICAS, masRecord.mas().getMaxReplicas())
         .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, masRecord.deleted())
-        .where(MACHINE_ANNOTATION_SERVICES.ID.eq(masRecord.pid()))
+        .where(MACHINE_ANNOTATION_SERVICES.ID.eq(masRecord.id()))
         .execute();
   }
 

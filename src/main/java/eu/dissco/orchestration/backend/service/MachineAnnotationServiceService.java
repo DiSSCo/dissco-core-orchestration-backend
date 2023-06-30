@@ -19,7 +19,6 @@ import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
-import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
@@ -97,7 +96,7 @@ public class MachineAnnotationServiceService {
 
   private void deployKedaToCluster(MachineAnnotationServiceRecord masRecord)
       throws KubernetesFailedException {
-    var name = getName(masRecord.pid());
+    var name = getName(masRecord.id());
     try {
       var keda = createKedaFiles(masRecord, name);
       customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
@@ -115,7 +114,7 @@ public class MachineAnnotationServiceService {
 
   private boolean deployMasToCluster(MachineAnnotationServiceRecord masRecord, boolean create)
       throws KubernetesFailedException {
-    var name = getName(masRecord.pid());
+    var name = getName(masRecord.id());
     try {
       var deployment = getV1Deployment(masRecord, name);
       if (create) {
@@ -198,9 +197,9 @@ public class MachineAnnotationServiceService {
 
   private void rollbackMasCreation(MachineAnnotationServiceRecord masRecord,
       boolean rollbackDeployment, boolean rollbackKeda) {
-    handleService.rollbackHandleCreation(masRecord.pid());
-    repository.rollbackMasCreation(masRecord.pid());
-    var name = getName(masRecord.pid());
+    handleService.rollbackHandleCreation(masRecord.id());
+    repository.rollbackMasCreation(masRecord.id());
+    var name = getName(masRecord.id());
     if (rollbackDeployment) {
       try {
         appsV1Api.deleteNamespacedDeployment(name + DEPLOYMENT,
@@ -235,12 +234,12 @@ public class MachineAnnotationServiceService {
       if (mas.equals(currentMasRecord.mas())) {
         return null;
       } else {
-        var newMasRecord = new MachineAnnotationServiceRecord(currentMasRecord.pid(),
+        var newMasRecord = new MachineAnnotationServiceRecord(currentMasRecord.id(),
             currentMasRecord.version() + 1, Instant.now(), userId, mas, null);
         repository.updateMachineAnnotationService(newMasRecord);
         updateDeployment(newMasRecord, currentMasRecord);
         publishUpdateEvent(newMasRecord, currentMasRecord);
-        return wrapSingleResponse(newMasRecord.pid(), newMasRecord, path);
+        return wrapSingleResponse(newMasRecord.id(), newMasRecord, path);
       }
     } else {
       throw new NotFoundException("Requested machine annotation system: " + id + "does not exist");
@@ -262,7 +261,7 @@ public class MachineAnnotationServiceService {
   private void updateKedaResource(MachineAnnotationServiceRecord masRecord,
       MachineAnnotationServiceRecord rollbackRecord)
       throws KubernetesFailedException {
-    var name = getName(masRecord.pid());
+    var name = getName(masRecord.id());
     try {
       customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
           kubernetesProperties.getKedaVersion(), properties.getNamespace(),
@@ -296,7 +295,7 @@ public class MachineAnnotationServiceService {
     JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newMasRecord.mas()),
         mapper.valueToTree(currentMasRecord.mas()));
     try {
-      kafkaPublisherService.publishUpdateEvent(newMasRecord.pid(), mapper.valueToTree(newMasRecord),
+      kafkaPublisherService.publishUpdateEvent(newMasRecord.id(), mapper.valueToTree(newMasRecord),
           jsonPatch,
           SUBJECT_TYPE);
     } catch (JsonProcessingException e) {
@@ -315,7 +314,7 @@ public class MachineAnnotationServiceService {
       } catch (KubernetesFailedException e) {
         log.error(
             "Fatal exception, unable to rollback kubernetes deployment for: {} ",
-            currentMasRecord.pid(), e);
+            currentMasRecord.id(), e);
       }
     }
     if (rollbackKeda) {
@@ -324,7 +323,7 @@ public class MachineAnnotationServiceService {
       } catch (KubernetesFailedException e) {
         log.error(
             "Fatal exception, unable to rollback keda for: {} ",
-            currentMasRecord.pid(), e);
+            currentMasRecord.id(), e);
       }
     }
   }
@@ -341,7 +340,7 @@ public class MachineAnnotationServiceService {
   }
 
   private void deleteDeployment(MachineAnnotationServiceRecord currentMasRecord) {
-    var name = getName(currentMasRecord.pid());
+    var name = getName(currentMasRecord.id());
     try {
       appsV1Api.deleteNamespacedDeployment(name + DEPLOYMENT,
           properties.getNamespace(), null, null, null, null, null, null);
@@ -402,7 +401,7 @@ public class MachineAnnotationServiceService {
 
   private List<JsonApiData> wrapData(List<MachineAnnotationServiceRecord> masRecords) {
     return masRecords.stream()
-        .map(r -> new JsonApiData(r.pid(), HandleType.MACHINE_ANNOTATION_SERVICE,
+        .map(r -> new JsonApiData(r.id(), HandleType.MACHINE_ANNOTATION_SERVICE,
             flattenMasRecord(r)))
         .toList();
   }
