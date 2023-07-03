@@ -64,7 +64,7 @@ public class FdoRecordService {
 
   private JsonNode buildMasAttributes(MachineAnnotationService mas) {
     var attributes = buildGeneralAttributes(ObjectType.MAS);
-    attributes.put(MAS_NAME.getAttribute(), mas.getTopicName());
+    attributes.put(MAS_NAME.getAttribute(), mas.getName());
     return attributes;
   }
 
