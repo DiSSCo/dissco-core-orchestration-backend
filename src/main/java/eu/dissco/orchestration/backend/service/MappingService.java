@@ -8,17 +8,20 @@ import com.github.fge.jsonpatch.diff.JsonDiff;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
+import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,15 +32,20 @@ import org.springframework.stereotype.Service;
 public class MappingService {
 
   public static final String SUBJECT_TYPE = "Mapping";
-
-  private final HandleService handleService;
+  private final FdoRecordService fdoRecordService;
+  private final HandleComponent handleComponent;
   private final KafkaPublisherService kafkaPublisherService;
   private final MappingRepository repository;
   private final ObjectMapper mapper;
 
-  public JsonApiWrapper createMapping(Mapping mapping, String userId, String path)
-      throws TransformerException {
-    var handle = handleService.createNewHandle(HandleType.MAPPING);
+  public JsonApiWrapper createMapping(Mapping mapping, String userId, String path) {
+    var requestBody = fdoRecordService.buildCreateRequest(mapping, ObjectType.MAPPING);
+    String handle = null;
+    try {
+      handle = handleComponent.postHandle(requestBody);
+    } catch (PidAuthenticationException | PidCreationException e) {
+      throw new ProcessingFailedException(e.getMessage(), e);
+    }
     var mappingRecord = new MappingRecord(handle, 1, Instant.now(), null, userId, mapping);
     repository.createMapping(mappingRecord);
     publishCreateEvent(handle, mappingRecord);
@@ -56,7 +64,14 @@ public class MappingService {
   }
 
   private void rollbackMappingCreation(MappingRecord mappingRecord) {
-    handleService.rollbackHandleCreation(mappingRecord.id());
+    var request = fdoRecordService.buildRollbackCreateRequest(mappingRecord.id());
+    try {
+      handleComponent.rollbackHandleCreation(request);
+    } catch (PidAuthenticationException | PidCreationException e) {
+      log.error(
+          "Unable to rollback handle creation for mapping. Manually delete the following handle: {}. Cause of error: ",
+          mappingRecord.id(), e);
+    }
     repository.rollbackMappingCreation(mappingRecord.id());
   }
 

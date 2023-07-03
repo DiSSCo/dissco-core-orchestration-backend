@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.diff.JsonDiff;
 import eu.dissco.orchestration.backend.domain.HandleType;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
@@ -13,11 +14,13 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
+import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
 import java.util.List;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,18 +29,23 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class SourceSystemService {
-
   public static final String SUBJECT_TYPE = "SourceSystem";
-
+  private final FdoRecordService fdoRecordService;
+  private final HandleComponent handleComponent;
   private final SourceSystemRepository repository;
-  private final HandleService handleService;
   private final MappingService mappingService;
   private final KafkaPublisherService kafkaPublisherService;
   private final ObjectMapper mapper;
 
   public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String userId, String path)
-      throws TransformerException, NotFoundException {
-    var handle = handleService.createNewHandle(HandleType.SOURCE_SYSTEM);
+      throws NotFoundException {
+    String handle = null;
+    var request = fdoRecordService.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM);
+    try {
+      handle = handleComponent.postHandle(request);
+    } catch (PidAuthenticationException | PidCreationException e) {
+      throw new ProcessingFailedException(e.getMessage(), e);
+    }
     validateMappingExists(sourceSystem.mappingId());
     var sourceSystemRecord = new SourceSystemRecord(handle, 1, userId, Instant.now(), null,
         sourceSystem);
@@ -58,7 +66,14 @@ public class SourceSystemService {
   }
 
   private void rollbackSourceSystemCreation(SourceSystemRecord sourceSystemRecord) {
-    handleService.rollbackHandleCreation(sourceSystemRecord.id());
+    var request = fdoRecordService.buildRollbackCreateRequest(sourceSystemRecord.id());
+    try {
+      handleComponent.rollbackHandleCreation(request);
+    } catch (PidAuthenticationException | PidCreationException e) {
+      log.error(
+          "Unable to rollback handle creation for source system. Manually delete the following handle: {}. Cause of error: ",
+          sourceSystemRecord.id(), e);
+    }
     repository.rollbackSourceSystemCreation(sourceSystemRecord.id());
   }
 
@@ -134,7 +149,6 @@ public class SourceSystemService {
       throw new NotFoundException("Requested source system: " + id + " does not exist");
     }
   }
-
 
   private JsonApiListWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,
       int pageSize, String path) {

@@ -16,9 +16,12 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.core.io.ClassPathResource;
 
 public class TestUtils {
 
@@ -240,5 +243,62 @@ public class TestUtils {
     );
   }
 
+  public static String loadResourceFile(String fileName) throws IOException {
+    return new String(new ClassPathResource(fileName).getInputStream()
+        .readAllBytes(), StandardCharsets.UTF_8);
+  }
 
+
+  public static JsonNode givenMasHandleRequest() throws Exception {
+    return MAPPER.readTree("""
+        {
+          "data": {
+            "type": "machineAnnotationService",
+            "attributes": {
+              "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "issuedForAgent": "https://ror.org/0566bfb96",
+              "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "machineAnnotationServiceName":"A Machine Annotation Service"
+            }
+          }
+        }""");
+  }
+
+  public static JsonNode givenSourceSystemHandleRequest() throws Exception{
+    return MAPPER.readTree("""
+        {
+          "data": {
+            "type": "sourceSystem",
+            "attributes": {
+              "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "issuedForAgent": "https://ror.org/0566bfb96",
+              "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "sourceSystemName":"Naturalis Tunicate DWCA endpoint"
+            }
+          }
+        }""");
+  }
+
+  public static JsonNode givenMappingHandleRequest() throws Exception {
+    return MAPPER.readTree("""
+        {
+          "data": {
+            "type": "mapping",
+            "attributes": {
+              "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "issuedForAgent": "https://ror.org/0566bfb96",
+              "digitalObjectType": "https://hdl.handle.net/21.T11148/b3f1045d8524d863ccfb",
+              "sourceDataStandard": "dwc"
+            }
+          }
+        }""");
+  }
+
+  public  static JsonNode givenRollbackCreationRequest() throws Exception{
+    return MAPPER.readTree("""
+        {
+          "data":
+            [{"id":"20.5000.1025/GW0-POP-XSL"}]
+        }""");
+  }
 }

@@ -20,20 +20,23 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
@@ -60,11 +63,14 @@ class MachineAnnotationServiceServiceTest {
   private final Configuration configuration = new Configuration(Configuration.VERSION_2_3_32);
   private final KubernetesProperties kubernetesProperties = new KubernetesProperties();
   @Mock
-  private HandleService handleService;
-  @Mock
   private MachineAnnotationServiceRepository repository;
   @Mock
   private KafkaPublisherService kafkaPublisherService;
+  @Mock
+  private HandleComponent handleComponent;
+  @Mock
+  private FdoRecordService fdoRecordService;
+
   @Mock
   private MachineAnnotationServiceProperties properties;
   @Mock
@@ -79,10 +85,11 @@ class MachineAnnotationServiceServiceTest {
   @BeforeEach
   void setup() throws IOException {
     initTime();
+
     initFreeMaker();
     var kedaTemplate = configuration.getTemplate("keda-template.ftl");
     var deploymentTemplate = configuration.getTemplate("mas-template.ftl");
-    service = new MachineAnnotationServiceService(handleService, kafkaPublisherService, repository,
+    service = new MachineAnnotationServiceService(handleComponent, fdoRecordService, kafkaPublisherService, repository,
         appsV1Api, customObjectsApi, kedaTemplate, deploymentTemplate, MAPPER, properties,
         kubernetesProperties);
   }
@@ -102,7 +109,7 @@ class MachineAnnotationServiceServiceTest {
     // Given
     var expected = givenMasSingleJsonApiWrapper();
     var mas = givenMas();
-    given(handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
 
@@ -111,6 +118,7 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMasRecord());
     then(appsV1Api).should()
         .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null), eq(null),
@@ -123,10 +131,21 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
+  void testCreateMasHandleFails() throws Exception {
+    // Given
+    var mas = givenMas();
+    willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
+
+    // Then
+    assertThrowsExactly(ProcessingFailedException.class, () ->
+        service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+  }
+
+  @Test
   void testCreateMasDeployFails() throws Exception {
     // Given
     var mas = givenMas();
-    given(handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null),
@@ -138,7 +157,7 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     then(repository).should().createMachineAnnotationService(givenMasRecord());
-    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
     then(customObjectsApi).shouldHaveNoInteractions();
   }
@@ -147,7 +166,7 @@ class MachineAnnotationServiceServiceTest {
   void testCreateKedaFails() throws Exception {
     // Given
     var mas = givenMas();
-    given(handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
@@ -163,7 +182,7 @@ class MachineAnnotationServiceServiceTest {
     then(appsV1Api).should()
         .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null), eq(null),
             eq(null), eq(null));
-    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
     then(appsV1Api).should()
         .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
@@ -174,7 +193,7 @@ class MachineAnnotationServiceServiceTest {
   void testCreateMasKafkaFails() throws Exception {
     // Given
     var mas = givenMas();
-    given(handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
@@ -186,14 +205,19 @@ class MachineAnnotationServiceServiceTest {
         () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
 
     // Then
+    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMasRecord());
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
+
     then(appsV1Api).should()
         .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null), eq(null),
             eq(null), eq(null));
     then(customObjectsApi).should()
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             any(Object.class), eq(null), eq(null), eq(null));
-    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
     then(appsV1Api).should()
         .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
@@ -203,6 +227,48 @@ class MachineAnnotationServiceServiceTest {
             eq(SUFFIX.toLowerCase() + "-scaled-object"), eq(null), eq(null), eq(null), eq(null),
             eq(null));
   }
+
+  @Test
+  void testCreateMasKafkaAndPidFails() throws Exception {
+    // Given
+    var mas = givenMas();
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
+    given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
+    given(properties.getNamespace()).willReturn("namespace");
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()),
+            SUBJECT_TYPE);
+    willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
+
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+
+    // Then
+    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
+    then(repository).should().createMachineAnnotationService(givenMasRecord());
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
+
+    then(appsV1Api).should()
+        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null), eq(null),
+            eq(null), eq(null));
+    then(customObjectsApi).should()
+        .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
+            any(Object.class), eq(null), eq(null), eq(null));
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
+    then(repository).should().rollbackMasCreation(HANDLE);
+    then(appsV1Api).should()
+        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
+            eq(null), eq(null), eq(null), eq(null), eq(null), eq(null));
+    then(customObjectsApi).should()
+        .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
+            eq(SUFFIX.toLowerCase() + "-scaled-object"), eq(null), eq(null), eq(null), eq(null),
+            eq(null));
+  }
+
 
   @Test
   void testUpdateMas() throws Exception {

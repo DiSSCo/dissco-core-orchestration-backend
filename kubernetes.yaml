@@ -46,6 +46,14 @@ spec:
               value: kafka.kafka.svc.cluster.local:9092
             - name: application.baseUrl
               value: sandbox.dissco.tech
+            - name: token.id
+              value: demo-api-client
+            - name: token.grant-type
+              value: client_credentials
+            - name: endpoint.token-endpoint
+              value: https://login-demo.dissco.eu/auth/realms/dissco/protocol/openid-connect/token
+            - name: endpoint.handle-endpoint
+              value: https://sandbox.dissco.tech/handle-manager/api/v1/pids/
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false

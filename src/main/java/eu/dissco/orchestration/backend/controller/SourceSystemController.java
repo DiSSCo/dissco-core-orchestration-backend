@@ -11,7 +11,6 @@ import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import jakarta.servlet.http.HttpServletRequest;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -42,7 +41,7 @@ public class SourceSystemController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException, NotFoundException {
+      throws JsonProcessingException, NotFoundException {
     var sourceSystem = getSourceSystemFromRequest(requestBody);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var userId = authentication.getName();

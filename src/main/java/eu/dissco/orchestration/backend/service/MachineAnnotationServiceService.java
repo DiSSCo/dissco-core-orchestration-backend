@@ -9,16 +9,20 @@ import com.google.gson.JsonParser;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.KubernetesFailedException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
+import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
@@ -31,7 +35,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -46,7 +49,8 @@ public class MachineAnnotationServiceService {
   private static final String DEPLOYMENT = "-deployment";
   private static final String SCALED_OBJECT = "-scaled-object";
 
-  private final HandleService handleService;
+  private final HandleComponent handleComponent;
+  private final FdoRecordService fdoRecordService;
   private final KafkaPublisherService kafkaPublisherService;
   private final MachineAnnotationServiceRepository repository;
   private final AppsV1Api appsV1Api;
@@ -64,14 +68,21 @@ public class MachineAnnotationServiceService {
   }
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
-      String path) throws TransformerException {
-    var handle = handleService.createNewHandle(HandleType.MACHINE_ANNOTATION_SERVICE);
-    setDefaultMas(mas, handle);
-    var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas, null);
-    repository.createMachineAnnotationService(masRecord);
-    createDeployment(masRecord);
-    publishCreateEvent(handle, masRecord);
-    return wrapSingleResponse(handle, masRecord, path);
+      String path) {
+    var requestBody = fdoRecordService.buildCreateRequest(mas, ObjectType.MAS);
+    try {
+      var handle = handleComponent.postHandle(requestBody);
+      setDefaultMas(mas, handle);
+      var masRecord = new MachineAnnotationServiceRecord(handle, 1, Instant.now(), userId, mas,
+          null);
+      repository.createMachineAnnotationService(masRecord);
+      createDeployment(masRecord);
+      publishCreateEvent(handle, masRecord);
+      return wrapSingleResponse(handle, masRecord, path);
+    } catch (PidCreationException | PidAuthenticationException e) {
+      throw new ProcessingFailedException(e.getMessage(), e);
+    }
+
   }
 
   private void setDefaultMas(MachineAnnotationService mas, String handle) {
@@ -197,7 +208,14 @@ public class MachineAnnotationServiceService {
 
   private void rollbackMasCreation(MachineAnnotationServiceRecord masRecord,
       boolean rollbackDeployment, boolean rollbackKeda) {
-    handleService.rollbackHandleCreation(masRecord.id());
+    var request = fdoRecordService.buildRollbackCreateRequest(masRecord.id());
+    try {
+      handleComponent.rollbackHandleCreation(request);
+    } catch (PidAuthenticationException | PidCreationException e) {
+      log.error(
+          "Unable to rollback handle creation for MAS. Manually delete the following handle: {}. Cause of error: ",
+          masRecord.id(), e);
+    }
     repository.rollbackMasCreation(masRecord.id());
     var name = getName(masRecord.id());
     if (rollbackDeployment) {

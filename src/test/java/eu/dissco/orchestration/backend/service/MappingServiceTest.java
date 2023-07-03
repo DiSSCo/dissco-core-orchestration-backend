@@ -28,12 +28,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.repository.MappingRepository;
+import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -53,7 +56,9 @@ class MappingServiceTest {
 
   private MappingService service;
   @Mock
-  private HandleService handleService;
+  private FdoRecordService fdoRecordService;
+  @Mock
+  private HandleComponent handleComponent;
   @Mock
   private KafkaPublisherService kafkaPublisherService;
   @Mock
@@ -64,7 +69,7 @@ class MappingServiceTest {
 
   @BeforeEach
   void setup() {
-    service = new MappingService(handleService, kafkaPublisherService, repository, MAPPER);
+    service = new MappingService(fdoRecordService,handleComponent, kafkaPublisherService, repository, MAPPER);
     initTime();
   }
 
@@ -79,13 +84,14 @@ class MappingServiceTest {
     // Given
     var mapping = givenMapping();
     var expected = givenMappingSingleJsonApiWrapper();
-    given(handleService.createNewHandle(HandleType.MAPPING)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
 
     // When
     var result = service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
+    then(fdoRecordService).should().buildCreateRequest(mapping, ObjectType.MAPPING);
     then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
     then(kafkaPublisherService).should()
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 1)),
@@ -96,7 +102,7 @@ class MappingServiceTest {
   void testCreateMappingKafkaFails() throws Exception {
     // Given
     var mapping = givenMapping();
-    given(handleService.createNewHandle(HandleType.MAPPING)).willReturn(HANDLE);
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 1)),
             SUBJECT_TYPE);
@@ -106,10 +112,46 @@ class MappingServiceTest {
         () -> service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH));
 
     // Then
+    then(fdoRecordService).should().buildCreateRequest(mapping, ObjectType.MAPPING);
     then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
-    then(handleService).should().rollbackHandleCreation(HANDLE);
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMappingCreation(HANDLE);
   }
+
+  @Test
+  void testCreateMasHandleFails() throws Exception {
+    // Given
+    var mapping = givenMapping();
+    willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
+
+    // Then
+    assertThrowsExactly(ProcessingFailedException.class, () ->
+        service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH));
+  }
+
+  @Test
+  void testCreateMappingKafkaAndRollbackFails() throws Exception {
+    // Given
+    var mapping = givenMapping();
+    given(handleComponent.postHandle(any())).willReturn(HANDLE);
+    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMappingRecord(HANDLE, 1)),
+            SUBJECT_TYPE);
+    willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.createMapping(mapping, OBJECT_CREATOR, MAPPING_PATH));
+
+    // Then
+    then(fdoRecordService).should().buildCreateRequest(mapping, ObjectType.MAPPING);
+    then(repository).should().createMapping(givenMappingRecord(HANDLE, 1));
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
+    then(repository).should().rollbackMappingCreation(HANDLE);
+  }
+
 
   @Test
   void testUpdateMapping() throws Exception {

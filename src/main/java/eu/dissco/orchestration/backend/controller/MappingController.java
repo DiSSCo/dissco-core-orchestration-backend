@@ -13,7 +13,6 @@ import eu.dissco.orchestration.backend.service.MappingService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -46,7 +45,7 @@ public class MappingController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws TransformerException, JsonProcessingException {
+      throws JsonProcessingException {
     var mapping = getMappingFromRequest(requestBody);
     var userId = authentication.getName();
     log.info("Received create request for mapping: {} from user: {}", mapping, userId);
