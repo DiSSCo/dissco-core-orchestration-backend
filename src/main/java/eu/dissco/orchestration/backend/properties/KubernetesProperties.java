@@ -3,6 +3,8 @@ package eu.dissco.orchestration.backend.properties;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
+
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -34,5 +36,8 @@ public class KubernetesProperties {
 
   @NotBlank
   private String kedaResource = "scaledobjects";
+
+  @Positive
+  private int kedaPatchWait = 500;
 
 }
