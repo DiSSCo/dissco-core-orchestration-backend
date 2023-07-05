@@ -292,6 +292,13 @@ public class MachineAnnotationServiceService {
       throw new KubernetesFailedException("Failed to remove keda from cluster");
     }
     try {
+      Thread.sleep(kubernetesProperties.getKedaPatchWait());
+    } catch (InterruptedException e) {
+      log.error("Application interrupted", e);
+      Thread.currentThread().interrupt();
+      throw new ProcessingFailedException("Application was interrupted during KEDA recreate", e);
+    }
+    try {
       deployKedaToCluster(masRecord);
     } catch (KubernetesFailedException e) {
       log.error(
