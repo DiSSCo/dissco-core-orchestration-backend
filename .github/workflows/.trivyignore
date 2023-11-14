@@ -1,4 +1,4 @@
-# Date: June 16, 2023
-# Issue: snappy-java high issue, https://www.cvedetails.com/cve/CVE-2023-34453/
-# Solution: Spring needs to update its version
-CVE-2023-34455
+# Date: November 14, 2023
+# Issue: openssl: Incorrect cipher key and IV length processing https://avd.aquasec.com/nvd/cve-2023-5363
+# Solution: Docker image needs an update
+CVE-2023-5363
