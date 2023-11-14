@@ -33,8 +33,10 @@ public class HandleComponent {
   public String postHandle(JsonNode request)
       throws PidAuthenticationException, PidCreationException {
     var requestBody = BodyInserters.fromValue(List.of(request));
+    log.debug("Sending call to Handle API: {}", request.toPrettyString());
     var response = sendRequest(HttpMethod.POST, requestBody, "batch");
     var responseJson = validateResponse(response);
+    log.debug("Received response from Handle API: {}", responseJson.toPrettyString());
     return parseResponse(responseJson);
   }
 

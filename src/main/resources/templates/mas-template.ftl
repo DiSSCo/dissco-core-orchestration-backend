@@ -28,6 +28,14 @@
           "imagePullPolicy": "Always",
           "env": [
             {
+            "name": "MAS_NAME",
+            "value": "${name}"
+            },
+            {
+            "name": "MAS_ID",
+            "value": "${id}"
+            },
+            {
             "name": "KAFKA_CONSUMER_HOST",
             "value": "${kafkaHost}"
             },

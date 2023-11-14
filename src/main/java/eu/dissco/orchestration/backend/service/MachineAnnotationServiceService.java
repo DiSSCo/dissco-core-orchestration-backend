@@ -184,6 +184,7 @@ public class MachineAnnotationServiceService {
     map.put("image", masRecord.mas().getContainerImage());
     map.put("imageTag", masRecord.mas().getContainerTag());
     map.put("name", name);
+    map.put("id", masRecord.id());
     map.put("kafkaHost", properties.getKafkaHost());
     map.put("topicName", masRecord.mas().getTopicName());
     return map;
