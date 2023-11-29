@@ -23,7 +23,7 @@ public class ApplicationConfiguration {
     return new ObjectMapper().findAndRegisterModules();
   }
 
-  @Bean(name = "yaml-mapper")
+  @Bean(name = "yamlMapper")
   public ObjectMapper yamlObjectMapper() {
     return new ObjectMapper(new YAMLFactory()).findAndRegisterModules();
   }

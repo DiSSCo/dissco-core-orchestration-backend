@@ -2,28 +2,28 @@
   "apiVersion": "apps/v1",
   "kind": "Deployment",
   "metadata": {
-    "name": "${name}-deployment",
+    "name": "${pid}-deployment",
     "labels": {
-      "app": "${name}"
+      "app": "${pid}"
     }
   },
   "spec": {
     "replicas": 1,
     "selector": {
       "matchLabels": {
-        "app": "${name}"
+        "app": "${pid}"
       }
     },
     "template": {
       "metadata": {
         "labels": {
-          "app": "${name}"
+          "app": "${pid}"
         }
       },
       "spec": {
         "containers": [
           {
-          "name": "${name}",
+          "name": "${pid}",
           "image": "${image}:${imageTag}",
           "imagePullPolicy": "Always",
           "env": [
@@ -49,7 +49,7 @@
             },
             {
             "name": "KAFKA_PRODUCER_TOPIC",
-            "value": "annotations"
+            "value": "annotation"
             },
             {
             "name": "KAFKA_CONSUMER_GROUP",

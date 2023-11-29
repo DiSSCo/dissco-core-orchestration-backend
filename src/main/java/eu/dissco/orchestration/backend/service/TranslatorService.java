@@ -38,7 +38,7 @@ public class TranslatorService {
 
   public TranslatorService(
       TranslatorJobProperties jobProperties, Configuration configuration,
-      @Qualifier("yaml-mapper") ObjectMapper mapper, BatchV1Api batchV1Api) {
+      @Qualifier("yamlMapper") ObjectMapper mapper, BatchV1Api batchV1Api) {
     this.jobProperties = jobProperties;
     this.configuration = configuration;
     this.mapper = mapper;
@@ -126,12 +126,12 @@ public class TranslatorService {
 
   public List<TranslatorResponse> getAll() throws ApiException {
     return batchV1Api.listNamespacedJob(NAMESPACE, null, null, null, null, null, null, null, null,
-        null, null).getItems().stream().map(this::mapToResponse).toList();
+        null, null, null).getItems().stream().map(this::mapToResponse).toList();
   }
 
   public Optional<TranslatorResponse> get(String id) throws ApiException {
     return batchV1Api.listNamespacedJob(NAMESPACE, null, null, null, null, null, null, null, null,
-            null, null).getItems().stream().filter(Objects::nonNull)
+            null, null, null).getItems().stream().filter(Objects::nonNull)
         .filter(v1Job -> v1Job.getMetadata().getName().equals(id))
         .map(this::mapToResponse).findAny();
   }
