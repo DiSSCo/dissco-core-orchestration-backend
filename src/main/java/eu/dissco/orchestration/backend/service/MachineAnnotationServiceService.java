@@ -55,9 +55,9 @@ public class MachineAnnotationServiceService {
   private final MachineAnnotationServiceRepository repository;
   private final AppsV1Api appsV1Api;
   private final CustomObjectsApi customObjectsApi;
-  @Qualifier("keda-template")
+  @Qualifier("kedaTemplate")
   private final Template kedaTemplate;
-  @Qualifier("deployment-template")
+  @Qualifier("deploymentTemplate")
   private final Template deploymentTemplate;
   private final ObjectMapper mapper;
   private final MachineAnnotationServiceProperties properties;

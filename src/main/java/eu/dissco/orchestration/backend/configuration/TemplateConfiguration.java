@@ -12,12 +12,12 @@ public class TemplateConfiguration {
 
   private final freemarker.template.Configuration configuration;
 
-  @Bean(name = "keda-template")
+  @Bean(name = "kedaTemplate")
   public Template kedaTemplate() throws IOException {
     return configuration.getTemplate("keda-template.ftl");
   }
 
-  @Bean(name = "deployment-template")
+  @Bean(name = "deploymentTemplate")
   public Template deploymentTemplate() throws IOException {
     return configuration.getTemplate("mas-template.ftl");
   }
