@@ -125,14 +125,14 @@ public class MachineAnnotationServiceService {
 
   private boolean deployMasToCluster(MachineAnnotationServiceRecord masRecord, boolean create)
       throws KubernetesFailedException {
-    var name = getName(masRecord.id());
+    var shortPid = getName(masRecord.id());
     try {
-      var deployment = getV1Deployment(masRecord, name);
+      var deployment = getV1Deployment(masRecord, shortPid);
       if (create) {
         appsV1Api.createNamespacedDeployment(properties.getNamespace(),
             deployment, null, null, null, null);
       } else {
-        appsV1Api.replaceNamespacedDeployment(name + DEPLOYMENT,
+        appsV1Api.replaceNamespacedDeployment(shortPid + DEPLOYMENT,
             properties.getNamespace(), deployment, null, null, null, null);
       }
     } catch (IOException | TemplateException e) {
@@ -146,9 +146,9 @@ public class MachineAnnotationServiceService {
     return true;
   }
 
-  private V1Deployment getV1Deployment(MachineAnnotationServiceRecord masRecord, String name)
+  private V1Deployment getV1Deployment(MachineAnnotationServiceRecord masRecord, String shortPid)
       throws IOException, TemplateException {
-    var templateProperties = getDeploymentTemplateProperties(masRecord, name);
+    var templateProperties = getDeploymentTemplateProperties(masRecord, shortPid);
     var deploymentString = fillDeploymentTemplate(templateProperties);
     return mapper.readValue(deploymentString.toString(), V1Deployment.class);
   }
@@ -179,11 +179,12 @@ public class MachineAnnotationServiceService {
 
   private Map<String, Object> getDeploymentTemplateProperties(
       MachineAnnotationServiceRecord masRecord,
-      String name) {
+      String shortPid) {
     var map = new HashMap<String, Object>();
     map.put("image", masRecord.mas().getContainerImage());
     map.put("imageTag", masRecord.mas().getContainerTag());
-    map.put("name", name);
+    map.put("pid", shortPid);
+    map.put("name", masRecord.mas().getName());
     map.put("id", masRecord.id());
     map.put("kafkaHost", properties.getKafkaHost());
     map.put("topicName", masRecord.mas().getTopicName());
