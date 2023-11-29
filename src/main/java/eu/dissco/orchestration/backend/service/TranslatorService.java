@@ -38,7 +38,7 @@ public class TranslatorService {
 
   public TranslatorService(
       TranslatorJobProperties jobProperties, Configuration configuration,
-      @Qualifier("yaml-mapper") ObjectMapper mapper, BatchV1Api batchV1Api) {
+      @Qualifier("yamlMapper") ObjectMapper mapper, BatchV1Api batchV1Api) {
     this.jobProperties = jobProperties;
     this.configuration = configuration;
     this.mapper = mapper;
