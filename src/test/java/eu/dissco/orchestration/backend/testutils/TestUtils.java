@@ -8,6 +8,7 @@ import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.MasInput;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
@@ -239,15 +240,15 @@ public class TestUtils {
         "dontmail@dissco.eu",
         "https://www.know.dissco.tech/no_sla",
         "fancy-topic-name",
-        5
+        5,
+        givenMasInput()
     );
   }
 
-  public static String loadResourceFile(String fileName) throws IOException {
-    return new String(new ClassPathResource(fileName).getInputStream()
-        .readAllBytes(), StandardCharsets.UTF_8);
-  }
+  public static MasInput givenMasInput(){
+    return new MasInput("input", "target");
 
+  }
 
   public static JsonNode givenMasHandleRequest() throws Exception {
     return MAPPER.readTree("""

@@ -50,5 +50,6 @@ create table machine_annotation_services
     sla_documentation text,
     topicname text,
     maxreplicas integer,
-    deleted_on timestamp with time zone
+    deleted_on timestamp with time zone,
+    mas_input jsonb
 );
