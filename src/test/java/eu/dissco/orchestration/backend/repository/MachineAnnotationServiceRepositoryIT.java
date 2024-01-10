@@ -75,6 +75,19 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
+  void testGetMasByIdNoMasInput() {
+    // Given
+    var expected = givenMasRecord(1, null);
+    postMass(List.of(expected));
+
+    // When
+    var result = repository.getMachineAnnotationService(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
   void testGetMass() {
     // Given
     int pageNum = 1;

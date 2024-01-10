@@ -109,7 +109,7 @@ public class MachineAnnotationServiceRepository {
 
   private MasInput mapToMasInput(JSONB masInput){
     try {
-      return masInput != null ? mapper.readValue(masInput.data(), MasInput.class) : null;
+      return mapper.readValue(masInput.data(), MasInput.class);
     } catch (JsonProcessingException e){
       throw new DisscoJsonBMappingException("Failed to parse masInput to json: " + masInput.data(),
           e);

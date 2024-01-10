@@ -224,7 +224,18 @@ public class TestUtils {
     );
   }
 
-  public static MachineAnnotationService givenMas() {
+  public static MachineAnnotationServiceRecord givenMasRecord(int version, MasInput masInput) {
+    return new MachineAnnotationServiceRecord(
+        HANDLE,
+        version,
+        CREATED,
+        OBJECT_CREATOR,
+        givenMas(),
+        null
+    );
+  }
+
+  public static MachineAnnotationService givenMas(MasInput masInput) {
     return new MachineAnnotationService(
         "A Machine Annotation Service",
         "public.ecr.aws/dissco/fancy-mas",
@@ -241,8 +252,12 @@ public class TestUtils {
         "https://www.know.dissco.tech/no_sla",
         "fancy-topic-name",
         5,
-        givenMasInput()
+        masInput
     );
+  }
+
+  public static MachineAnnotationService givenMas() {
+    return givenMas(givenMasInput());
   }
 
   public static MasInput givenMasInput(){
