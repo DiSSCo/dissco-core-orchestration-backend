@@ -230,7 +230,7 @@ public class TestUtils {
         version,
         CREATED,
         OBJECT_CREATOR,
-        givenMas(),
+        givenMas(masInput),
         null
     );
   }

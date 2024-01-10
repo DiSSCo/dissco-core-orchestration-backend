@@ -47,6 +47,20 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
+  void testCreateMasNoMasInput() {
+    // Given
+    var masRecord = givenMasRecord(1, null);
+
+    // When
+    repository.createMachineAnnotationService(masRecord);
+    var result = repository.getMachineAnnotationServices(1, 10);
+
+    // Then
+    assertThat(result).containsOnly(masRecord);
+  }
+
+
+  @Test
   void testUpdateMas() {
     // Given
     var originalRecord = givenMasRecord();

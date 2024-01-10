@@ -62,10 +62,10 @@ public class MachineAnnotationServiceRepository {
         .execute();
   }
 
-  private JSONB setToJSONB(MasInput masInput){
+  private JSONB setToJSONB(MasInput masInput) {
     try {
       return masInput != null ? JSONB.jsonb(mapper.writeValueAsString(masInput)) : null;
-    } catch (JsonProcessingException e){
+    } catch (JsonProcessingException e) {
       throw new DisscoJsonBMappingException("Failed to parse field to jsonb: " + masInput, e);
     }
   }
@@ -107,10 +107,10 @@ public class MachineAnnotationServiceRepository {
     );
   }
 
-  private MasInput mapToMasInput(JSONB masInput){
+  private MasInput mapToMasInput(JSONB masInput) {
     try {
-      return mapper.readValue(masInput.data(), MasInput.class);
-    } catch (JsonProcessingException e){
+      return masInput != null ? mapper.readValue(masInput.data(), MasInput.class) : null;
+    } catch (JsonProcessingException e) {
       throw new DisscoJsonBMappingException("Failed to parse masInput to json: " + masInput.data(),
           e);
     }
