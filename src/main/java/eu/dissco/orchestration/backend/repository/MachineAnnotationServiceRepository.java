@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.MachineAnnotationServicesRecord;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
+import eu.dissco.orchestration.backend.domain.MasInput;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -57,7 +58,16 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.TOPICNAME, masRecord.mas().getTopicName())
         .set(MACHINE_ANNOTATION_SERVICES.MAXREPLICAS, masRecord.mas().getMaxReplicas())
         .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, masRecord.deleted())
+        .set(MACHINE_ANNOTATION_SERVICES.MAS_INPUT, setToJSONB(masRecord.mas().getMasInput()))
         .execute();
+  }
+
+  private JSONB setToJSONB(MasInput masInput) {
+    try {
+      return masInput != null ? JSONB.jsonb(mapper.writeValueAsString(masInput)) : null;
+    } catch (JsonProcessingException e) {
+      throw new DisscoJsonBMappingException("Failed to parse field to jsonb: " + masInput, e);
+    }
   }
 
   public Optional<MachineAnnotationServiceRecord> getActiveMachineAnnotationService(String id) {
@@ -90,10 +100,20 @@ public class MachineAnnotationServiceRepository {
             machineAnnotationServicesRecord.getSupportContact(),
             machineAnnotationServicesRecord.getSlaDocumentation(),
             machineAnnotationServicesRecord.getTopicname(),
-            machineAnnotationServicesRecord.getMaxreplicas()
+            machineAnnotationServicesRecord.getMaxreplicas(),
+            mapToMasInput(machineAnnotationServicesRecord.getMasInput())
         ),
         machineAnnotationServicesRecord.getDeletedOn()
     );
+  }
+
+  private MasInput mapToMasInput(JSONB masInput) {
+    try {
+      return masInput != null ? mapper.readValue(masInput.data(), MasInput.class) : null;
+    } catch (JsonProcessingException e) {
+      throw new DisscoJsonBMappingException("Failed to parse masInput to json: " + masInput.data(),
+          e);
+    }
   }
 
   private JsonNode mapToJson(JSONB jsonb) {
@@ -161,6 +181,7 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.TOPICNAME, masRecord.mas().getTopicName())
         .set(MACHINE_ANNOTATION_SERVICES.MAXREPLICAS, masRecord.mas().getMaxReplicas())
         .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, masRecord.deleted())
+        .set(MACHINE_ANNOTATION_SERVICES.MAS_INPUT, setToJSONB(masRecord.mas().getMasInput()))
         .where(MACHINE_ANNOTATION_SERVICES.ID.eq(masRecord.id()))
         .execute();
   }

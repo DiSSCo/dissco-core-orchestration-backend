@@ -6,6 +6,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasInput;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,6 +47,20 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
+  void testCreateMasNoMasInput() {
+    // Given
+    var masRecord = givenMasRecord(1, null);
+
+    // When
+    repository.createMachineAnnotationService(masRecord);
+    var result = repository.getMachineAnnotationServices(1, 10);
+
+    // Then
+    assertThat(result).containsOnly(masRecord);
+  }
+
+
+  @Test
   void testUpdateMas() {
     // Given
     var originalRecord = givenMasRecord();
@@ -64,6 +79,19 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   void testGetMasById() {
     // Given
     var expected = givenMasRecord();
+    postMass(List.of(expected));
+
+    // When
+    var result = repository.getMachineAnnotationService(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetMasByIdNoMasInput() {
+    // Given
+    var expected = givenMasRecord(1, null);
     postMass(List.of(expected));
 
     // When
@@ -186,7 +214,8 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
             "dontmail@dissco.eu",
             "https://www.know.dissco.tech/no_sla",
             "fancy-topic-name",
-            2
+            2,
+            givenMasInput()
         ),
         null
     );
