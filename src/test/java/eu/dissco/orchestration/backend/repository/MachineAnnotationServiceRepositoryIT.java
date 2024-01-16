@@ -1,12 +1,11 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOTATION_SERVICES;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOTATION_SERVICES_TMP;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasInput;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,7 +29,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(MACHINE_ANNOTATION_SERVICES).execute();
+    context.truncate(MACHINE_ANNOTATION_SERVICES_TMP).execute();
   }
 
   @Test
@@ -49,7 +48,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   @Test
   void testCreateMasNoMasInput() {
     // Given
-    var masRecord = givenMasRecord(1, null);
+    var masRecord = givenMasRecord(1);
 
     // When
     repository.createMachineAnnotationService(masRecord);
@@ -91,7 +90,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetMasByIdNoMasInput() {
     // Given
-    var expected = givenMasRecord(1, null);
+    var expected = givenMasRecord(1);
     postMass(List.of(expected));
 
     // When
@@ -215,7 +214,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
             "https://www.know.dissco.tech/no_sla",
             "fancy-topic-name",
             2,
-            givenMasInput()
+            false
         ),
         null
     );

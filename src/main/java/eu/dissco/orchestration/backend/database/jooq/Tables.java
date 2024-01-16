@@ -5,7 +5,7 @@ package eu.dissco.orchestration.backend.database.jooq;
 
 
 import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
-import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
+import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServicesTmp;
 import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 
@@ -22,9 +22,9 @@ public class Tables {
     public static final Handles HANDLES = Handles.HANDLES;
 
     /**
-     * The table <code>public.machine_annotation_services</code>.
+     * The table <code>public.machine_annotation_services_tmp</code>.
      */
-    public static final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
+    public static final MachineAnnotationServicesTmp MACHINE_ANNOTATION_SERVICES_TMP = MachineAnnotationServicesTmp.MACHINE_ANNOTATION_SERVICES_TMP;
 
     /**
      * The table <code>public.mapping</code>.
