@@ -28,7 +28,7 @@ create table mapping
         primary key (id, version)
 );
 
-create table machine_annotation_services_tmp
+create table machine_annotation_services
 (
     id text not null
         primary key,

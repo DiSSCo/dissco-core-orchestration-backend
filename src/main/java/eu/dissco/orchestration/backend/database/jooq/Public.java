@@ -5,11 +5,13 @@ package eu.dissco.orchestration.backend.database.jooq;
 
 
 import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
-import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServicesTmp;
+import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
 import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
+
 import java.util.Arrays;
 import java.util.List;
+
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
@@ -34,9 +36,9 @@ public class Public extends SchemaImpl {
     public final Handles HANDLES = Handles.HANDLES;
 
     /**
-     * The table <code>public.machine_annotation_services_tmp</code>.
+     * The table <code>public.machine_annotation_services</code>.
      */
-    public final MachineAnnotationServicesTmp MACHINE_ANNOTATION_SERVICES_TMP = MachineAnnotationServicesTmp.MACHINE_ANNOTATION_SERVICES_TMP;
+    public final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
 
     /**
      * The table <code>public.mapping</code>.
@@ -65,7 +67,7 @@ public class Public extends SchemaImpl {
     public final List<Table<?>> getTables() {
         return Arrays.asList(
             Handles.HANDLES,
-            MachineAnnotationServicesTmp.MACHINE_ANNOTATION_SERVICES_TMP,
+            MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES,
             Mapping.MAPPING,
             SourceSystem.SOURCE_SYSTEM
         );
