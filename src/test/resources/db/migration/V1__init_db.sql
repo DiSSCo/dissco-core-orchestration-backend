@@ -28,7 +28,7 @@ create table mapping
         primary key (id, version)
 );
 
-create table machine_annotation_services
+create table machine_annotation_services_tmp
 (
     id text not null
         primary key,
@@ -51,5 +51,5 @@ create table machine_annotation_services
     topicname text,
     maxreplicas integer,
     deleted_on timestamp with time zone,
-    mas_input jsonb
+    batching_permitted boolean not null
 );

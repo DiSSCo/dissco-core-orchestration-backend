@@ -8,7 +8,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasInput;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecordResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
@@ -21,7 +20,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 
@@ -642,7 +640,7 @@ class MachineAnnotationServiceServiceTest {
         OBJECT_CREATOR,
         new MachineAnnotationService("Another name", "public.ecr.aws/dissco/fancy-mas",
             "less-fancy", MAPPER.createObjectNode(), null, null, null, null, null, null, null, null,
-            null, "another-topic-name", 1, givenMasInput()),
+            null, "another-topic-name", 1, false),
         null
     ));
   }

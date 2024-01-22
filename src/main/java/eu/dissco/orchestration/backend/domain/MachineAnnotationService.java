@@ -25,5 +25,5 @@ public final class MachineAnnotationService {
   private final String slaDocumentation;
   private String topicName;
   private int maxReplicas;
-  private MasInput masInput;
+  private @NotBlank boolean batchingPermitted;
 }

@@ -8,7 +8,6 @@ import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
-import eu.dissco.orchestration.backend.domain.MasInput;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
@@ -17,12 +16,9 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.core.io.ClassPathResource;
 
 public class TestUtils {
 
@@ -224,18 +220,7 @@ public class TestUtils {
     );
   }
 
-  public static MachineAnnotationServiceRecord givenMasRecord(int version, MasInput masInput) {
-    return new MachineAnnotationServiceRecord(
-        HANDLE,
-        version,
-        CREATED,
-        OBJECT_CREATOR,
-        givenMas(masInput),
-        null
-    );
-  }
-
-  public static MachineAnnotationService givenMas(MasInput masInput) {
+  public static MachineAnnotationService givenMas() {
     return new MachineAnnotationService(
         "A Machine Annotation Service",
         "public.ecr.aws/dissco/fancy-mas",
@@ -252,17 +237,8 @@ public class TestUtils {
         "https://www.know.dissco.tech/no_sla",
         "fancy-topic-name",
         5,
-        masInput
+        false
     );
-  }
-
-  public static MachineAnnotationService givenMas() {
-    return givenMas(givenMasInput());
-  }
-
-  public static MasInput givenMasInput(){
-    return new MasInput("input", "target");
-
   }
 
   public static JsonNode givenMasHandleRequest() throws Exception {
