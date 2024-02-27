@@ -331,6 +331,7 @@ public class SourceSystemService {
   private Map<String, Object> getTemplateProperties(SourceSystemRecord sourceSystem,
       boolean isCronJob) {
     var map = new HashMap<String, Object>();
+    var cron = generateCron();
     var jobName = generateJobName(sourceSystem, isCronJob);
     map.put("image", jobProperties.getImage());
     map.put("sourceSystemId", sourceSystem.id());
@@ -339,9 +340,15 @@ public class SourceSystemService {
     map.put("kafkaHost", jobProperties.getKafkaHost());
     map.put("kafkaTopic", jobProperties.getKafkaTopic());
     if (isCronJob) {
-      map.put("cron", "0 0 * * *");
+      map.put("cron", cron);
     }
     return map;
+  }
+
+  private String generateCron() {
+    String day = RandomStringUtils.randomNumeric(0, 6);
+    String hour = RandomStringUtils.randomNumeric(0, 23);
+    return "0 " + hour + " * * " + day;
   }
 
   private StringWriter fillTemplate(Map<String, Object> templateProperties,
