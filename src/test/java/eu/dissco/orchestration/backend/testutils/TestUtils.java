@@ -3,6 +3,7 @@ package eu.dissco.orchestration.backend.testutils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
@@ -112,7 +113,8 @@ public class TestUtils {
         version,
         OBJECT_CREATOR,
         CREATED,
-        null, givenSourceSystem()
+        null,
+        givenSourceSystem()
     );
   }
 
@@ -121,6 +123,7 @@ public class TestUtils {
         OBJECT_NAME,
         SS_ENDPOINT,
         OBJECT_DESCRIPTION,
+        TranslatorType.biocase,
         HANDLE_ALT
     );
   }

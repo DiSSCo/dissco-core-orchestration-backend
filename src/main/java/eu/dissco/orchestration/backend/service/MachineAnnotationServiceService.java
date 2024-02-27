@@ -68,7 +68,7 @@ public class MachineAnnotationServiceService {
   }
 
   public JsonApiWrapper createMachineAnnotationService(MachineAnnotationService mas, String userId,
-      String path) {
+      String path) throws ProcessingFailedException {
     var requestBody = fdoRecordService.buildCreateRequest(mas, ObjectType.MAS);
     try {
       var handle = handleComponent.postHandle(requestBody);
@@ -94,7 +94,8 @@ public class MachineAnnotationServiceService {
     }
   }
 
-  private void createDeployment(MachineAnnotationServiceRecord masRecord) {
+  private void createDeployment(MachineAnnotationServiceRecord masRecord)
+      throws ProcessingFailedException {
     var successfulDeployment = false;
     try {
       successfulDeployment = deployMasToCluster(masRecord, true);
@@ -112,7 +113,7 @@ public class MachineAnnotationServiceService {
       var keda = createKedaFiles(masRecord, name);
       customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
           kubernetesProperties.getKedaVersion(), properties.getNamespace(),
-          kubernetesProperties.getKedaResource(), keda, null, null, null);
+          kubernetesProperties.getKedaResource(), keda).execute();
     } catch (TemplateException | IOException e) {
       log.error("Failed to create keda scaledObject files for: {}", masRecord, e);
       throw new KubernetesFailedException("Failed to deploy keda to cluster");
@@ -130,10 +131,10 @@ public class MachineAnnotationServiceService {
       var deployment = getV1Deployment(masRecord, shortPid);
       if (create) {
         appsV1Api.createNamespacedDeployment(properties.getNamespace(),
-            deployment, null, null, null, null);
+            deployment).execute();
       } else {
         appsV1Api.replaceNamespacedDeployment(shortPid + DEPLOYMENT,
-            properties.getNamespace(), deployment, null, null, null, null);
+            properties.getNamespace(), deployment).execute();
       }
     } catch (IOException | TemplateException e) {
       log.error("Failed to create deployment files for: {}", masRecord, e);
@@ -198,7 +199,8 @@ public class MachineAnnotationServiceService {
     return writer;
   }
 
-  private void publishCreateEvent(String handle, MachineAnnotationServiceRecord masRecord) {
+  private void publishCreateEvent(String handle, MachineAnnotationServiceRecord masRecord)
+      throws ProcessingFailedException {
     try {
       kafkaPublisherService.publishCreateEvent(handle, mapper.valueToTree(masRecord), SUBJECT_TYPE);
     } catch (JsonProcessingException e) {
@@ -223,7 +225,7 @@ public class MachineAnnotationServiceService {
     if (rollbackDeployment) {
       try {
         appsV1Api.deleteNamespacedDeployment(name + DEPLOYMENT,
-            properties.getNamespace(), null, null, null, null, null, null);
+            properties.getNamespace()).execute();
       } catch (ApiException e) {
         log.error(
             "Fatal exception, unable to rollback kubernetes deployment for: {} error message with code: {} and message: {}",
@@ -234,8 +236,7 @@ public class MachineAnnotationServiceService {
       try {
         customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
             kubernetesProperties.getKedaVersion(), properties.getNamespace(),
-            kubernetesProperties.getKedaResource(), name + SCALED_OBJECT, null,
-            null, null, null, null);
+            kubernetesProperties.getKedaResource(), name + SCALED_OBJECT).execute();
       } catch (ApiException e) {
         log.error(
             "Fatal exception, unable to rollback kubernetes keda for: {} error message with code: {} and message: {}",
@@ -246,7 +247,7 @@ public class MachineAnnotationServiceService {
 
   public JsonApiWrapper updateMachineAnnotationService(String id,
       MachineAnnotationService mas, String userId, String path)
-      throws NotFoundException {
+      throws NotFoundException, ProcessingFailedException {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var currentMasRecord = currentMasOptional.get();
@@ -267,7 +268,7 @@ public class MachineAnnotationServiceService {
   }
 
   private void updateDeployment(MachineAnnotationServiceRecord newMasRecord,
-      MachineAnnotationServiceRecord currentMasRecord) {
+      MachineAnnotationServiceRecord currentMasRecord) throws ProcessingFailedException {
     var successfulDeployment = false;
     try {
       successfulDeployment = deployMasToCluster(newMasRecord, false);
@@ -280,13 +281,12 @@ public class MachineAnnotationServiceService {
 
   private void updateKedaResource(MachineAnnotationServiceRecord masRecord,
       MachineAnnotationServiceRecord rollbackRecord)
-      throws KubernetesFailedException {
+      throws KubernetesFailedException, ProcessingFailedException {
     var name = getName(masRecord.id());
     try {
       customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
           kubernetesProperties.getKedaVersion(), properties.getNamespace(),
-          kubernetesProperties.getKedaResource(), name + SCALED_OBJECT, null,
-          null, null, null, null);
+          kubernetesProperties.getKedaResource(), name + SCALED_OBJECT).execute();
     } catch (ApiException e) {
       log.error(
           "Deletion of kubernetes keda failed for record: {}, with code: {} and message: {}",
@@ -318,7 +318,7 @@ public class MachineAnnotationServiceService {
   }
 
   private void publishUpdateEvent(MachineAnnotationServiceRecord newMasRecord,
-      MachineAnnotationServiceRecord currentMasRecord) {
+      MachineAnnotationServiceRecord currentMasRecord) throws ProcessingFailedException {
     JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newMasRecord.mas()),
         mapper.valueToTree(currentMasRecord.mas()));
     try {
@@ -333,7 +333,7 @@ public class MachineAnnotationServiceService {
   }
 
   private void rollbackToPreviousVersion(MachineAnnotationServiceRecord currentMasRecord,
-      boolean rollbackDeployment, boolean rollbackKeda) {
+      boolean rollbackDeployment, boolean rollbackKeda) throws ProcessingFailedException {
     repository.updateMachineAnnotationService(currentMasRecord);
     if (rollbackDeployment) {
       try {
@@ -355,7 +355,8 @@ public class MachineAnnotationServiceService {
     }
   }
 
-  public void deleteMachineAnnotationService(String id) throws NotFoundException {
+  public void deleteMachineAnnotationService(String id)
+      throws NotFoundException, ProcessingFailedException {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var deleted = Instant.now();
@@ -366,11 +367,11 @@ public class MachineAnnotationServiceService {
     }
   }
 
-  private void deleteDeployment(MachineAnnotationServiceRecord currentMasRecord) {
+  private void deleteDeployment(MachineAnnotationServiceRecord currentMasRecord)
+      throws ProcessingFailedException {
     var name = getName(currentMasRecord.id());
     try {
-      appsV1Api.deleteNamespacedDeployment(name + DEPLOYMENT,
-          properties.getNamespace(), null, null, null, null, null, null);
+      appsV1Api.deleteNamespacedDeployment(name + DEPLOYMENT, properties.getNamespace()).execute();
     } catch (ApiException e) {
       log.error(
           "Deletion of kubernetes deployment failed for record: {}, with code: {} and message: {}",
@@ -381,8 +382,7 @@ public class MachineAnnotationServiceService {
     try {
       customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
           kubernetesProperties.getKedaVersion(), properties.getNamespace(),
-          kubernetesProperties.getKedaResource(), name + SCALED_OBJECT,
-          null, null, null, null, null);
+          kubernetesProperties.getKedaResource(), name + SCALED_OBJECT).execute();
     } catch (ApiException e) {
       log.error(
           "Deletion of kubernetes keda failed for record: {}, with code: {} and message: {}",
@@ -417,8 +417,7 @@ public class MachineAnnotationServiceService {
   }
 
   private JsonApiListWrapper wrapResponse(List<MachineAnnotationServiceRecord> masRecords,
-      int pageNum,
-      int pageSize, String path) {
+      int pageNum, int pageSize, String path) {
     boolean hasNext = masRecords.size() > pageSize;
     masRecords = hasNext ? masRecords.subList(0, pageSize) : masRecords;
     var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);

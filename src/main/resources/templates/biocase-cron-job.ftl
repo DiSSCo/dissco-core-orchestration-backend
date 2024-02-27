@@ -1,27 +1,25 @@
 apiVersion: batch/v1
-kind: Job
+kind: CronJob
 metadata:
   name: ${jobName}
 spec:
-  backoffLimit: 2
-  template:
+  schedule: ${cron}
+  jobTemplate:
     spec:
-      restartPolicy: Never
-      containers:
-        - name: ${containerName}
-          image: ${image}
-          resources:
-            requests:
-              memory: 2G
-            limits:
-              memory: 2G
-          env:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: ${containerName}
+            image: ${image}
+            resources:
+              requests:
+                memory: 2G
+              limits:
+                memory: 2G
+            env:
             - name: spring.profiles.active
-              value: dwca
-            - name: dwca.download-file
-              value: /temp/darwin.zip
-            - name: dwca.temp-folder
-              value: /temp/darwin
+              value: biocase
             - name: kafka.host
               value: ${kafkaHost}
             - name: kafka.topic
@@ -46,12 +44,6 @@ spec:
               value: https://doi.org/21.T11148/894b1e6cad57e921764e
             - name: JAVA_OPTS
               value: -server -XX:+useContainerSupport -XX:MaxRAMPercentage=75 --illegal-access=deny
-          securityContext:
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
-          volumeMounts:
-            - mountPath: /temp
-              name: temp-volume
-      volumes:
-        - name: temp-volume
-          emptyDir: { }
+            securityContext:
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false

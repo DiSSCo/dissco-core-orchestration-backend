@@ -29,6 +29,7 @@ public class SourceSystemRepository {
         .set(SOURCE_SYSTEM.ENDPOINT, sourceSystemRecord.sourceSystem().endpoint())
         .set(SOURCE_SYSTEM.DESCRIPTION, sourceSystemRecord.sourceSystem().description())
         .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystemRecord.sourceSystem().mappingId())
+        .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, sourceSystemRecord.sourceSystem().translatorType())
         .execute();
   }
 
@@ -41,6 +42,7 @@ public class SourceSystemRepository {
         .set(SOURCE_SYSTEM.ENDPOINT, sourceSystemRecord.sourceSystem().endpoint())
         .set(SOURCE_SYSTEM.DESCRIPTION, sourceSystemRecord.sourceSystem().description())
         .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystemRecord.sourceSystem().mappingId())
+        .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, sourceSystemRecord.sourceSystem().translatorType())
         .where(SOURCE_SYSTEM.ID.eq(sourceSystemRecord.id())).execute();
   }
 
@@ -88,6 +90,7 @@ public class SourceSystemRepository {
             row.get(SOURCE_SYSTEM.NAME),
             row.get(SOURCE_SYSTEM.ENDPOINT),
             row.get(SOURCE_SYSTEM.DESCRIPTION),
+            row.get(SOURCE_SYSTEM.TRANSLATOR_TYPE),
             row.get(SOURCE_SYSTEM.MAPPING_ID)));
   }
 

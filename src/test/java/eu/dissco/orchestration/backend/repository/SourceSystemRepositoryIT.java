@@ -1,6 +1,7 @@
 package eu.dissco.orchestration.backend.repository;
 
 import static eu.dissco.orchestration.backend.database.jooq.Tables.SOURCE_SYSTEM;
+import static eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType.biocase;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
@@ -62,6 +63,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
             "new name",
             SS_ENDPOINT,
             OBJECT_DESCRIPTION,
+            biocase,
             HANDLE_ALT
         ));
 
@@ -199,6 +201,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
         OBJECT_NAME,
         endPoint,
         OBJECT_DESCRIPTION,
+        biocase,
         HANDLE_ALT
     );
   }
@@ -230,6 +233,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
         row.get(SOURCE_SYSTEM.NAME),
         row.get(SOURCE_SYSTEM.ENDPOINT),
         row.get(SOURCE_SYSTEM.DESCRIPTION),
+        row.get(SOURCE_SYSTEM.TRANSLATOR_TYPE),
         row.get(SOURCE_SYSTEM.MAPPING_ID)));
   }
 
@@ -243,6 +247,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
           .set(SOURCE_SYSTEM.NAME, sourceSystemRecord.sourceSystem().name())
           .set(SOURCE_SYSTEM.ENDPOINT, sourceSystemRecord.sourceSystem().endpoint())
           .set(SOURCE_SYSTEM.DESCRIPTION, sourceSystemRecord.sourceSystem().description())
+          .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, sourceSystemRecord.sourceSystem().translatorType())
           .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystemRecord.sourceSystem().mappingId())
           .set(SOURCE_SYSTEM.DELETED, sourceSystemRecord.deleted())
           .set(SOURCE_SYSTEM.CREATED, sourceSystemRecord.created()));
