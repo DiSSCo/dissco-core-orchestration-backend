@@ -118,7 +118,7 @@ class MachineAnnotationServiceControllerTest {
   }
 
   @Test
-  void testDeleteMas() throws NotFoundException {
+  void testDeleteMas() throws Exception {
     // When
     var result = controller.deleteMachineAnnotationService(authentication, PREFIX, SUFFIX);
 

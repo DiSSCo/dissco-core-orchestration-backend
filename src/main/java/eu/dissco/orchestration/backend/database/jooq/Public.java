@@ -4,7 +4,6 @@
 package eu.dissco.orchestration.backend.database.jooq;
 
 
-import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
 import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
 import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
@@ -29,11 +28,6 @@ public class Public extends SchemaImpl {
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
-
-    /**
-     * The table <code>public.handles</code>.
-     */
-    public final Handles HANDLES = Handles.HANDLES;
 
     /**
      * The table <code>public.machine_annotation_services</code>.
@@ -66,7 +60,6 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
-            Handles.HANDLES,
             MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES,
             Mapping.MAPPING,
             SourceSystem.SOURCE_SYSTEM

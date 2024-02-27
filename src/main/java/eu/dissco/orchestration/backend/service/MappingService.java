@@ -38,7 +38,8 @@ public class MappingService {
   private final MappingRepository repository;
   private final ObjectMapper mapper;
 
-  public JsonApiWrapper createMapping(Mapping mapping, String userId, String path) {
+  public JsonApiWrapper createMapping(Mapping mapping, String userId, String path)
+      throws ProcessingFailedException {
     var requestBody = fdoRecordService.buildCreateRequest(mapping, ObjectType.MAPPING);
     String handle = null;
     try {
@@ -52,7 +53,8 @@ public class MappingService {
     return wrapSingleResponse(handle, mappingRecord, path);
   }
 
-  private void publishCreateEvent(String handle, MappingRecord mappingRecord) {
+  private void publishCreateEvent(String handle, MappingRecord mappingRecord)
+      throws ProcessingFailedException {
     try {
       kafkaPublisherService.publishCreateEvent(handle, mapper.valueToTree(mappingRecord),
           SUBJECT_TYPE);
@@ -76,7 +78,7 @@ public class MappingService {
   }
 
   public JsonApiWrapper updateMapping(String id, Mapping mapping, String userId, String path)
-      throws NotFoundException {
+      throws NotFoundException, ProcessingFailedException {
     var currentVersion = repository.getActiveMapping(id);
     if (currentVersion.isEmpty()) {
       throw new NotFoundException("Requested mapping does not exist");
@@ -94,7 +96,7 @@ public class MappingService {
   }
 
   private void publishUpdateEvent(MappingRecord newMappingRecord,
-      MappingRecord currentMappingRecord) {
+      MappingRecord currentMappingRecord) throws ProcessingFailedException {
     JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newMappingRecord.mapping()),
         mapper.valueToTree(currentMappingRecord.mapping()));
     try {
