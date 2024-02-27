@@ -185,8 +185,8 @@ class MachineAnnotationServiceServiceTest {
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
         .willReturn(createDeploy);
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
-    given(appsV1Api.deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
-        eq("namespace"))).willReturn(deleteDeploy);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        "namespace")).willReturn(deleteDeploy);
     var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
         anyString(), any(Object.class))).willReturn(createCustom);
@@ -223,8 +223,8 @@ class MachineAnnotationServiceServiceTest {
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
         anyString(), any(Object.class))).willReturn(createCustom);
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
-    given(appsV1Api.deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
-        eq("namespace"))).willReturn(deleteDeploy);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        "namespace")).willReturn(deleteDeploy);
     var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
     given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
         anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
@@ -272,8 +272,8 @@ class MachineAnnotationServiceServiceTest {
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
         anyString(), any(Object.class))).willReturn(createCustom);
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
-    given(appsV1Api.deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
-        eq("namespace"))).willReturn(deleteDeploy);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        "namespace")).willReturn(deleteDeploy);
     var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
     given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
         anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);

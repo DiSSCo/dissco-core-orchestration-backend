@@ -104,26 +104,37 @@ public class TestUtils {
   }
 
   public static SourceSystemRecord givenSourceSystemRecord() {
-    return givenSourceSystemRecord(1);
+    return givenSourceSystemRecord(1, TranslatorType.biocase);
+  }
+  public static SourceSystemRecord givenSourceSystemRecord(int version) {
+    return givenSourceSystemRecord(version, TranslatorType.biocase);
   }
 
-  public static SourceSystemRecord givenSourceSystemRecord(int version) {
+  public static SourceSystemRecord givenSourceSystemRecord(TranslatorType translatorType) {
+    return givenSourceSystemRecord(1, translatorType);
+  }
+
+  public static SourceSystemRecord givenSourceSystemRecord(int version, TranslatorType translatorType) {
     return new SourceSystemRecord(
         HANDLE,
         version,
         OBJECT_CREATOR,
         CREATED,
         null,
-        givenSourceSystem()
+        givenSourceSystem(translatorType)
     );
   }
 
   public static SourceSystem givenSourceSystem() {
+    return givenSourceSystem(TranslatorType.biocase);
+  }
+
+  public static SourceSystem givenSourceSystem(TranslatorType translatorType) {
     return new SourceSystem(
         OBJECT_NAME,
         SS_ENDPOINT,
         OBJECT_DESCRIPTION,
-        TranslatorType.biocase,
+        translatorType,
         HANDLE_ALT
     );
   }

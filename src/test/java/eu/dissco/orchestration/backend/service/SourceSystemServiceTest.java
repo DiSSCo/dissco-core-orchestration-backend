@@ -1,6 +1,5 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType.biocase;
 import static eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType.dwca;
 import static eu.dissco.orchestration.backend.service.SourceSystemService.SUBJECT_TYPE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
@@ -247,12 +246,13 @@ class SourceSystemServiceTest {
   @Test
   void testCreateSourceSystemKafkaAndRollbackFails() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystem();
+    var sourceSystem = givenSourceSystem(dwca);
     given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
         Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord()), SUBJECT_TYPE);
+        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord(dwca)),
+            SUBJECT_TYPE);
     willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
@@ -268,7 +268,7 @@ class SourceSystemServiceTest {
         () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
 
     // Then
-    then(repository).should().createSourceSystem(givenSourceSystemRecord());
+    then(repository).should().createSourceSystem(givenSourceSystemRecord(dwca));
     then(builder).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackSourceSystemCreation(HANDLE);
@@ -295,7 +295,7 @@ class SourceSystemServiceTest {
         1,
         OBJECT_CREATOR,
         CREATED,
-        null, new SourceSystem("name", "endpoint", "description", biocase, "id")
+        null, new SourceSystem("name", "endpoint", "description", dwca, "id")
     ));
     var expected = givenSourceSystemSingleJsonApiWrapper(2);
     given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);
@@ -322,7 +322,7 @@ class SourceSystemServiceTest {
         1,
         OBJECT_CREATOR,
         CREATED,
-        null, new SourceSystem("name", "endpoint", "description", biocase, "id")
+        null, new SourceSystem("name", "endpoint", "description", dwca, "id")
     ));
     given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
@@ -347,7 +347,7 @@ class SourceSystemServiceTest {
         1,
         OBJECT_CREATOR,
         CREATED,
-        null, new SourceSystem("name", "endpoint", "description", biocase, "id")
+        null, new SourceSystem("name", "endpoint", "description", dwca, "id")
     ));
     given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
@@ -367,10 +367,12 @@ class SourceSystemServiceTest {
   }
 
   private JsonNode givenJsonPatch() throws JsonProcessingException {
-    return MAPPER.readTree("[{\"op\":\"replace\",\"path\":\"/mappingId\",\"value\":\"id\"},"
-        + "{\"op\":\"replace\",\"path\":\"/endpoint\",\"value\":\"endpoint\"},{\"op\":\"replace\""
-        + ",\"path\":\"/name\",\"value\":\"name\"},{\"op\":\"replace\",\"path\":\"/description\""
-        + ",\"value\":\"description\"}]");
+    return MAPPER.readTree(
+        "[{\"op\":\"replace\",\"path\":\"/mappingId\",\"value\":\"id\"},{\"op\":\"replace\","
+            + "\"path\":\"/endpoint\",\"value\":\"endpoint\"},{\"op\":\"replace\","
+            + "\"path\":\"/translatorType\",\"value\":\"dwca\"},{\"op\":\"replace\","
+            + "\"path\":\"/name\",\"value\":\"name\"},{\"op\":\"replace\",\"path\":\"/description\","
+            + "\"value\":\"description\"}]");
   }
 
   @Test
