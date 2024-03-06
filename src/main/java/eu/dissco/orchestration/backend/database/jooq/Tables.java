@@ -4,7 +4,6 @@
 package eu.dissco.orchestration.backend.database.jooq;
 
 
-import eu.dissco.orchestration.backend.database.jooq.tables.Handles;
 import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
 import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
@@ -15,11 +14,6 @@ import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
-
-    /**
-     * The table <code>public.handles</code>.
-     */
-    public static final Handles HANDLES = Handles.HANDLES;
 
     /**
      * The table <code>public.machine_annotation_services</code>.

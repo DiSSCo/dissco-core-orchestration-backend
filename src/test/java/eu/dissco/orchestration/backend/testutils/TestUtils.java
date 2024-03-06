@@ -3,6 +3,7 @@ package eu.dissco.orchestration.backend.testutils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
@@ -103,24 +104,37 @@ public class TestUtils {
   }
 
   public static SourceSystemRecord givenSourceSystemRecord() {
-    return givenSourceSystemRecord(1);
+    return givenSourceSystemRecord(1, TranslatorType.biocase);
+  }
+  public static SourceSystemRecord givenSourceSystemRecord(int version) {
+    return givenSourceSystemRecord(version, TranslatorType.biocase);
   }
 
-  public static SourceSystemRecord givenSourceSystemRecord(int version) {
+  public static SourceSystemRecord givenSourceSystemRecord(TranslatorType translatorType) {
+    return givenSourceSystemRecord(1, translatorType);
+  }
+
+  public static SourceSystemRecord givenSourceSystemRecord(int version, TranslatorType translatorType) {
     return new SourceSystemRecord(
         HANDLE,
         version,
         OBJECT_CREATOR,
         CREATED,
-        null, givenSourceSystem()
+        null,
+        givenSourceSystem(translatorType)
     );
   }
 
   public static SourceSystem givenSourceSystem() {
+    return givenSourceSystem(TranslatorType.biocase);
+  }
+
+  public static SourceSystem givenSourceSystem(TranslatorType translatorType) {
     return new SourceSystem(
         OBJECT_NAME,
         SS_ENDPOINT,
         OBJECT_DESCRIPTION,
+        translatorType,
         HANDLE_ALT
     );
   }

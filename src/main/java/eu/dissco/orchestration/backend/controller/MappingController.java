@@ -8,6 +8,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MappingService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,7 +46,7 @@ public class MappingController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException {
+      throws JsonProcessingException, ProcessingFailedException {
     var mapping = getMappingFromRequest(requestBody);
     var userId = authentication.getName();
     log.info("Received create request for mapping: {} from user: {}", mapping, userId);
@@ -58,7 +59,7 @@ public class MappingController {
   public ResponseEntity<JsonApiWrapper> updateMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException {
+      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
     var mapping = getMappingFromRequest(requestBody);
     var id = prefix + '/' + suffix;
     var userId = authentication.getName();

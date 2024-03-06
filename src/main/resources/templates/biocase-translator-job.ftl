@@ -17,11 +17,7 @@ spec:
               memory: 2G
           env:
             - name: spring.profiles.active
-              value: dwca
-            - name: dwca.download-file
-              value: /temp/darwin.zip
-            - name: dwca.temp-folder
-              value: /temp/darwin
+              value: biocase
             - name: kafka.host
               value: ${kafkaHost}
             - name: kafka.topic
@@ -49,9 +45,3 @@ spec:
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
-          volumeMounts:
-            - mountPath: /temp
-              name: temp-volume
-      volumes:
-        - name: temp-volume
-          emptyDir: { }

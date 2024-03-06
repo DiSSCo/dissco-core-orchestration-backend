@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 
@@ -39,7 +40,12 @@ import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
+import io.kubernetes.client.openapi.apis.AppsV1Api.APIcreateNamespacedDeploymentRequest;
+import io.kubernetes.client.openapi.apis.AppsV1Api.APIdeleteNamespacedDeploymentRequest;
+import io.kubernetes.client.openapi.apis.AppsV1Api.APIreplaceNamespacedDeploymentRequest;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
+import io.kubernetes.client.openapi.apis.CustomObjectsApi.APIcreateNamespacedCustomObjectRequest;
+import io.kubernetes.client.openapi.apis.CustomObjectsApi.APIdeleteNamespacedCustomObjectRequest;
 import io.kubernetes.client.openapi.models.V1Deployment;
 import java.io.File;
 import java.io.IOException;
@@ -88,9 +94,9 @@ class MachineAnnotationServiceServiceTest {
     initFreeMaker();
     var kedaTemplate = configuration.getTemplate("keda-template.ftl");
     var deploymentTemplate = configuration.getTemplate("mas-template.ftl");
-    service = new MachineAnnotationServiceService(handleComponent, fdoRecordService, kafkaPublisherService, repository,
-        appsV1Api, customObjectsApi, kedaTemplate, deploymentTemplate, MAPPER, properties,
-        kubernetesProperties);
+    service = new MachineAnnotationServiceService(handleComponent, fdoRecordService,
+        kafkaPublisherService, repository, appsV1Api, customObjectsApi, kedaTemplate,
+        deploymentTemplate, MAPPER, properties, kubernetesProperties);
   }
 
   private void initFreeMaker() throws IOException {
@@ -111,6 +117,12 @@ class MachineAnnotationServiceServiceTest {
     given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
+    given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
+        .willReturn(createDeploy);
+    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), any(Object.class))).willReturn(createCustom);
 
     // When
     var result = service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH);
@@ -120,11 +132,10 @@ class MachineAnnotationServiceServiceTest {
     then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMasRecord());
     then(appsV1Api).should()
-        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null), eq(null),
-            eq(null), eq(null));
+        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
     then(customObjectsApi).should()
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            any(Object.class), eq(null), eq(null), eq(null));
+            any(Object.class));
     then(kafkaPublisherService).should()
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()), SUBJECT_TYPE);
   }
@@ -147,8 +158,10 @@ class MachineAnnotationServiceServiceTest {
     given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
-    given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null),
-        eq(null), eq(null), eq(null))).willThrow(new ApiException());
+    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
+    given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
+        .willReturn(createDeploy);
+    given(createDeploy.execute()).willThrow(new ApiException());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -168,9 +181,16 @@ class MachineAnnotationServiceServiceTest {
     given(handleComponent.postHandle(any())).willReturn(HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
+    given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
+        .willReturn(createDeploy);
+    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        "namespace")).willReturn(deleteDeploy);
+    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
-        anyString(),
-        any(Object.class), eq(null), eq(null), eq(null))).willThrow(new ApiException());
+        anyString(), any(Object.class))).willReturn(createCustom);
+    given(createCustom.execute()).willThrow(new ApiException());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -179,13 +199,11 @@ class MachineAnnotationServiceServiceTest {
     // Then
     then(repository).should().createMachineAnnotationService(givenMasRecord());
     then(appsV1Api).should()
-        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null), eq(null),
-            eq(null), eq(null));
+        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
     then(appsV1Api).should()
-        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
-            eq(null), eq(null), eq(null), eq(null), eq(null), eq(null));
+        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"));
   }
 
   @Test
@@ -198,6 +216,18 @@ class MachineAnnotationServiceServiceTest {
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()),
             SUBJECT_TYPE);
+    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
+    given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
+        .willReturn(createDeploy);
+    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), any(Object.class))).willReturn(createCustom);
+    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        "namespace")).willReturn(deleteDeploy);
+    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -210,21 +240,18 @@ class MachineAnnotationServiceServiceTest {
     then(handleComponent).should().rollbackHandleCreation(any());
 
     then(appsV1Api).should()
-        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null), eq(null),
-            eq(null), eq(null));
+        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
     then(customObjectsApi).should()
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            any(Object.class), eq(null), eq(null), eq(null));
+            any(Object.class));
     then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
     then(appsV1Api).should()
-        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
-            eq(null), eq(null), eq(null), eq(null), eq(null), eq(null));
+        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"));
     then(customObjectsApi).should()
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            eq(SUFFIX.toLowerCase() + "-scaled-object"), eq(null), eq(null), eq(null), eq(null),
-            eq(null));
+            eq(SUFFIX.toLowerCase() + "-scaled-object"));
   }
 
   @Test
@@ -238,7 +265,18 @@ class MachineAnnotationServiceServiceTest {
         .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord()),
             SUBJECT_TYPE);
     willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
-
+    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
+    given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
+        .willReturn(createDeploy);
+    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), any(Object.class))).willReturn(createCustom);
+    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        "namespace")).willReturn(deleteDeploy);
+    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -251,21 +289,18 @@ class MachineAnnotationServiceServiceTest {
     then(handleComponent).should().rollbackHandleCreation(any());
 
     then(appsV1Api).should()
-        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null), eq(null),
-            eq(null), eq(null));
+        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
     then(customObjectsApi).should()
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            any(Object.class), eq(null), eq(null), eq(null));
+            any(Object.class));
     then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
     then(appsV1Api).should()
-        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
-            eq(null), eq(null), eq(null), eq(null), eq(null), eq(null));
+        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"));
     then(customObjectsApi).should()
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            eq(SUFFIX.toLowerCase() + "-scaled-object"), eq(null), eq(null), eq(null), eq(null),
-            eq(null));
+            eq(SUFFIX.toLowerCase() + "-scaled-object"));
   }
 
 
@@ -278,6 +313,15 @@ class MachineAnnotationServiceServiceTest {
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(prevRecord);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
+    given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
+        eq("namespace"), any(V1Deployment.class))).willReturn(replaceDeploy);
+    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
+    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), any(Object.class))).willReturn(createCustom);
 
     // When
     var result = service.updateMachineAnnotationService(HANDLE, mas, OBJECT_CREATOR, MAS_PATH);
@@ -287,15 +331,13 @@ class MachineAnnotationServiceServiceTest {
     then(repository).should().updateMachineAnnotationService(givenMasRecord(2));
     then(appsV1Api).should()
         .replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
-            any(V1Deployment.class), eq(null), eq(null),
-            eq(null), eq(null));
+            any(V1Deployment.class));
     then(customObjectsApi).should()
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            eq(SUFFIX.toLowerCase() + "-scaled-object"), eq(null), eq(null), eq(null), eq(null),
-            eq(null));
+            eq(SUFFIX.toLowerCase() + "-scaled-object"));
     then(customObjectsApi).should()
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            any(Object.class), eq(null), eq(null), eq(null));
+            any(Object.class));
     then(kafkaPublisherService).should()
         .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord(2)), givenJsonPatch(),
             SUBJECT_TYPE);
@@ -309,10 +351,16 @@ class MachineAnnotationServiceServiceTest {
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(prevRecord);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
+    given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
+        eq("namespace"), any(V1Deployment.class))).willReturn(replaceDeploy);
+    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
+    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
-        anyString(),
-        any(Object.class), eq(null), eq(null), eq(null))).willThrow(new ApiException())
-        .willReturn(null);
+        anyString(), any(Object.class))).willReturn(createCustom);
+    given(createCustom.execute()).willThrow(new ApiException());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -323,30 +371,28 @@ class MachineAnnotationServiceServiceTest {
     then(repository).should().updateMachineAnnotationService(prevRecord.get());
     then(appsV1Api).should(times(2))
         .replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
-            any(V1Deployment.class), eq(null), eq(null),
-            eq(null), eq(null));
+            any(V1Deployment.class));
     then(customObjectsApi).should()
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            eq(SUFFIX.toLowerCase() + "-scaled-object"), eq(null), eq(null), eq(null), eq(null),
-            eq(null));
+            eq(SUFFIX.toLowerCase() + "-scaled-object"));
     then(customObjectsApi).should(times(2))
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            any(Object.class), eq(null), eq(null), eq(null));
+            any(Object.class));
     then(kafkaPublisherService).shouldHaveNoInteractions();
   }
 
   @Test
-  void testUpdateKedaFails() throws Exception {
+  void testUpdateKedaFails() throws ApiException {
     // Given
     var prevRecord = buildOptionalPrevRecord();
     var mas = givenMas();
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(prevRecord);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
-        eq("namespace"),
-        any(V1Deployment.class), eq(null), eq(null),
-        eq(null), eq(null))).willThrow(new ApiException());
+        eq("namespace"), any(V1Deployment.class))).willReturn(replaceDeploy);
+    given(replaceDeploy.execute()).willThrow(new ApiException());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -357,8 +403,7 @@ class MachineAnnotationServiceServiceTest {
     then(repository).should().updateMachineAnnotationService(prevRecord.get());
     then(appsV1Api).should()
         .replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
-            any(V1Deployment.class), eq(null), eq(null),
-            eq(null), eq(null));
+            any(V1Deployment.class));
     then(customObjectsApi).shouldHaveNoInteractions();
     then(kafkaPublisherService).shouldHaveNoInteractions();
   }
@@ -374,6 +419,15 @@ class MachineAnnotationServiceServiceTest {
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenMasRecord(2)), givenJsonPatch(),
             SUBJECT_TYPE);
+    var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
+    given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
+        eq("namespace"), any(V1Deployment.class))).willReturn(replaceDeploy);
+    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
+    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), any(Object.class))).willReturn(createCustom);
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -383,15 +437,13 @@ class MachineAnnotationServiceServiceTest {
     then(repository).should().updateMachineAnnotationService(givenMasRecord(2));
     then(appsV1Api).should(times(2))
         .replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
-            any(V1Deployment.class), eq(null), eq(null),
-            eq(null), eq(null));
+            any(V1Deployment.class));
     then(customObjectsApi).should(times(2))
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            eq(SUFFIX.toLowerCase() + "-scaled-object"), eq(null), eq(null), eq(null), eq(null),
-            eq(null));
+            eq(SUFFIX.toLowerCase() + "-scaled-object"));
     then(customObjectsApi).should(times(2))
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            any(Object.class), eq(null), eq(null), eq(null));
+            any(Object.class));
     then(repository).should().updateMachineAnnotationService(prevRecord.get());
   }
 
@@ -545,6 +597,12 @@ class MachineAnnotationServiceServiceTest {
     // Given
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
         Optional.of(givenMasRecord()));
+    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        null)).willReturn(deleteDeploy);
+    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", null,
+        "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
 
     // When / Then
     assertDoesNotThrow(() -> service.deleteMachineAnnotationService(HANDLE));
@@ -561,11 +619,17 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
-  void testDeleteMas() throws ApiException, NotFoundException {
+  void testDeleteMas() throws NotFoundException, ProcessingFailedException {
     // Given
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
         Optional.of(givenMasRecord()));
     given(properties.getNamespace()).willReturn("namespace");
+    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        "namespace")).willReturn(deleteDeploy);
+    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", "namespace",
+        "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
 
     // When
     service.deleteMachineAnnotationService(HANDLE);
@@ -573,12 +637,10 @@ class MachineAnnotationServiceServiceTest {
     // Then
     then(repository).should().deleteMachineAnnotationService(HANDLE, Instant.now());
     then(appsV1Api).should()
-        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"),
-            eq(null), eq(null), eq(null), eq(null), eq(null), eq(null));
+        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"));
     then(customObjectsApi).should()
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
-            eq(SUFFIX.toLowerCase() + "-scaled-object"), eq(null), eq(null), eq(null), eq(null),
-            eq(null));
+            eq(SUFFIX.toLowerCase() + "-scaled-object"));
     then(kafkaPublisherService).shouldHaveNoInteractions();
   }
 
@@ -588,8 +650,10 @@ class MachineAnnotationServiceServiceTest {
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
         Optional.of(givenMasRecord()));
     given(properties.getNamespace()).willReturn("namespace");
+    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
-        "namespace", null, null, null, null, null, null)).willThrow(new ApiException());
+        "namespace")).willReturn(deleteDeploy);
+    given(deleteDeploy.execute()).willThrow(new ApiException());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -610,10 +674,16 @@ class MachineAnnotationServiceServiceTest {
         Optional.of(givenMasRecord()));
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
-        anyString(),
-        eq(SUFFIX.toLowerCase() + "-scaled-object"), eq(null), eq(null), eq(null), eq(null),
-        eq(null))).willThrow(new ApiException());
+    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
+    given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
+        .willReturn(createDeploy);
+    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        "namespace")).willReturn(deleteDeploy);
+    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", "namespace",
+        "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
+    given(deleteCustom.execute()).willThrow(new ApiException());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -624,11 +694,9 @@ class MachineAnnotationServiceServiceTest {
     then(repository).should()
         .createMachineAnnotationService(any(MachineAnnotationServiceRecord.class));
     then(appsV1Api).should().deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
-        eq("namespace"),
-        eq(null), eq(null), eq(null), eq(null), eq(null), eq(null));
+        eq("namespace"));
     then(appsV1Api).should()
-        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class), eq(null), eq(null),
-            eq(null), eq(null));
+        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
     then(kafkaPublisherService).shouldHaveNoInteractions();
   }
 

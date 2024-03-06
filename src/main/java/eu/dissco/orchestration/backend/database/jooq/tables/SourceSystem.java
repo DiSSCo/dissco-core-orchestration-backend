@@ -6,6 +6,7 @@ package eu.dissco.orchestration.backend.database.jooq.tables;
 
 import eu.dissco.orchestration.backend.database.jooq.Keys;
 import eu.dissco.orchestration.backend.database.jooq.Public;
+import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.SourceSystemRecord;
 
 import java.time.Instant;
@@ -13,11 +14,11 @@ import java.util.function.Function;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Function9;
+import org.jooq.Function10;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Records;
-import org.jooq.Row9;
+import org.jooq.Row10;
 import org.jooq.Schema;
 import org.jooq.SelectField;
 import org.jooq.Table;
@@ -94,6 +95,11 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
      * The column <code>public.source_system.creator</code>.
      */
     public final TableField<SourceSystemRecord, String> CREATOR = createField(DSL.name("creator"), SQLDataType.CLOB.nullable(false).defaultValue(DSL.field(DSL.raw("'0000-0002-5669-2769'::text"), SQLDataType.CLOB)), this, "");
+
+    /**
+     * The column <code>public.source_system.translator_type</code>.
+     */
+    public final TableField<SourceSystemRecord, TranslatorType> TRANSLATOR_TYPE = createField(DSL.name("translator_type"), SQLDataType.VARCHAR.asEnumDataType(eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType.class), this, "");
 
     private SourceSystem(Name alias, Table<SourceSystemRecord> aliased) {
         this(alias, aliased, null);
@@ -178,18 +184,18 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row9 type methods
+    // Row10 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row9<String, String, String, String, Instant, Instant, String, Integer, String> fieldsRow() {
-        return (Row9) super.fieldsRow();
+    public Row10<String, String, String, String, Instant, Instant, String, Integer, String, TranslatorType> fieldsRow() {
+        return (Row10) super.fieldsRow();
     }
 
     /**
      * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
      */
-    public <U> SelectField<U> mapping(Function9<? super String, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Integer, ? super String, ? extends U> from) {
+    public <U> SelectField<U> mapping(Function10<? super String, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Integer, ? super String, ? super TranslatorType, ? extends U> from) {
         return convertFrom(Records.mapping(from));
     }
 
@@ -197,7 +203,7 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
      * Convenience mapping calling {@link SelectField#convertFrom(Class,
      * Function)}.
      */
-    public <U> SelectField<U> mapping(Class<U> toType, Function9<? super String, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Integer, ? super String, ? extends U> from) {
+    public <U> SelectField<U> mapping(Class<U> toType, Function10<? super String, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Integer, ? super String, ? super TranslatorType, ? extends U> from) {
         return convertFrom(toType, Records.mapping(from));
     }
 }
