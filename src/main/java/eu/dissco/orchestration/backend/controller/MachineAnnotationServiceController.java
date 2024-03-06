@@ -44,7 +44,7 @@ public class MachineAnnotationServiceController {
   public ResponseEntity<JsonApiWrapper> createMachineAnnotationService(
       Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, TransformerException, ProcessingFailedException {
+      throws JsonProcessingException, ProcessingFailedException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
     var userId = authentication.getName();
     log.info("Received create request for machine annotation service: {} from user: {}",

@@ -65,12 +65,22 @@ public class SourceSystemService {
   }
 
   private static String generateJobName(SourceSystemRecord sourceSystem, boolean isCron) {
-    var name = sourceSystem.sourceSystem().translatorType().name().toLowerCase() + "-" + getSuffix(
-        sourceSystem.id()) + "-translator-service";
+    var name =
+        sourceSystem.sourceSystem().translatorType().getName().toLowerCase() + "-" +
+            getSuffix(sourceSystem.id()) + "-translator-service";
     if (!isCron) {
       name = name + "-" + RandomStringUtils.randomAlphabetic(6).toLowerCase();
     }
     return name;
+  }
+
+  private static void logException(SourceSystemRecord sourceSystemRecord, Exception e) {
+    if (e instanceof IOException || e instanceof TemplateException) {
+      log.error("Failed to create translator template for: {}", sourceSystemRecord, e);
+    } else if (e instanceof ApiException apiException) {
+      log.error("Failed to deploy kubernetes deployment to cluster with code: {} and message: {}",
+          apiException.getCode(), apiException.getResponseBody());
+    }
   }
 
   public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String userId, String path)
@@ -95,13 +105,13 @@ public class SourceSystemService {
     }
   }
 
-  private void createTranslatorJob(SourceSystemRecord sourceSystemRecord, boolean rollback)
+  private void createTranslatorJob(SourceSystemRecord sourceSystemRecord, boolean rollbackOnFailure)
       throws ProcessingFailedException {
     try {
       triggerTranslatorJob(sourceSystemRecord);
     } catch (IOException | TemplateException | ApiException e) {
       logException(sourceSystemRecord, e);
-      if (rollback) {
+      if (rollbackOnFailure) {
         rollbackSourceSystemCreation(sourceSystemRecord, true);
       }
       throw new ProcessingFailedException("Failed to deploy job to cluster", e);
@@ -208,15 +218,6 @@ public class SourceSystemService {
       logException(sourceSystemRecord, e);
       rollbackToPreviousVersion(currentSourceSystem, false);
       throw new ProcessingFailedException("Failed to update new source system", e);
-    }
-  }
-
-  private static void logException(SourceSystemRecord sourceSystemRecord, Exception e) {
-    if (e instanceof IOException || e instanceof TemplateException) {
-      log.error("Failed to create translator template for: {}", sourceSystemRecord, e);
-    } else if (e instanceof ApiException apiException){
-      log.error("Failed to deploy kubernetes deployment to cluster with code: {} and message: {}",
-          apiException.getCode(), apiException.getResponseBody());
     }
   }
 
@@ -331,7 +332,6 @@ public class SourceSystemService {
   private Map<String, Object> getTemplateProperties(SourceSystemRecord sourceSystem,
       boolean isCronJob) {
     var map = new HashMap<String, Object>();
-    var cron = generateCron();
     var jobName = generateJobName(sourceSystem, isCronJob);
     map.put("image", jobProperties.getImage());
     map.put("sourceSystemId", sourceSystem.id());
@@ -340,7 +340,7 @@ public class SourceSystemService {
     map.put("kafkaHost", jobProperties.getKafkaHost());
     map.put("kafkaTopic", jobProperties.getKafkaTopic());
     if (isCronJob) {
-      map.put("cron", cron);
+      map.put("cron", generateCron());
     }
     return map;
   }

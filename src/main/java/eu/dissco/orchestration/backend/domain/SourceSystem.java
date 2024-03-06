@@ -9,7 +9,7 @@ public record SourceSystem(
     @NotBlank
     String endpoint,
     String description,
-
+    @NotBlank
     TranslatorType translatorType,
     @NotBlank
     String mappingId
