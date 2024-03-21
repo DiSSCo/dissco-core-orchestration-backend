@@ -2,3 +2,8 @@
 # Issue: Vulnerability in spring-web
 # Solution: Spring boot needs to update its version of spring
 CVE-2024-22259
+
+# Date: March 21, 2024
+# Issue: Vulnerability in spring-security-core
+# Solution: Spring boot needs to update its version of spring
+CVE-2024-22257
