@@ -26,4 +26,5 @@ public final class MachineAnnotationService {
   private String topicName;
   private int maxReplicas;
   private @NotBlank boolean batchingPermitted;
+  private final Integer timeToLive;
 }

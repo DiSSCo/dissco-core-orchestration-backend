@@ -7,6 +7,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.TTL;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecord;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecordResponse;
@@ -708,7 +709,7 @@ class MachineAnnotationServiceServiceTest {
         OBJECT_CREATOR,
         new MachineAnnotationService("Another name", "public.ecr.aws/dissco/fancy-mas",
             "less-fancy", MAPPER.createObjectNode(), null, null, null, null, null, null, null, null,
-            null, "another-topic-name", 1, false),
+            null, "another-topic-name", 1, false, TTL),
         null
     ));
   }

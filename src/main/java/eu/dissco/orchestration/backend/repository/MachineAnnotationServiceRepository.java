@@ -58,6 +58,7 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.MAXREPLICAS, masRecord.mas().getMaxReplicas())
         .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, masRecord.deleted())
         .set(MACHINE_ANNOTATION_SERVICES.BATCHING_PERMITTED, masRecord.mas().isBatchingPermitted())
+        .set(MACHINE_ANNOTATION_SERVICES.TIME_TO_LIVE, getTTL(masRecord))
         .execute();
   }
 
@@ -92,7 +93,8 @@ public class MachineAnnotationServiceRepository {
             machineAnnotationServicesRecord.getSlaDocumentation(),
             machineAnnotationServicesRecord.getTopicname(),
             machineAnnotationServicesRecord.getMaxreplicas(),
-            machineAnnotationServicesRecord.getBatchingPermitted()
+            machineAnnotationServicesRecord.getBatchingPermitted(),
+            machineAnnotationServicesRecord.getTimeToLive()
         ),
         machineAnnotationServicesRecord.getDeletedOn()
     );
@@ -138,6 +140,7 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.VERSION, masRecord.version())
         .set(MACHINE_ANNOTATION_SERVICES.NAME, masRecord.mas().getName())
         .set(MACHINE_ANNOTATION_SERVICES.CREATED, masRecord.created())
+        .set(MACHINE_ANNOTATION_SERVICES.CREATED, masRecord.created())
         .set(MACHINE_ANNOTATION_SERVICES.ADMINISTRATOR, masRecord.administrator())
         .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE, masRecord.mas().getContainerImage())
         .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE_TAG, masRecord.mas().getContainerTag())
@@ -164,6 +167,7 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICES.MAXREPLICAS, masRecord.mas().getMaxReplicas())
         .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, masRecord.deleted())
         .set(MACHINE_ANNOTATION_SERVICES.BATCHING_PERMITTED, masRecord.mas().isBatchingPermitted())
+        .set(MACHINE_ANNOTATION_SERVICES.TIME_TO_LIVE, getTTL(masRecord))
         .where(MACHINE_ANNOTATION_SERVICES.ID.eq(masRecord.id()))
         .execute();
   }
@@ -173,4 +177,9 @@ public class MachineAnnotationServiceRepository {
         .where(MACHINE_ANNOTATION_SERVICES.ID.eq(pid))
         .execute();
   }
+
+  private Integer getTTL(MachineAnnotationServiceRecord masRecord){
+    return masRecord.mas().getTimeToLive() == null ? 86400 : masRecord.mas().getTimeToLive();
+  }
+
 }
