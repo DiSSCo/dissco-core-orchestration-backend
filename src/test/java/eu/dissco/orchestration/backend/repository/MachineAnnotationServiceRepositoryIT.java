@@ -5,6 +5,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.TTL;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecord;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -214,11 +215,51 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
             "https://www.know.dissco.tech/no_sla",
             "fancy-topic-name",
             2,
-            false
+            false,
+            TTL
         ),
         null
     );
   }
+
+  @Test
+  void testCreateMasNullTTL() {
+    // Given
+    var masRecord = new MachineAnnotationServiceRecord(
+        HANDLE,
+        1,
+        CREATED,
+        OBJECT_CREATOR,
+        (new MachineAnnotationService(
+            "A Machine Annotation Service",
+            "public.ecr.aws/dissco/fancy-mas",
+            "sha-54289",
+            MAPPER.createObjectNode(),
+            "A fancy mas making all dreams come true",
+            "Definitely production ready",
+            "https://github.com/DiSSCo/fancy-mas",
+            "public",
+            "No one we know",
+            "https://www.apache.org/licenses/LICENSE-2.0",
+            List.of(),
+            "dontmail@dissco.eu",
+            "https://www.know.dissco.tech/no_sla",
+            "fancy-topic-name",
+            5,
+            false,
+            null
+        )),
+        null
+    );
+
+    // When
+    repository.createMachineAnnotationService(masRecord);
+    var result = repository.getMachineAnnotationServices(1, 10);
+
+    // Then
+    assertThat(result.get(0).mas().getTimeToLive()).isEqualTo(TTL);
+  }
+
 
   private void postMass(List<MachineAnnotationServiceRecord> originalRecord) {
     originalRecord.forEach(masRecord -> repository.createMachineAnnotationService(masRecord));

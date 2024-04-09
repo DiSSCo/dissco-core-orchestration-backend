@@ -40,6 +40,7 @@ public class TestUtils {
   public static final String MAPPING_PATH = SANDBOX_URI + MAPPING_URI;
   public static final String MAS_URI = "/mas";
   public static final String MAS_PATH = SANDBOX_URI + MAS_URI;
+  public static final Integer TTL = 86400;
 
 
   private TestUtils() {
@@ -251,7 +252,8 @@ public class TestUtils {
         "https://www.know.dissco.tech/no_sla",
         "fancy-topic-name",
         5,
-        false
+        false,
+        TTL
     );
   }
 
