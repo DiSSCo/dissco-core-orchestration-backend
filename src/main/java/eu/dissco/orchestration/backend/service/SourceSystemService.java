@@ -36,6 +36,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -59,6 +60,7 @@ public class SourceSystemService {
   private final TranslatorJobProperties jobProperties;
   private final Configuration configuration;
   private final BatchV1Api batchV1Api;
+  private final Random random;
 
   private static String getSuffix(String sourceSystemId) {
     return sourceSystemId.substring(sourceSystemId.indexOf('/') + 1).toLowerCase();
@@ -66,7 +68,7 @@ public class SourceSystemService {
 
   private static String generateJobName(SourceSystemRecord sourceSystem, boolean isCron) {
     var name =
-        sourceSystem.sourceSystem().translatorType().getName().toLowerCase() + "-" +
+        sourceSystem.sourceSystem().translatorType().getLiteral().toLowerCase() + "-" +
             getSuffix(sourceSystem.id()) + "-translator-service";
     if (!isCron) {
       name = name + "-" + RandomStringUtils.randomAlphabetic(6).toLowerCase();
@@ -336,6 +338,7 @@ public class SourceSystemService {
     map.put("image", jobProperties.getImage());
     map.put("sourceSystemId", sourceSystem.id());
     map.put("jobName", jobName);
+    map.put("namespace", jobProperties.getNamespace());
     map.put("containerName", jobName);
     map.put("kafkaHost", jobProperties.getKafkaHost());
     map.put("kafkaTopic", jobProperties.getKafkaTopic());
@@ -346,8 +349,8 @@ public class SourceSystemService {
   }
 
   private String generateCron() {
-    String day = RandomStringUtils.randomNumeric(0, 6);
-    String hour = RandomStringUtils.randomNumeric(0, 23);
+    String day = String.valueOf(random.nextInt(7));
+    String hour = String.valueOf(random.nextInt(23));
     return "0 " + hour + " * * " + day;
   }
 

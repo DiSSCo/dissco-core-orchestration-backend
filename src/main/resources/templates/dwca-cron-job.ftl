@@ -2,12 +2,14 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: ${jobName}
+  namespace: ${namespace}
 spec:
   schedule: ${cron}
   jobTemplate:
     spec:
       template:
         spec:
+          serviceAccountName: translator-secret-manager
           restartPolicy: Never
           containers:
           - name: ${containerName}
@@ -46,14 +48,23 @@ spec:
               value: https://doi.org/21.T11148/bbad8c4e101e8af01115
             - name: fdo.digital-specimen-type
               value: https://doi.org/21.T11148/894b1e6cad57e921764e
-            - name: JAVA_OPTS
-              value: -server -XX:+useContainerSupport -XX:MaxRAMPercentage=75 --illegal-access=deny
+            - name: JAVA_TOOL_OPTIONS
+              value: -XX:MaxRAMPercentage=85
             securityContext:
               runAsNonRoot: true
               allowPrivilegeEscalation: false
             volumeMounts:
-            - mountPath: /temp
-              name: temp-volume
+              - mountPath: /temp
+                name: temp-volume
+              - name: db-secrets
+                mountPath: "/mnt/secrets-store/db-secrets"
+                readOnly: true
           volumes:
-          - name: temp-volume
-            emptyDir: { }
+            - name: temp-volume
+              emptyDir: { }
+            - name: db-secrets
+              csi:
+                driver: secrets-store.csi.k8s.io
+                readOnly: true
+                volumeAttributes:
+                  secretProviderClass: "db-secrets"

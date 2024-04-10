@@ -60,6 +60,7 @@ import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,7 +72,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SourceSystemServiceTest {
 
-  private static final String NAMESPACE = "default";
+  private static final String NAMESPACE = "translator-services";
 
   private final ObjectMapper yamlMapper = new ObjectMapper(
       new YAMLFactory()).findAndRegisterModules();
@@ -92,6 +93,7 @@ class SourceSystemServiceTest {
   private MappingService mappingService;
   @Mock
   private BatchV1Api batchV1Api;
+  private Random random = new Random();
 
 
   private MockedStatic<Instant> mockedStatic;
@@ -100,7 +102,7 @@ class SourceSystemServiceTest {
   @BeforeEach
   void setup() throws IOException {
     service = new SourceSystemService(builder, handleComponent, repository, mappingService,
-        kafkaPublisherService, MAPPER, yamlMapper, jobProperties, configuration, batchV1Api);
+        kafkaPublisherService, MAPPER, yamlMapper, jobProperties, configuration, batchV1Api, random);
     initTime();
     initFreeMaker();
   }
