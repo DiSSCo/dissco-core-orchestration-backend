@@ -33,7 +33,7 @@ spec:
             - name: webclient.sourceSystemId
               value: ${sourceSystemId}
             - name: spring.datasource.url
-              value: jdbc:postgresql://terraform-20230822143945532600000001.cbppwfnjypll.eu-west-2.rds.amazonaws.com:5432/dissco
+              value: ${database_url}
             - name: spring.datasource.username
               valueFrom:
                 secretKeyRef:
