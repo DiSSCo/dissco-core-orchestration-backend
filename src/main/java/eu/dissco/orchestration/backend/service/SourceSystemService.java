@@ -342,6 +342,7 @@ public class SourceSystemService {
     map.put("containerName", jobName);
     map.put("kafkaHost", jobProperties.getKafkaHost());
     map.put("kafkaTopic", jobProperties.getKafkaTopic());
+    map.put("database_url", jobProperties.getDatabaseUrl());
     if (isCronJob) {
       map.put("cron", generateCron());
     }
