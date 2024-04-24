@@ -101,6 +101,7 @@ class SourceSystemServiceTest {
 
   @BeforeEach
   void setup() throws IOException {
+    jobProperties.setDatabaseUrl("jdbc:postgresql://localhost:5432/translator");
     service = new SourceSystemService(builder, handleComponent, repository, mappingService,
         kafkaPublisherService, MAPPER, yamlMapper, jobProperties, configuration, batchV1Api, random);
     initTime();
