@@ -1,6 +1,5 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.DIGITAL_OBJECT_TYPE;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.FDO_PROFILE;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.MAS_NAME;
@@ -28,7 +27,7 @@ public class FdoRecordService {
   public JsonNode buildCreateRequest(Object object, ObjectType type) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
-    data.put("type", type.getObjectType());
+    data.put("type", type.getFdoProfile());
     var attributes = buildRequestAttributes(object, type);
     data.set("attributes", attributes);
     request.set("data", data);
@@ -53,7 +52,7 @@ public class FdoRecordService {
         return buildSourceSystemAttributes((SourceSystem) object);
       }
     }
-    throw new IllegalStateException("Invalid Object type " + type.getObjectType());
+    throw new IllegalStateException();
   }
 
   private JsonNode buildMappingAttributes(Mapping mapping) {
@@ -76,9 +75,8 @@ public class FdoRecordService {
 
   private ObjectNode buildGeneralAttributes(ObjectType type) {
     var attributes = mapper.createObjectNode();
-    attributes.put(FDO_PROFILE.getAttribute(), FDO_PROFILE.getDefaultValue());
+    attributes.put(FDO_PROFILE.getAttribute(), type.getFdoProfile());
     attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT.getDefaultValue());
-    attributes.put(DIGITAL_OBJECT_TYPE.getAttribute(), type.getFdoProfile());
     return attributes;
   }
 

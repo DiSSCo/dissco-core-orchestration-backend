@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import eu.dissco.orchestration.backend.domain.HandleType;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
@@ -424,7 +424,7 @@ class SourceSystemServiceTest {
     var sourceSystemRecord = new SourceSystemRecord(
         HANDLE, 1, OBJECT_CREATOR, CREATED, CREATED, givenSourceSystem());
     var expected = new JsonApiWrapper(
-        new JsonApiData(HANDLE, HandleType.SOURCE_SYSTEM,
+        new JsonApiData(HANDLE, ObjectType.SOURCE_SYSTEM,
             flattenSourceSystemRecord(sourceSystemRecord)),
         new JsonApiLinks(SYSTEM_PATH));
 

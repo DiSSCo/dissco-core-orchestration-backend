@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
-import eu.dissco.orchestration.backend.domain.HandleType;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.domain.Mapping;
@@ -55,7 +55,7 @@ public class TestUtils {
     var sourceSystemRecord = givenSourceSystemRecord(version);
     return new JsonApiWrapper(new JsonApiData(
         sourceSystemRecord.id(),
-        HandleType.SOURCE_SYSTEM,
+        ObjectType.SOURCE_SYSTEM,
         flattenSourceSystemRecord(sourceSystemRecord)
     ), new JsonApiLinks(SYSTEM_PATH));
   }
@@ -68,7 +68,7 @@ public class TestUtils {
     var masRecord = givenMasRecord(version);
     return new JsonApiWrapper(new JsonApiData(
         masRecord.id(),
-        HandleType.MACHINE_ANNOTATION_SERVICE,
+        ObjectType.MAS,
         flattenMasRecord(masRecord)
     ), new JsonApiLinks(MAS_PATH));
   }
@@ -81,7 +81,7 @@ public class TestUtils {
     var mappingRecord = givenMappingRecord(HANDLE, version);
     return new JsonApiWrapper(new JsonApiData(
         mappingRecord.id(),
-        HandleType.MAPPING,
+        ObjectType.MAPPING,
         flattenMappingRecord(mappingRecord)
     ), new JsonApiLinks(MAPPING_PATH));
   }
@@ -89,7 +89,7 @@ public class TestUtils {
   public static JsonApiRequestWrapper givenSourceSystemRequest() {
     return new JsonApiRequestWrapper(
         new JsonApiRequest(
-            HandleType.SOURCE_SYSTEM,
+            ObjectType.SOURCE_SYSTEM,
             MAPPER.valueToTree(givenSourceSystem())
         )
     );
@@ -98,7 +98,7 @@ public class TestUtils {
   public static JsonApiRequestWrapper givenMappingRequest() {
     return new JsonApiRequestWrapper(
         new JsonApiRequest(
-            HandleType.MAPPING,
+            ObjectType.MAPPING,
             MAPPER.valueToTree(givenMapping())
         )
     );
@@ -144,14 +144,14 @@ public class TestUtils {
       List<SourceSystemRecord> ssRecords, JsonApiLinks linksNode) {
     List<JsonApiData> dataNode = new ArrayList<>();
     ssRecords.forEach(ss -> dataNode.add(
-        new JsonApiData(ss.id(), HandleType.SOURCE_SYSTEM, flattenSourceSystemRecord(ss))));
+        new JsonApiData(ss.id(), ObjectType.SOURCE_SYSTEM, flattenSourceSystemRecord(ss))));
     return new JsonApiListWrapper(dataNode, linksNode);
   }
 
   public static JsonApiListWrapper givenMasRecordResponse(
       List<MachineAnnotationServiceRecord> masRecords, JsonApiLinks linksNode) {
     var dataNode = masRecords.stream().map(
-        mas -> new JsonApiData(mas.id(), HandleType.MACHINE_ANNOTATION_SERVICE,
+        mas -> new JsonApiData(mas.id(), ObjectType.MAS,
             flattenMasRecord(mas))).toList();
     return new JsonApiListWrapper(dataNode, linksNode);
   }
@@ -199,7 +199,7 @@ public class TestUtils {
       JsonApiLinks linksNode) {
     List<JsonApiData> dataNode = new ArrayList<>();
     mappingRecords.forEach(
-        m -> dataNode.add(new JsonApiData(m.id(), HandleType.MAPPING, flattenMappingRecord(m))));
+        m -> dataNode.add(new JsonApiData(m.id(), ObjectType.MAPPING, flattenMappingRecord(m))));
     return new JsonApiListWrapper(dataNode, linksNode);
   }
 
@@ -215,7 +215,7 @@ public class TestUtils {
 
   public static JsonApiRequestWrapper givenMasRequest() {
     return new JsonApiRequestWrapper(new JsonApiRequest(
-        HandleType.MACHINE_ANNOTATION_SERVICE,
+        ObjectType.MAS,
         MAPPER.valueToTree(givenMas())
     ));
   }
@@ -261,11 +261,10 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "type": "machineAnnotationService",
+            "type": "https://hdl.handle.net/21.T11148/22e71a0015cbcfba8ffa",
             "attributes": {
-              "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "fdoProfile": "https://hdl.handle.net/21.T11148/22e71a0015cbcfba8ffa",
               "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
               "machineAnnotationServiceName":"A Machine Annotation Service"
             }
           }
@@ -276,11 +275,10 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "type": "sourceSystem",
+            "type": "https://hdl.handle.net/21.T11148/417a4f472f60f7974c12",
             "attributes": {
-              "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "fdoProfile": "https://hdl.handle.net/21.T11148/417a4f472f60f7974c12",
               "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
               "sourceSystemName":"Naturalis Tunicate DWCA endpoint"
             }
           }
@@ -291,11 +289,10 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "type": "mapping",
+            "type": "https://hdl.handle.net/21.T11148/ce794a6f4df42eb7e77e",
             "attributes": {
-              "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+              "fdoProfile": "https://hdl.handle.net/21.T11148/ce794a6f4df42eb7e77e",
               "issuedForAgent": "https://ror.org/0566bfb96",
-              "digitalObjectType": "https://hdl.handle.net/21.T11148/b3f1045d8524d863ccfb",
               "sourceDataStandard": "dwc"
             }
           }

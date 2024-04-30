@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.diff.JsonDiff;
 import com.google.gson.JsonParser;
-import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -410,7 +409,7 @@ public class MachineAnnotationServiceService {
   private JsonApiWrapper wrapSingleResponse(String id, MachineAnnotationServiceRecord masRecord,
       String path) {
     return new JsonApiWrapper(
-        new JsonApiData(id, HandleType.MACHINE_ANNOTATION_SERVICE,
+        new JsonApiData(id, ObjectType.MAS,
             flattenMasRecord(masRecord)),
         new JsonApiLinks(path)
     );
@@ -427,7 +426,7 @@ public class MachineAnnotationServiceService {
 
   private List<JsonApiData> wrapData(List<MachineAnnotationServiceRecord> masRecords) {
     return masRecords.stream()
-        .map(r -> new JsonApiData(r.id(), HandleType.MACHINE_ANNOTATION_SERVICE,
+        .map(r -> new JsonApiData(r.id(), ObjectType.MAS,
             flattenMasRecord(r)))
         .toList();
   }

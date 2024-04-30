@@ -17,9 +17,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
-import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
@@ -88,7 +88,7 @@ class MappingControllerTest {
         "badType"
     );
     var requestBody = new JsonApiRequestWrapper(
-        new JsonApiRequest(HandleType.MAPPING, MAPPER.valueToTree(mapping)));
+        new JsonApiRequest(ObjectType.MAPPING, MAPPER.valueToTree(mapping)));
 
     // Then
     assertThrowsExactly(IllegalArgumentException.class,

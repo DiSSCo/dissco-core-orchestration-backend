@@ -25,7 +25,6 @@ import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -249,7 +248,7 @@ class MappingServiceTest {
         givenMapping());
     given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
     var expected = new JsonApiWrapper(
-        new JsonApiData(HANDLE, HandleType.MAPPING, flattenMappingRecord(mappingRecord)),
+        new JsonApiData(HANDLE, ObjectType.MAPPING, flattenMappingRecord(mappingRecord)),
         new JsonApiLinks(MAPPING_PATH));
 
     // When

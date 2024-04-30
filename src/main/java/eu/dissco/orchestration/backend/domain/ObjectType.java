@@ -1,20 +1,18 @@
 package eu.dissco.orchestration.backend.domain;
 
-public enum ObjectType {
-  SOURCE_SYSTEM ("sourceSystem", "https://hdl.handle.net/21.T11148/64396cf36b976ad08267"),
-  MAPPING ("mapping", "https://hdl.handle.net/21.T11148/b3f1045d8524d863ccfb"),
-  MAS("machineAnnotationService", "https://hdl.handle.net/21.T11148/64396cf36b976ad08267");
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 
-  private final String type;
+@Getter
+public enum ObjectType {
+  @JsonProperty("sourceSystem") SOURCE_SYSTEM ("https://hdl.handle.net/21.T11148/417a4f472f60f7974c12"),
+  @JsonProperty("mapping") MAPPING ("https://hdl.handle.net/21.T11148/ce794a6f4df42eb7e77e"),
+  @JsonProperty("machineAnnotationService") MAS( "https://hdl.handle.net/21.T11148/22e71a0015cbcfba8ffa");
+
   private final String fdoProfile;
 
-  private ObjectType(String type, String fdoProfile){
-    this.type = type;
+  private ObjectType(String fdoProfile){
     this.fdoProfile = fdoProfile;
   }
-
-  public String getObjectType(){ return type;}
-
-  public String getFdoProfile(){return fdoProfile;}
 
 }
