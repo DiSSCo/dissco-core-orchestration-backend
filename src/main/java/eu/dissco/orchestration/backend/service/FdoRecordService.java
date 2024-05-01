@@ -1,6 +1,5 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.FDO_PROFILE;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.MAS_NAME;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_DATA_STANDARD;
@@ -23,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class FdoRecordService {
 
   private final ObjectMapper mapper;
+  private static final String ISSUED_FOR_AGENT_ROR = "https://ror.org/0566bfb96";
 
   public JsonNode buildCreateRequest(Object object, ObjectType type) {
     var request = mapper.createObjectNode();
@@ -56,29 +56,23 @@ public class FdoRecordService {
   }
 
   private JsonNode buildMappingAttributes(Mapping mapping) {
-    var attributes = buildGeneralAttributes(ObjectType.MAPPING);
-    attributes.put(SOURCE_DATA_STANDARD.getAttribute(), mapping.sourceDataStandard());
-    return attributes;
+    return buildGeneralAttributes()
+        .put(SOURCE_DATA_STANDARD.getAttribute(), mapping.sourceDataStandard());
   }
 
   private JsonNode buildMasAttributes(MachineAnnotationService mas) {
-    var attributes = buildGeneralAttributes(ObjectType.MAS);
-    attributes.put(MAS_NAME.getAttribute(), mas.getName());
-    return attributes;
+    return buildGeneralAttributes()
+        .put(MAS_NAME.getAttribute(), mas.getName());
   }
 
   private JsonNode buildSourceSystemAttributes(SourceSystem sourceSystem) {
-    var attributes = buildGeneralAttributes(ObjectType.SOURCE_SYSTEM);
-    attributes.put(SOURCE_SYSTEM_NAME.getAttribute(), sourceSystem.name());
-    return attributes;
+    return buildGeneralAttributes()
+        .put(SOURCE_SYSTEM_NAME.getAttribute(), sourceSystem.name());
   }
 
-  private ObjectNode buildGeneralAttributes(ObjectType type) {
-    var attributes = mapper.createObjectNode();
-    attributes.put(FDO_PROFILE.getAttribute(), type.getFdoProfile());
-    attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT.getDefaultValue());
-    return attributes;
+  private ObjectNode buildGeneralAttributes() {
+    return mapper.createObjectNode()
+            .put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT_ROR);
   }
-
 
 }

@@ -4,20 +4,16 @@ import lombok.Getter;
 
 @Getter
 public enum FdoProfileAttributes {
-  FDO_PROFILE("fdoProfile", null),
   // Issued for agent should be DiSSCo PID; currently it's set as Naturalis's ROR
-  ISSUED_FOR_AGENT("issuedForAgent", "https://ror.org/0566bfb96"),
+  ISSUED_FOR_AGENT("issuedForAgent"),
   // Mapping
-  SOURCE_DATA_STANDARD("sourceDataStandard", null),
+  SOURCE_DATA_STANDARD("sourceDataStandard"),
   // Source System
-  SOURCE_SYSTEM_NAME("sourceSystemName", null),
-  MAS_NAME("machineAnnotationServiceName", null);
+  SOURCE_SYSTEM_NAME("sourceSystemName"),
+  MAS_NAME("machineAnnotationServiceName");
 
   private final String attribute;
-  private final String defaultValue;
 
-  private FdoProfileAttributes(String attribute, String defaultValue) {
-    this.attribute = attribute;
-    this.defaultValue = defaultValue;
-  }
+  FdoProfileAttributes(String attribute) {
+    this.attribute = attribute;}
 }
