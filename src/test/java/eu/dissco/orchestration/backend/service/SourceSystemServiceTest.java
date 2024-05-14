@@ -404,7 +404,7 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testGetSourceSystemById() throws Exception {
+  void testGetSourceSystemById() {
     // Given
     var sourceSystemRecord = givenSourceSystemRecord();
     var expected = givenSourceSystemSingleJsonApiWrapper();
