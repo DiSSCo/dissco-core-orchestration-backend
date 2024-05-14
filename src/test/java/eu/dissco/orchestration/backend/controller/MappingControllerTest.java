@@ -17,12 +17,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
-import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
-import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MappingService;
 import java.util.Collections;
@@ -79,23 +75,6 @@ class MappingControllerTest {
   }
 
   @Test
-  void testCreateMappingBadSourceSystemStandard() {
-    // Given
-    var mapping = new Mapping(
-        "name",
-        "description",
-        MAPPER.createObjectNode(),
-        "badType"
-    );
-    var requestBody = new JsonApiRequestWrapper(
-        new JsonApiRequest(ObjectType.MAPPING, MAPPER.valueToTree(mapping)));
-
-    // Then
-    assertThrowsExactly(IllegalArgumentException.class,
-        () -> controller.createMapping(authentication, requestBody, mockRequest));
-  }
-
-  @Test
   void testUpdateMapping() throws Exception {
     // Given
     givenAuthentication();
@@ -125,9 +104,6 @@ class MappingControllerTest {
 
   @Test
   void testGetMappingById() {
-    // Given
-    var id = HANDLE;
-
     // When
     var result = controller.getMappingById(PREFIX, SUFFIX, mockRequest);
 

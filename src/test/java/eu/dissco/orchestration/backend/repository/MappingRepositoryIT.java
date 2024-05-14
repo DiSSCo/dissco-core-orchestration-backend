@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.SourceDataStandard;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,7 +79,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
             "An updated name",
             "With a nice new description",
             MAPPER.createObjectNode(),
-            "abcd"
+            SourceDataStandard.ABCD
         )
     );
   }
@@ -208,7 +209,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
           dbRecord.get(MAPPING.NAME),
           dbRecord.get(MAPPING.DESCRIPTION),
           MAPPER.readTree(dbRecord.get(MAPPING.MAPPING_).data()),
-          dbRecord.get(MAPPING.SOURCEDATASTANDARD));
+          SourceDataStandard.fromString(dbRecord.get(MAPPING.SOURCEDATASTANDARD)));
       return new MappingRecord(
           dbRecord.get(MAPPING.ID),
           dbRecord.get(MAPPING.VERSION),
@@ -230,7 +231,7 @@ class MappingRepositoryIT extends BaseRepositoryIT {
           .set(MAPPING.VERSION, mappingRecord.version())
           .set(MAPPING.NAME, mappingRecord.mapping().name())
           .set(MAPPING.DESCRIPTION, mappingRecord.mapping().description())
-          .set(MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard())
+          .set(MAPPING.SOURCEDATASTANDARD, mappingRecord.mapping().sourceDataStandard().toString())
           .set(MAPPING.MAPPING_,
               JSONB.valueOf(mappingRecord.mapping().mapping().toString()))
           .set(MAPPING.CREATED, mappingRecord.created())

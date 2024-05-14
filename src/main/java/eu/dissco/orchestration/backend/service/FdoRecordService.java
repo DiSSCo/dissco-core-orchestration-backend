@@ -57,7 +57,7 @@ public class FdoRecordService {
 
   private JsonNode buildMappingAttributes(Mapping mapping) {
     return buildGeneralAttributes()
-        .put(SOURCE_DATA_STANDARD.getAttribute(), mapping.sourceDataStandard());
+        .put(SOURCE_DATA_STANDARD.getAttribute(), mapping.sourceDataStandard().toString());
   }
 
   private JsonNode buildMasAttributes(MachineAnnotationService mas) {

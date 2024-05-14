@@ -14,6 +14,7 @@ public record SourceSystemRecord(
     @NotNull
     Instant created,
     Instant deleted,
+    @NotNull
     SourceSystem sourceSystem
 ) {
 

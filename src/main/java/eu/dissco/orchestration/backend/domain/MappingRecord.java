@@ -15,6 +15,7 @@ public record MappingRecord(
     Instant deleted,
     @NotBlank
     String creator,
+    @NotNull
     Mapping mapping
 ) {
 

@@ -4,11 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
-import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
+import eu.dissco.orchestration.backend.domain.ObjectType;
+import eu.dissco.orchestration.backend.domain.SourceDataStandard;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
@@ -192,7 +193,7 @@ public class TestUtils {
         OBJECT_NAME,
         OBJECT_DESCRIPTION,
         MAPPER.createObjectNode(),
-        "dwc");
+        SourceDataStandard.DWC);
   }
 
   public static JsonApiListWrapper givenMappingRecordResponse(List<MappingRecord> mappingRecords,

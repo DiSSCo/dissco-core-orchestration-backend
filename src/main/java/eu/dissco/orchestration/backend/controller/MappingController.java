@@ -12,8 +12,6 @@ import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MappingService;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -40,8 +38,6 @@ public class MappingController {
   private final MappingService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
-  private static final ArrayList<String> SOURCE_DATA_SYSTEMS = new ArrayList<>(
-      List.of("dwc", "abcd", "abcdefg"));
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
@@ -113,16 +109,7 @@ public class MappingController {
       log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
-    var mapping = mapper.treeToValue(requestBody.data().attributes(), Mapping.class);
-    checkSourceStandard(mapping);
-    return mapping;
-  }
-
-  private void checkSourceStandard(Mapping mapping) {
-    if (!SOURCE_DATA_SYSTEMS.contains(mapping.sourceDataStandard())) {
-      throw new IllegalArgumentException(
-          "Invalid source data standard" + mapping.sourceDataStandard());
-    }
+    return mapper.treeToValue(requestBody.data().attributes(), Mapping.class);
   }
 
 }
