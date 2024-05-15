@@ -13,6 +13,7 @@ import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
+import eu.dissco.orchestration.backend.properties.FdoProperties;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,12 +23,12 @@ import org.springframework.stereotype.Service;
 public class FdoRecordService {
 
   private final ObjectMapper mapper;
-  private static final String ISSUED_FOR_AGENT_ROR = "https://ror.org/0566bfb96";
+  private final FdoProperties fdoProperties;
 
   public JsonNode buildCreateRequest(Object object, ObjectType type) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
-    data.put("type", type.getFdoProfile());
+    data.put("type", getFdoType(type));
     var attributes = buildRequestAttributes(object, type);
     data.set("attributes", attributes);
     request.set("data", data);
@@ -36,7 +37,7 @@ public class FdoRecordService {
 
   public JsonNode buildRollbackCreateRequest(String handle) {
     var dataNode = List.of(mapper.createObjectNode().put("id", handle));
-    ArrayNode dataArrayNode= mapper.valueToTree(dataNode);
+    ArrayNode dataArrayNode = mapper.valueToTree(dataNode);
     return mapper.createObjectNode().set("data", dataArrayNode);
   }
 
@@ -70,9 +71,24 @@ public class FdoRecordService {
         .put(SOURCE_SYSTEM_NAME.getAttribute(), sourceSystem.name());
   }
 
+  private String getFdoType(ObjectType type) {
+    switch (type) {
+      case MAS -> {
+        return fdoProperties.getMasType();
+      }
+      case MAPPING -> {
+        return fdoProperties.getMappingType();
+      }
+      case SOURCE_SYSTEM -> {
+        return fdoProperties.getSourceSystemType();
+      }
+      default -> throw new IllegalStateException();
+    }
+  }
+
   private ObjectNode buildGeneralAttributes() {
     return mapper.createObjectNode()
-            .put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT_ROR);
+        .put(ISSUED_FOR_AGENT.getAttribute(), fdoProperties.getIssuedForAgent());
   }
 
 }

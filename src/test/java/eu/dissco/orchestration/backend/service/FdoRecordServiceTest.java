@@ -12,7 +12,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.orchestration.backend.domain.ObjectType;
-import eu.dissco.orchestration.backend.service.FdoRecordService;
+import eu.dissco.orchestration.backend.properties.FdoProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ class FdoRecordServiceTest {
 
   @BeforeEach
   void setup() {
-    this.builder = new FdoRecordService(MAPPER);
+    this.builder = new FdoRecordService(MAPPER, new FdoProperties());
   }
   @Test
   void testCreateRequestSourceSystem() throws Exception {

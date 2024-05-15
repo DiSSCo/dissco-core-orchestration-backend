@@ -98,7 +98,8 @@ public class SourceSystemService {
   }
 
   private String createHandle(SourceSystem sourceSystem) throws ProcessingFailedException {
-    var request = fdoRecordService.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM);
+    var request = fdoRecordService.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM
+    );
     try {
       return handleComponent.postHandle(request);
     } catch (PidAuthenticationException | PidCreationException e) {
