@@ -2,7 +2,7 @@ package eu.dissco.orchestration.backend.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.orchestration.backend.domain.HandleType;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
@@ -119,7 +119,8 @@ public class SourceSystemController {
 
   private SourceSystem getSourceSystemFromRequest(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
-    if (!requestBody.data().type().equals(HandleType.SOURCE_SYSTEM)) {
+    if (!requestBody.data().type().equals(ObjectType.SOURCE_SYSTEM)) {
+      log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
     return mapper.treeToValue(requestBody.data().attributes(), SourceSystem.class);

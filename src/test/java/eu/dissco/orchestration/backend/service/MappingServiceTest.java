@@ -25,10 +25,10 @@ import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.ObjectType;
+import eu.dissco.orchestration.backend.domain.SourceDataStandard;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
@@ -157,7 +157,7 @@ class MappingServiceTest {
   void testUpdateMapping() throws Exception {
     // Given
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode(),
-        "dwc");
+        SourceDataStandard.DWC);
     var prevRecord = Optional.of(
         new MappingRecord(HANDLE, 1, CREATED, null, OBJECT_CREATOR, prevMapping));
     var mapping = givenMapping();
@@ -180,7 +180,7 @@ class MappingServiceTest {
   void testUpdateMappingKafkaFails() throws Exception {
     // Given
     var prevMapping = new Mapping("old name", OBJECT_DESCRIPTION, MAPPER.createObjectNode(),
-        "dwc");
+        SourceDataStandard.DWC);
     var prevRecord = Optional.of(
         new MappingRecord(HANDLE, 1, CREATED, null, OBJECT_CREATOR, prevMapping));
     var mapping = givenMapping();
@@ -249,7 +249,7 @@ class MappingServiceTest {
         givenMapping());
     given(repository.getMapping(HANDLE)).willReturn(mappingRecord);
     var expected = new JsonApiWrapper(
-        new JsonApiData(HANDLE, HandleType.MAPPING, flattenMappingRecord(mappingRecord)),
+        new JsonApiData(HANDLE, ObjectType.MAPPING, flattenMappingRecord(mappingRecord)),
         new JsonApiLinks(MAPPING_PATH));
 
     // When

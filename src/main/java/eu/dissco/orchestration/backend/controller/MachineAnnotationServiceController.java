@@ -2,8 +2,8 @@ package eu.dissco.orchestration.backend.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
@@ -111,7 +111,8 @@ public class MachineAnnotationServiceController {
 
   private MachineAnnotationService getMachineAnnotation(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
-    if (!requestBody.data().type().equals(HandleType.MACHINE_ANNOTATION_SERVICE)) {
+    if (!requestBody.data().type().equals(ObjectType.MAS)) {
+      log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
     return mapper.treeToValue(requestBody.data().attributes(), MachineAnnotationService.class);

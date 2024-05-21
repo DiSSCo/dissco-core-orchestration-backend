@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.diff.JsonDiff;
-import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.MappingRecord;
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -140,7 +139,7 @@ public class MappingService {
 
   private JsonApiWrapper wrapSingleResponse(String id, MappingRecord mappingRecord, String path) {
     return new JsonApiWrapper(
-        new JsonApiData(id, HandleType.MAPPING, flattenMappingRecord(mappingRecord)),
+        new JsonApiData(id, ObjectType.MAPPING, flattenMappingRecord(mappingRecord)),
         new JsonApiLinks(path)
     );
   }
@@ -156,7 +155,7 @@ public class MappingService {
 
   private List<JsonApiData> wrapData(List<MappingRecord> mappingRecords) {
     return mappingRecords.stream()
-        .map(r -> new JsonApiData(r.id(), HandleType.MAPPING, flattenMappingRecord(r)))
+        .map(r -> new JsonApiData(r.id(), ObjectType.MAPPING, flattenMappingRecord(r)))
         .toList();
   }
 

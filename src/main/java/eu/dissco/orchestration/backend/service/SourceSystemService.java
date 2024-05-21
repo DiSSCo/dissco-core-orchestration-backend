@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.diff.JsonDiff;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.domain.Enrichment;
-import eu.dissco.orchestration.backend.domain.HandleType;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
@@ -99,7 +98,8 @@ public class SourceSystemService {
   }
 
   private String createHandle(SourceSystem sourceSystem) throws ProcessingFailedException {
-    var request = fdoRecordService.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM);
+    var request = fdoRecordService.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM
+    );
     try {
       return handleComponent.postHandle(request);
     } catch (PidAuthenticationException | PidCreationException e) {
@@ -266,7 +266,7 @@ public class SourceSystemService {
   private JsonApiWrapper wrapSingleResponse(String id, SourceSystemRecord sourceSystemRecord,
       String path) {
     return new JsonApiWrapper(
-        new JsonApiData(id, HandleType.SOURCE_SYSTEM,
+        new JsonApiData(id, ObjectType.SOURCE_SYSTEM,
             flattenSourceSystemRecord(sourceSystemRecord)),
         new JsonApiLinks(path)
     );
@@ -300,7 +300,7 @@ public class SourceSystemService {
 
   private List<JsonApiData> wrapData(List<SourceSystemRecord> sourceSystemRecords) {
     return sourceSystemRecords.stream()
-        .map(r -> new JsonApiData(r.id(), HandleType.SOURCE_SYSTEM, flattenSourceSystemRecord(r)))
+        .map(r -> new JsonApiData(r.id(), ObjectType.SOURCE_SYSTEM, flattenSourceSystemRecord(r)))
         .toList();
   }
 
