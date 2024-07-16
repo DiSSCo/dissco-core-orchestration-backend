@@ -3,13 +3,13 @@ package eu.dissco.orchestration.backend.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ObjectType;
-import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
+import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -44,11 +44,12 @@ public class SourceSystemController {
   public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws IOException, NotFoundException, ProcessingFailedException {
-    var sourceSystem = getSourceSystemFromRequest(requestBody);
+    var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var userId = authentication.getName();
-    log.info("Received create request for source system: {} from user: {}", sourceSystem, userId);
-    var result = service.createSourceSystem(sourceSystem, userId, path);
+    log.info("Received create request for source system: {} from user: {}", sourceSystemRequest,
+        userId);
+    var result = service.createSourceSystem(sourceSystemRequest, userId, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
@@ -57,12 +58,12 @@ public class SourceSystemController {
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws IOException, NotFoundException, ProcessingFailedException {
-    var sourceSystem = getSourceSystemFromRequest(requestBody);
+    var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
     var id = prefix + '/' + suffix;
     var userId = authentication.getName();
     log.info("Received update request for source system: {} from user: {}", id, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateSourceSystem(id, sourceSystem, userId, path);
+    var result = service.updateSourceSystem(id, sourceSystemRequest, userId, path);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {
@@ -76,9 +77,9 @@ public class SourceSystemController {
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException, ProcessingFailedException {
     String id = prefix + "/" + suffix;
-    log.info("Received delete request for mapping: {} from user: {}", id,
-        authentication.getName());
-    service.deleteSourceSystem(id);
+    var userId = authentication.getName();
+    log.info("Received delete request for mapping: {} from user: {}", id, userId);
+    service.deleteSourceSystem(id, userId);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
@@ -114,15 +115,15 @@ public class SourceSystemController {
         pageSize);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK)
-        .body(service.getSourceSystemRecords(pageNum, pageSize, path));
+        .body(service.getSourceSystems(pageNum, pageSize, path));
   }
 
-  private SourceSystem getSourceSystemFromRequest(JsonApiRequestWrapper requestBody)
+  private SourceSystemRequest getSourceSystemFromRequest(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
     if (!requestBody.data().type().equals(ObjectType.SOURCE_SYSTEM)) {
       log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(), SourceSystem.class);
+    return mapper.treeToValue(requestBody.data().attributes(), SourceSystemRequest.class);
   }
 }

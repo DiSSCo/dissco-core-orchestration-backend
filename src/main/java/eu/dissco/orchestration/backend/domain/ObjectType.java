@@ -5,8 +5,8 @@ import lombok.Getter;
 
 @Getter
 public enum ObjectType {
-  @JsonProperty("sourceSystem") SOURCE_SYSTEM,
-  @JsonProperty("mapping") MAPPING,
-  @JsonProperty("machineAnnotationService") MAS;
+  @JsonProperty("ods:SourceSystem") SOURCE_SYSTEM,
+  @JsonProperty("ods:DataMapping") MAPPING,
+  @JsonProperty("ods:MachineAnnotationService") MAS
 
 }

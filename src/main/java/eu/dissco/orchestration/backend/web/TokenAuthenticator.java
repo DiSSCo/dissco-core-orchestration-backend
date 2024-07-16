@@ -58,7 +58,8 @@ public class TokenAuthenticator {
     if (tokenNode != null && tokenNode.get("access_token") != null) {
       return tokenNode.get("access_token").asText();
     }
-    log.warn("Unexpected response from keycloak server. Unable to parse access_token: {}", tokenNode);
+    log.warn("Unexpected response from keycloak server. Unable to parse access_token: {}",
+        tokenNode);
     throw new PidAuthenticationException(
         "Unable to authenticate processing service with Keycloak. An error has occurred parsing keycloak response");
   }

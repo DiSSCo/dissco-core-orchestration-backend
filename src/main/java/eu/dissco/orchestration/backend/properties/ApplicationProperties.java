@@ -15,4 +15,13 @@ public class ApplicationProperties {
 
   @NotBlank
   private String baseUrl;
+
+  @NotBlank
+  private String name = "dissco-core-orchestration-backend";
+
+  @NotBlank
+  private String pid = "https://hdl.handle.net/TEST/123-123-123";
+
+  @NotBlank
+  private String createUpdateTombstoneEventType = "https://hdl.handle.net/TEST/123-123-123";
 }

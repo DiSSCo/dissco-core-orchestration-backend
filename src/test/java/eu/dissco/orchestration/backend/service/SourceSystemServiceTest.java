@@ -1,19 +1,19 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType.dwca;
-import static eu.dissco.orchestration.backend.service.SourceSystemService.SUBJECT_TYPE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.SOURCE_SYSTEM_TYPE_DOI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenSourceSystemRecord;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRecord;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenSourceSystem;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -28,20 +28,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import eu.dissco.orchestration.backend.domain.ObjectType;
-import eu.dissco.orchestration.backend.domain.SourceSystem;
-import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
+import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
+import eu.dissco.orchestration.backend.schema.SourceSystem;
+import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
+import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
 import io.kubernetes.client.openapi.ApiException;
@@ -80,21 +81,23 @@ class SourceSystemServiceTest {
 
   private final Configuration configuration = new Configuration(Configuration.VERSION_2_3_32);
 
+  private final Random random = new Random();
+
   private SourceSystemService service;
   @Mock
   private KafkaPublisherService kafkaPublisherService;
   @Mock
   private SourceSystemRepository repository;
   @Mock
-  private FdoRecordService builder;
+  private FdoRecordService fdoRecordService;
   @Mock
   private HandleComponent handleComponent;
   @Mock
-  private MappingService mappingService;
+  private DataMappingService dataMappingService;
   @Mock
   private BatchV1Api batchV1Api;
-  private Random random = new Random();
-
+  @Mock
+  private FdoProperties fdoProperties;
 
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
@@ -102,8 +105,9 @@ class SourceSystemServiceTest {
   @BeforeEach
   void setup() throws IOException {
     jobProperties.setDatabaseUrl("jdbc:postgresql://localhost:5432/translator");
-    service = new SourceSystemService(builder, handleComponent, repository, mappingService,
-        kafkaPublisherService, MAPPER, yamlMapper, jobProperties, configuration, batchV1Api, random);
+    service = new SourceSystemService(fdoRecordService, handleComponent, repository, dataMappingService,
+        kafkaPublisherService, MAPPER, yamlMapper, jobProperties, configuration, batchV1Api,
+        random, fdoProperties);
     initTime();
     initFreeMaker();
   }
@@ -122,10 +126,11 @@ class SourceSystemServiceTest {
   void testCreateSourceSystem() throws Exception {
     // Given
     var expected = givenSourceSystemSingleJsonApiWrapper();
-    var sourceSystem = givenSourceSystem();
-    given(handleComponent.postHandle(any())).willReturn(HANDLE);
-    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
-        Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
+    var sourceSystem = givenSourceSystemRequest();
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
+        Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);
@@ -138,16 +143,17 @@ class SourceSystemServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
-    then(repository).should().createSourceSystem(givenSourceSystemRecord());
+    then(repository).should().createSourceSystem(givenSourceSystem());
     then(kafkaPublisherService).should()
-        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord()), SUBJECT_TYPE);
+        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem()));
   }
 
   @Test
   void testCreateSourceSystemMappingNotFound() {
     // Given
-    var sourceSystem = givenSourceSystem();
-    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(Optional.empty());
+    var sourceSystem = givenSourceSystemRequest();
+    given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
+        Optional.empty());
 
     assertThrowsExactly(NotFoundException.class,
         () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
@@ -156,10 +162,11 @@ class SourceSystemServiceTest {
   @Test
   void testCreateSourceSystemCronFails() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystem();
-    given(handleComponent.postHandle(any())).willReturn(HANDLE);
-    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
-        Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
+    var sourceSystem = givenSourceSystemRequest();
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
+        Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);
@@ -170,8 +177,8 @@ class SourceSystemServiceTest {
         () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
 
     // Then
-    then(repository).should().createSourceSystem(givenSourceSystemRecord());
-    then(builder).should().buildRollbackCreateRequest(HANDLE);
+    then(repository).should().createSourceSystem(givenSourceSystem());
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackSourceSystemCreation(HANDLE);
   }
@@ -179,10 +186,11 @@ class SourceSystemServiceTest {
   @Test
   void testCreateSourceSystemTranslatorJobFails() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystem();
-    given(handleComponent.postHandle(any())).willReturn(HANDLE);
-    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
-        Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
+    var sourceSystem = givenSourceSystemRequest();
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
+        Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);
@@ -198,8 +206,8 @@ class SourceSystemServiceTest {
         () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
 
     // Then
-    then(repository).should().createSourceSystem(givenSourceSystemRecord());
-    then(builder).should().buildRollbackCreateRequest(HANDLE);
+    then(repository).should().createSourceSystem(givenSourceSystem());
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackSourceSystemCreation(HANDLE);
   }
@@ -207,10 +215,11 @@ class SourceSystemServiceTest {
   @Test
   void testCreateSourceSystemKafkaFails() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystem();
-    given(handleComponent.postHandle(any())).willReturn(HANDLE);
-    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
-        Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
+    var sourceSystem = givenSourceSystemRequest();
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
+        Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);
@@ -220,15 +229,15 @@ class SourceSystemServiceTest {
     given(
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord()), SUBJECT_TYPE);
+        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem()));
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
         () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
 
     // Then
-    then(repository).should().createSourceSystem(givenSourceSystemRecord());
-    then(builder).should().buildRollbackCreateRequest(HANDLE);
+    then(repository).should().createSourceSystem(givenSourceSystem());
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackSourceSystemCreation(HANDLE);
   }
@@ -236,9 +245,9 @@ class SourceSystemServiceTest {
   @Test
   void testCreateMasHandleFails() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystem();
-    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
-        Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
+    var sourceSystem = givenSourceSystemRequest();
+    given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
+        Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
 
     // When / Then
@@ -249,13 +258,13 @@ class SourceSystemServiceTest {
   @Test
   void testCreateSourceSystemKafkaAndRollbackFails() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystem(dwca);
-    given(handleComponent.postHandle(any())).willReturn(HANDLE);
-    given(mappingService.getActiveMapping(sourceSystem.mappingId())).willReturn(
-        Optional.of(givenMappingRecord(sourceSystem.mappingId(), 1)));
+    var sourceSystem = givenSourceSystemRequest(SourceSystemRequest.OdsTranslatorType.DWCA);
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
+        Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord(dwca)),
-            SUBJECT_TYPE);
+        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem(OdsTranslatorType.DWCA)));
     willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
@@ -271,8 +280,8 @@ class SourceSystemServiceTest {
         () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
 
     // Then
-    then(repository).should().createSourceSystem(givenSourceSystemRecord(dwca));
-    then(builder).should().buildRollbackCreateRequest(HANDLE);
+    then(repository).should().createSourceSystem(givenSourceSystem(OdsTranslatorType.DWCA));
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackSourceSystemCreation(HANDLE);
   }
@@ -280,8 +289,8 @@ class SourceSystemServiceTest {
   @Test
   void testRunSourceSystemById() {
     // Given
-    var sourceSystemRecord = givenSourceSystemRecord();
-    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystemRecord);
+    var sourceSystem = givenSourceSystem();
+    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystem);
     var createJob = mock(APIcreateNamespacedJobRequest.class);
     given(
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
@@ -292,42 +301,32 @@ class SourceSystemServiceTest {
 
   @Test
   void testUpdateSourceSystem() throws Exception {
-    var sourceSystem = givenSourceSystem();
-    var prevRecord = Optional.of(new SourceSystemRecord(
-        HANDLE,
-        1,
-        OBJECT_CREATOR,
-        CREATED,
-        null, new SourceSystem("name", "endpoint", "description", dwca, "id")
-    ));
+    var sourceSystem = givenSourceSystemRequest();
+    var prevSourceSystem = Optional.of(givenSourceSystem(OdsTranslatorType.DWCA));
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
     var expected = givenSourceSystemSingleJsonApiWrapper(2);
-    given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
 
     // When
-    var result = service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
+    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
-    then(repository).should().updateSourceSystem(givenSourceSystemRecord(2));
+    then(repository).should().updateSourceSystem(givenSourceSystem(2));
     then(kafkaPublisherService).should()
-        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord(2)),
-            givenJsonPatch(), SUBJECT_TYPE);
+        .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
+            MAPPER.valueToTree(prevSourceSystem.get()));
   }
 
   @Test
   void testUpdateSourceSystemCronJobFails() throws Exception {
-    var sourceSystem = givenSourceSystem();
-    var prevRecord = Optional.of(new SourceSystemRecord(
-        HANDLE,
-        1,
-        OBJECT_CREATOR,
-        CREATED,
-        null, new SourceSystem("name", "endpoint", "description", dwca, "id")
-    ));
-    given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);
+    var sourceSystem = givenSourceSystemRequest();
+    var prevSourceSystem = Optional.of(givenSourceSystem(OdsTranslatorType.DWCA));
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
@@ -335,53 +334,39 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
 
     // Then
-    then(repository).should().updateSourceSystem(givenSourceSystemRecord(2));
-    then(repository).should().updateSourceSystem(prevRecord.get());
+    then(repository).should().updateSourceSystem(givenSourceSystem(2));
+    then(repository).should().updateSourceSystem(prevSourceSystem.get());
   }
 
   @Test
   void testUpdateSourceSystemKafkaFails() throws Exception {
-    var sourceSystem = givenSourceSystem();
-    var prevRecord = Optional.of(new SourceSystemRecord(
-        HANDLE,
-        1,
-        OBJECT_CREATOR,
-        CREATED,
-        null, new SourceSystem("name", "endpoint", "description", dwca, "id")
-    ));
-    given(repository.getActiveSourceSystem(HANDLE)).willReturn(prevRecord);
+    var sourceSystem = givenSourceSystemRequest();
+    var prevSourceSystem = Optional.of(givenSourceSystem(OdsTranslatorType.DWCA));
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishUpdateEvent(HANDLE, MAPPER.valueToTree(givenSourceSystemRecord(2)),
-            givenJsonPatch(), SUBJECT_TYPE);
+        .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
+            MAPPER.valueToTree(prevSourceSystem.get()));
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
 
     // Then
-    then(repository).should().updateSourceSystem(givenSourceSystemRecord(2));
-    then(repository).should().updateSourceSystem(prevRecord.get());
-  }
-
-  private JsonNode givenJsonPatch() throws JsonProcessingException {
-    return MAPPER.readTree(
-        "[{\"op\":\"replace\",\"path\":\"/mappingId\",\"value\":\"id\"},{\"op\":\"replace\","
-            + "\"path\":\"/endpoint\",\"value\":\"endpoint\"},{\"op\":\"replace\","
-            + "\"path\":\"/translatorType\",\"value\":\"dwca\"},{\"op\":\"replace\","
-            + "\"path\":\"/name\",\"value\":\"name\"},{\"op\":\"replace\",\"path\":\"/description\","
-            + "\"value\":\"description\"}]");
+    then(repository).should().updateSourceSystem(givenSourceSystem(2));
+    then(repository).should().updateSourceSystem(prevSourceSystem.get());
   }
 
   @Test
   void testUpdateSourceSystemNotFound() {
     // Given
-    var sourceSystem = givenSourceSystem();
+    var sourceSystem = givenSourceSystemRequest();
     given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.empty());
 
     // Then
@@ -392,12 +377,12 @@ class SourceSystemServiceTest {
   @Test
   void testUpdateSourceSystemNoChanges() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystem();
-    given(repository.getActiveSourceSystem(HANDLE)).willReturn(
-        Optional.of(givenSourceSystemRecord()));
+    var sourceSystem = givenSourceSystemRequest();
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(
+        Optional.of(givenSourceSystem()));
 
     // When
-    var result = service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
+    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
 
     // Then
     assertThat(result).isNull();
@@ -406,10 +391,10 @@ class SourceSystemServiceTest {
   @Test
   void testGetSourceSystemById() {
     // Given
-    var sourceSystemRecord = givenSourceSystemRecord();
+    var sourceSystem = givenSourceSystem();
     var expected = givenSourceSystemSingleJsonApiWrapper();
 
-    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystemRecord);
+    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystem);
 
     // When
     var result = service.getSourceSystemById(HANDLE, SYSTEM_PATH);
@@ -421,14 +406,13 @@ class SourceSystemServiceTest {
   @Test
   void testGetSourceSystemByIdIsDeleted() {
     // Given
-    var sourceSystemRecord = new SourceSystemRecord(
-        HANDLE, 1, OBJECT_CREATOR, CREATED, CREATED, givenSourceSystem());
+    var sourceSystem = givenSourceSystem();
     var expected = new JsonApiWrapper(
         new JsonApiData(HANDLE, ObjectType.SOURCE_SYSTEM,
-            flattenSourceSystemRecord(sourceSystemRecord)),
+            flattenSourceSystem(sourceSystem)),
         new JsonApiLinks(SYSTEM_PATH));
 
-    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystemRecord);
+    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystem);
 
     // When
     var result = service.getSourceSystemById(HANDLE, SYSTEM_PATH);
@@ -438,37 +422,37 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void getSourceSystemRecords() {
+  void getSourceSystems() {
     // Given
     int pageNum = 1;
     int pageSize = 10;
     String path = SANDBOX_URI;
-    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize + 1,
-        givenSourceSystemRecord());
-    given(repository.getSourceSystems(pageNum, pageSize)).willReturn(ssRecords);
+    List<SourceSystem> sourceSystems = Collections.nCopies(pageSize + 1,
+        givenSourceSystem());
+    given(repository.getSourceSystems(pageNum, pageSize)).willReturn(sourceSystems);
     var linksNode = new JsonApiLinks(pageSize, pageNum, true, path);
-    var expected = givenSourceSystemRecordResponse(ssRecords.subList(0, pageSize), linksNode);
+    var expected = givenSourceSystemResponse(sourceSystems.subList(0, pageSize), linksNode);
 
     // When
-    var result = service.getSourceSystemRecords(pageNum, pageSize, path);
+    var result = service.getSourceSystems(pageNum, pageSize, path);
 
     // Then
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
-  void getSourceSystemRecordsLastPage() {
+  void getSourceSystemsLastPage() {
     // Given
     int pageNum = 2;
     int pageSize = 10;
     String path = SANDBOX_URI;
-    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
-    given(repository.getSourceSystems(pageNum, pageSize)).willReturn(ssRecords);
+    List<SourceSystem> sourceSystems = Collections.nCopies(pageSize, givenSourceSystem());
+    given(repository.getSourceSystems(pageNum, pageSize)).willReturn(sourceSystems);
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, path);
-    var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
+    var expected = givenSourceSystemResponse(sourceSystems, linksNode);
 
     // When
-    var result = service.getSourceSystemRecords(pageNum, pageSize, path);
+    var result = service.getSourceSystems(pageNum, pageSize, path);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -477,37 +461,39 @@ class SourceSystemServiceTest {
   @Test
   void testDeleteSourceSystem() {
     // Given
-    given(repository.getActiveSourceSystem(HANDLE)).willReturn(
-        Optional.of(givenSourceSystemRecord()));
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(
+        Optional.of(givenSourceSystem()));
     var deleteCron = mock(APIdeleteNamespacedCronJobRequest.class);
     given(batchV1Api.deleteNamespacedCronJob(anyString(), eq(NAMESPACE)))
         .willReturn(deleteCron);
 
     // Then
-    assertDoesNotThrow(() -> service.deleteSourceSystem(HANDLE));
+    assertDoesNotThrow(() -> service.deleteSourceSystem(BARE_HANDLE, OBJECT_CREATOR));
   }
 
   @Test
   void testDeleteSourceSystemCronFailed() throws ApiException {
     // Given
-    given(repository.getActiveSourceSystem(HANDLE)).willReturn(
-        Optional.of(givenSourceSystemRecord()));
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(
+        Optional.of(givenSourceSystem()));
     var deleteCron = mock(APIdeleteNamespacedCronJobRequest.class);
     given(batchV1Api.deleteNamespacedCronJob(anyString(), eq(NAMESPACE)))
         .willReturn(deleteCron);
     given(deleteCron.execute()).willThrow(ApiException.class);
 
     // Then
-    assertThrowsExactly(ProcessingFailedException.class, () -> service.deleteSourceSystem(HANDLE));
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.deleteSourceSystem(BARE_HANDLE, OBJECT_CREATOR));
   }
 
   @Test
   void testDeleteSourceSystemNotFound() {
     // Given
-    given(repository.getActiveSourceSystem(HANDLE)).willReturn(Optional.empty());
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(Optional.empty());
 
     // Then
-    assertThrowsExactly(NotFoundException.class, () -> service.deleteSourceSystem(HANDLE));
+    assertThrowsExactly(NotFoundException.class,
+        () -> service.deleteSourceSystem(BARE_HANDLE, OBJECT_CREATOR));
   }
 
   private void initTime() {

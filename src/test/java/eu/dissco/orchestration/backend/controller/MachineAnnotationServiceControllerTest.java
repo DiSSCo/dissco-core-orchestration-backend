@@ -1,19 +1,18 @@
 package eu.dissco.orchestration.backend.controller;
 
-import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequestJson;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequestJson;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
-import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +45,7 @@ class MachineAnnotationServiceControllerTest {
   @Test
   void testCreateMas() throws Exception {
     // Given
-    var mas = givenMasRequest();
+    var mas = givenMasRequestJson();
 
     // When
     var result = controller.createMachineAnnotationService(authentication, mas, mockRequest);
@@ -58,7 +57,7 @@ class MachineAnnotationServiceControllerTest {
   @Test
   void testCreateMappingBadType() {
     // Given
-    var requestBody = givenSourceSystemRequest();
+    var requestBody = givenSourceSystemRequestJson();
 
     // Then
     assertThrowsExactly(
@@ -69,9 +68,10 @@ class MachineAnnotationServiceControllerTest {
   @Test
   void testUpdateMas() throws Exception {
     // Given
-    var mas = givenMasRequest();
+    var mas = givenMasRequestJson();
     var masResponse = givenMasSingleJsonApiWrapper();
-    given(service.updateMachineAnnotationService(HANDLE, givenMas(), "", "null/mas")).willReturn(
+    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), "",
+        "null/mas")).willReturn(
         masResponse);
 
     // When
@@ -85,8 +85,9 @@ class MachineAnnotationServiceControllerTest {
   @Test
   void testUpdateMasNoChange() throws Exception {
     // Given
-    var mas = givenMasRequest();
-    given(service.updateMachineAnnotationService(HANDLE, givenMas(), "", "null/mas")).willReturn(
+    var mas = givenMasRequestJson();
+    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), "",
+        "null/mas")).willReturn(
         null);
 
     // When

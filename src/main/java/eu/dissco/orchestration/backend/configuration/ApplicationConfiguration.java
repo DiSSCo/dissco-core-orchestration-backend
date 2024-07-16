@@ -1,7 +1,10 @@
 package eu.dissco.orchestration.backend.configuration;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import java.util.Date;
 import java.util.Random;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -17,10 +20,19 @@ import org.springframework.context.annotation.Primary;
 @RequiredArgsConstructor
 public class ApplicationConfiguration {
 
+  public static final String HANDLE_PROXY = "https://hdl.handle.net/";
+  public static final String DATE_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
+
   @Bean
   @Primary
   public ObjectMapper objectMapper() {
-    return new ObjectMapper().findAndRegisterModules();
+    var mapper = new ObjectMapper().findAndRegisterModules();
+    var dateModule = new SimpleModule();
+    dateModule.addSerializer(Date.class, new DateSerializer());
+    dateModule.addDeserializer(Date.class, new DateDeserializer());
+    mapper.registerModule(dateModule);
+    mapper.setSerializationInclusion(Include.NON_NULL);
+    return mapper;
   }
 
   @Bean(name = "yamlMapper")

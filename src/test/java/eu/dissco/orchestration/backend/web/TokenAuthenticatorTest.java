@@ -26,16 +26,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @ExtendWith(MockitoExtension.class)
 class TokenAuthenticatorTest {
-  private static MockWebServer mockTokenServer;
 
-  @Mock
-  private TokenProperties properties;
+  private static MockWebServer mockTokenServer;
   private final MultiValueMap<String, String> testFromFormData = new LinkedMultiValueMap<>() {{
     add("grant_type", "grantType");
     add("client_id", "clientId");
     add("client_secret", "secret");
   }};
-
+  @Mock
+  private TokenProperties properties;
   @Mock
   private CompletableFuture<JsonNode> jsonFuture;
   private TokenAuthenticator authenticator;
@@ -46,16 +45,29 @@ class TokenAuthenticatorTest {
     mockTokenServer.start();
   }
 
+  @AfterAll
+  static void destroy() throws IOException {
+    mockTokenServer.shutdown();
+  }
+
+  private static JsonNode expectedTokenResponse() throws Exception {
+    return MAPPER.readTree("""
+        {
+          "access_token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expires_in": 3600,
+          "refresh_expires_in": 0,
+          "token_type": "Bearer",
+          "not-before-policy": 0,
+          "scope": ""
+        }
+        """);
+  }
+
   @BeforeEach
   void setup() {
     WebClient webClient = WebClient.create(
         String.format("http://%s:%s", mockTokenServer.getHostName(), mockTokenServer.getPort()));
     authenticator = new TokenAuthenticator(properties, webClient);
-  }
-
-  @AfterAll
-  static void destroy() throws IOException {
-    mockTokenServer.shutdown();
   }
 
   @Test
@@ -111,11 +123,9 @@ class TokenAuthenticatorTest {
   }
 
   @Test
-  void testRetriesFailure() throws Exception {
+  void testRetriesFailure() {
     // Given
     int requestCount = mockTokenServer.getRequestCount();
-    var expectedJson = expectedTokenResponse();
-    var expected = expectedJson.get("access_token").asText();
     given(properties.getFromFormData()).willReturn(testFromFormData);
     mockTokenServer.enqueue(new MockResponse().setResponseCode(501));
     mockTokenServer.enqueue(new MockResponse().setResponseCode(501));
@@ -148,19 +158,6 @@ class TokenAuthenticatorTest {
 
     // When
     assertThrows(PidAuthenticationException.class, () -> authenticator.getToken());
-  }
-  
-  private static JsonNode expectedTokenResponse() throws Exception {
-    return MAPPER.readTree("""
-        {
-          "access_token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-          "expires_in": 3600,
-          "refresh_expires_in": 0,
-          "token_type": "Bearer",
-          "not-before-policy": 0,
-          "scope": ""
-        }
-        """);
   }
 
 }

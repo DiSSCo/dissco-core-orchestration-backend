@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.2.5</version>
+    <version>3.3.1</version>
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
   <groupId>eu.dissco.core</groupId>
@@ -17,10 +17,9 @@
   <properties>
     <java.version>17</java.version>
     <apachecommons.version>4.4</apachecommons.version>
-    <apachecommons-compress.version>1.26.0</apachecommons-compress.version>
-    <k8s-client-java.version>20.0.0</k8s-client-java.version>
+    <k8s-client-java.version>21.0.0</k8s-client-java.version>
     <json-patch.version>1.13</json-patch.version>
-    <testcontainers.version>1.19.6</testcontainers.version>
+    <testcontainers.version>1.19.8</testcontainers.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <sonar.organization>dissco</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -85,12 +84,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
-      <version>${httpclient5.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-collections4</artifactId>
-      <version>${apachecommons.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -114,12 +107,6 @@
       <groupId>com.github.java-json-tools</groupId>
       <artifactId>json-patch</artifactId>
       <version>${json-patch.version}</version>
-    </dependency>
-    <!-- Added because of CVE-2024-25710 and CVE-2024-26308 in kuberentes and testcontainer  -->
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-compress</artifactId>
-      <version>${apachecommons-compress.version}</version>
     </dependency>
 
     <dependency>
@@ -179,6 +166,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
     </dependency>
@@ -190,6 +182,20 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.3.0</version>
+        <configuration>
+          <mainClass>eu.dissco.orchestration.backend.maven.MavenRunner</mainClass>
+          <arguments>
+            <argument>https://schemas.dissco.tech/schemas/fdo-type/data-mapping/0.3.0/data-mapping.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/fdo-type/machine-annotation-service/0.3.0/machine-annotation-service.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/fdo-type/source-system/0.3.0/source-system.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/fdo-type/create-update-tombstone-event/0.3.0/create-update-tombstone-event.json</argument>
+          </arguments>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -253,6 +259,28 @@
             <version>${glassfish-jaxb.version}</version>
           </dependency>
         </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.jsonschema2pojo</groupId>
+        <artifactId>jsonschema2pojo-maven-plugin</artifactId>
+        <version>1.2.1</version>
+        <configuration>
+          <sourceDirectory>${basedir}/src/main/resources/json-schema/</sourceDirectory>
+          <targetPackage>eu.dissco.orchestration.backend.schema</targetPackage>
+          <generateBuilders>true</generateBuilders>
+          <includeConstructors>true</includeConstructors>
+          <includeDynamicBuilders>true</includeDynamicBuilders>
+          <includeAdditionalProperties>true</includeAdditionalProperties>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>
+                generate
+              </goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

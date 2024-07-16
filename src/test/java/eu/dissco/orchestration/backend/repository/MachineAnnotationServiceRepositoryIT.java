@@ -1,18 +1,18 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOTATION_SERVICES;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MACHINE_ANNOTATION_SERVICES;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.TTL;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecord;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
-import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
@@ -30,55 +30,55 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(MACHINE_ANNOTATION_SERVICES).execute();
+    context.truncate(NEW_MACHINE_ANNOTATION_SERVICES).execute();
   }
 
   @Test
   void testCreateMas() {
     // Given
-    var masRecord = givenMasRecord();
+    var mas = givenMas();
 
     // When
-    repository.createMachineAnnotationService(masRecord);
+    repository.createMachineAnnotationService(mas);
     var result = repository.getMachineAnnotationServices(1, 10);
 
     // Then
-    assertThat(result).containsOnly(masRecord);
+    assertThat(result).containsOnly(mas);
   }
 
   @Test
   void testCreateMasNoMasInput() {
     // Given
-    var masRecord = givenMasRecord(1);
+    var mas = givenMas(1);
 
     // When
-    repository.createMachineAnnotationService(masRecord);
+    repository.createMachineAnnotationService(mas);
     var result = repository.getMachineAnnotationServices(1, 10);
 
     // Then
-    assertThat(result).containsOnly(masRecord);
+    assertThat(result).containsOnly(mas);
   }
 
 
   @Test
   void testUpdateMas() {
     // Given
-    var originalRecord = givenMasRecord();
-    postMass(List.of(originalRecord));
-    var updatedRecord = givenUpdatedRecord();
+    var originalMas = givenMas();
+    postMass(List.of(originalMas));
+    var updatedMas = givenMas(2, "Another name", TTL);
 
     // When
-    repository.updateMachineAnnotationService(updatedRecord);
+    repository.updateMachineAnnotationService(updatedMas);
     var result = repository.getMachineAnnotationServices(1, 10);
 
     // Then
-    assertThat(result).containsOnly(updatedRecord);
+    assertThat(result).containsOnly(updatedMas);
   }
 
   @Test
   void testGetMasById() {
     // Given
-    var expected = givenMasRecord();
+    var expected = givenMas();
     postMass(List.of(expected));
 
     // When
@@ -91,7 +91,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetMasByIdNoMasInput() {
     // Given
-    var expected = givenMasRecord(1);
+    var expected = givenMas(1);
     postMass(List.of(expected));
 
     // When
@@ -106,14 +106,15 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     // Given
     int pageNum = 1;
     int pageSize = 10;
-    var masRecords = IntStream.range(0, pageSize).boxed().map(this::givenMasRecordWithId).toList();
-    postMass(masRecords);
+    var machineAnnotationServices = IntStream.range(0, pageSize).boxed()
+        .map(this::givenMasWithId).toList();
+    postMass(machineAnnotationServices);
 
     // When
     var result = repository.getMachineAnnotationServices(pageNum, pageSize);
 
     // Then
-    assertThat(result).isEqualTo(masRecords);
+    assertThat(result).isEqualTo(machineAnnotationServices);
   }
 
   @Test
@@ -121,9 +122,9 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     // Given
     int pageNum = 2;
     int pageSize = 10;
-    var masRecords = IntStream.range(0, pageSize + 1).boxed().map(this::givenMasRecordWithId)
+    var machineAnnotationServices = IntStream.range(0, pageSize + 1).boxed().map(this::givenMasWithId)
         .toList();
-    postMass(masRecords);
+    postMass(machineAnnotationServices);
 
     // When
     var result = repository.getMachineAnnotationServices(pageNum, pageSize);
@@ -135,27 +136,28 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   @Test
   void testDeleteMas() {
     // Given
-    var masRecord = givenMasRecord();
-    postMass(List.of(masRecord));
+    var mas = givenMas();
+    mas.setOdsTombstoneMetadata(givenTombstoneMetadata());
+    postMass(List.of(mas));
 
     // When
-    repository.deleteMachineAnnotationService(HANDLE, CREATED);
+    repository.deleteMachineAnnotationService(HANDLE, Date.from(CREATED));
     var result = repository.getMachineAnnotationService(HANDLE);
 
     // Then
-    assertThat(result.deleted()).isEqualTo(CREATED);
+    assertThat(result.getOdsTombstoneMetadata().getOdsTombstonedDate()).isEqualTo(
+        Date.from(CREATED));
   }
 
-  private MachineAnnotationServiceRecord givenMasRecordWithId(Integer i) {
-    return new MachineAnnotationServiceRecord(String.valueOf(i), 1, CREATED, OBJECT_CREATOR,
-        givenMas(), null);
+  private MachineAnnotationService givenMasWithId(Integer i) {
+    return givenMas(String.valueOf(i), 1, MAS_NAME, TTL);
   }
 
 
   @Test
   void testGetActiveMas() {
     // Given
-    var expected = givenMasRecord();
+    var expected = givenMas();
     postMass(List.of(expected));
 
     // When
@@ -168,9 +170,9 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetActiveMasWasDeleted() {
     // Given
-    var expected = givenMasRecord();
+    var expected = givenMas();
     postMass(List.of(expected));
-    repository.deleteMachineAnnotationService(HANDLE, Instant.now());
+    repository.deleteMachineAnnotationService(HANDLE, Date.from(Instant.now()));
 
     // When
     var result = repository.getActiveMachineAnnotationService(HANDLE);
@@ -182,7 +184,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   @Test
   void testRollback() {
     // Given
-    var expected = givenMasRecord();
+    var expected = givenMas();
     postMass(List.of(expected));
 
     // When
@@ -193,76 +195,22 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     assertThat(result).isNull();
   }
 
-  private MachineAnnotationServiceRecord givenUpdatedRecord() {
-    return new MachineAnnotationServiceRecord(
-        HANDLE,
-        2,
-        CREATED,
-        OBJECT_CREATOR,
-        new MachineAnnotationService(
-            "A Improved Machine Annotation Service",
-            "public.ecr.aws/dissco/fancy-mas",
-            "sha-542asaw",
-            null,
-            "An even beter service",
-            "Definitely production ready-ish",
-            "https://github.com/DiSSCo/fancy-mas",
-            "public",
-            "Died last year",
-            "https://www.apache.org/licenses/LICENSE-2.0",
-            null,
-            "dontmail@dissco.eu",
-            "https://www.know.dissco.tech/no_sla",
-            "fancy-topic-name",
-            2,
-            false,
-            TTL
-        ),
-        null
-    );
-  }
-
   @Test
   void testCreateMasNullTTL() {
     // Given
-    var masRecord = new MachineAnnotationServiceRecord(
-        HANDLE,
-        1,
-        CREATED,
-        OBJECT_CREATOR,
-        (new MachineAnnotationService(
-            "A Machine Annotation Service",
-            "public.ecr.aws/dissco/fancy-mas",
-            "sha-54289",
-            MAPPER.createObjectNode(),
-            "A fancy mas making all dreams come true",
-            "Definitely production ready",
-            "https://github.com/DiSSCo/fancy-mas",
-            "public",
-            "No one we know",
-            "https://www.apache.org/licenses/LICENSE-2.0",
-            List.of(),
-            "dontmail@dissco.eu",
-            "https://www.know.dissco.tech/no_sla",
-            "fancy-topic-name",
-            5,
-            false,
-            null
-        )),
-        null
-    );
+    var mas = givenMas(1, MAS_NAME, null);
 
     // When
-    repository.createMachineAnnotationService(masRecord);
+    repository.createMachineAnnotationService(mas);
     var result = repository.getMachineAnnotationServices(1, 10);
 
     // Then
-    assertThat(result.get(0).mas().getTimeToLive()).isEqualTo(TTL);
+    assertThat(result.get(0).getOdsTimeToLive()).isEqualTo(TTL);
   }
 
 
-  private void postMass(List<MachineAnnotationServiceRecord> originalRecord) {
-    originalRecord.forEach(masRecord -> repository.createMachineAnnotationService(masRecord));
+  private void postMass(List<MachineAnnotationService> originalMas) {
+    originalMas.forEach(mas -> repository.createMachineAnnotationService(mas));
   }
 
 }

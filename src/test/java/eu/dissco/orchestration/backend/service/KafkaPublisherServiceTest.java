@@ -1,14 +1,12 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.service.MachineAnnotationServiceService.SUBJECT_TYPE;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRecord;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.then;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.orchestration.backend.testutils.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,13 +19,15 @@ class KafkaPublisherServiceTest {
 
   @Mock
   private KafkaTemplate<String, String> kafkaTemplate;
+  @Mock
+  private ProvenanceService provenanceService;
 
   private KafkaPublisherService service;
 
 
   @BeforeEach
   void setup() {
-    service = new KafkaPublisherService(kafkaTemplate, MAPPER);
+    service = new KafkaPublisherService(kafkaTemplate, MAPPER, provenanceService);
   }
 
   @Test
@@ -35,9 +35,7 @@ class KafkaPublisherServiceTest {
     // Given
 
     // When
-    service.publishCreateEvent(HANDLE,
-        MAPPER.valueToTree(givenMasRecord()),
-        SUBJECT_TYPE);
+    service.publishCreateEvent(MAPPER.valueToTree(TestUtils.givenMas()));
 
     // Then
     then(kafkaTemplate).should().send(eq("createUpdateDeleteTopic"), anyString());
@@ -48,10 +46,8 @@ class KafkaPublisherServiceTest {
     // Given
 
     // When
-    service.publishUpdateEvent(HANDLE,
-        MAPPER.valueToTree(givenMasRecord()),
-        MAPPER.createObjectNode(),
-        SUBJECT_TYPE);
+    service.publishUpdateEvent(MAPPER.valueToTree(TestUtils.givenMas()),
+        MAPPER.createObjectNode());
 
     // Then
     then(kafkaTemplate).should().send(eq("createUpdateDeleteTopic"), anyString());

@@ -2,7 +2,6 @@ package eu.dissco.orchestration.backend.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
@@ -10,9 +9,9 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
 import jakarta.servlet.http.HttpServletRequest;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -80,9 +79,10 @@ public class MachineAnnotationServiceController {
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException, ProcessingFailedException {
     String id = prefix + "/" + suffix;
+    var userId = authentication.getName();
     log.info("Received delete request for machine annotation service: {} from user: {}", id,
-        authentication.getName());
-    service.deleteMachineAnnotationService(id);
+        userId);
+    service.deleteMachineAnnotationService(id, userId);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
@@ -109,13 +109,14 @@ public class MachineAnnotationServiceController {
         .body(service.getMachineAnnotationServices(pageNum, pageSize, path));
   }
 
-  private MachineAnnotationService getMachineAnnotation(JsonApiRequestWrapper requestBody)
+  private MachineAnnotationServiceRequest getMachineAnnotation(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
     if (!requestBody.data().type().equals(ObjectType.MAS)) {
       log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(), MachineAnnotationService.class);
+    return mapper.treeToValue(requestBody.data().attributes(),
+        MachineAnnotationServiceRequest.class);
   }
 
 }

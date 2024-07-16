@@ -1,26 +1,28 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.SOURCE_SYSTEM;
-import static eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType.biocase;
+import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE_ALT;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_DESCRIPTION;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import eu.dissco.orchestration.backend.domain.SourceSystem;
-import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
-import java.time.Instant;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
+import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
+import eu.dissco.orchestration.backend.schema.SourceSystem;
+import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
+import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.jooq.JSONB;
 import org.jooq.Query;
-import org.jooq.Record;
+import org.jooq.Record1;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,57 +31,54 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
 
   private SourceSystemRepository repository;
 
+  private static String removeProxy(String id) {
+    return id.replace(HANDLE_PROXY, "");
+  }
+
   @BeforeEach
   void setup() {
-    repository = new SourceSystemRepository(context);
+    repository = new SourceSystemRepository(context, MAPPER);
   }
 
   @AfterEach
   void destroy() {
-    context.truncate(SOURCE_SYSTEM).execute();
+    context.truncate(NEW_SOURCE_SYSTEM).execute();
   }
 
   @Test
   void testCreateSourceSystem() {
     // Given
-    var ssRecord = givenSourceSystemRecord();
+    var sourceSystem = givenSourceSystem();
 
     // When
-    repository.createSourceSystem(ssRecord);
+    repository.createSourceSystem(sourceSystem);
     var result = getAllSourceSystems();
 
     // Then
     assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(ssRecord);
+    assertThat(result.get(0)).isEqualTo(sourceSystem);
   }
 
   @Test
-  void testUpdateSourceSystem() {
+  void testUpdateSourceSystem() throws JsonProcessingException {
     // Given
-    var originalRecord = givenSourceSystemRecord();
-    postSourceSystem(List.of(originalRecord));
-    var updatedRecord = new SourceSystemRecord(HANDLE, 1, OBJECT_CREATOR, CREATED, null,
-        new SourceSystem(
-            "new name",
-            SS_ENDPOINT,
-            OBJECT_DESCRIPTION,
-            biocase,
-            HANDLE_ALT
-        ));
+    var orginalSourceSystem = givenSourceSystem();
+    postSourceSystem(List.of(orginalSourceSystem));
+    var updatedSourceSystem = orginalSourceSystem.withSchemaName("An updated name");
 
     // When
-    repository.updateSourceSystem(updatedRecord);
+    repository.updateSourceSystem(updatedSourceSystem);
     var result = getAllSourceSystems();
 
     // Then
     assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(updatedRecord);
+    assertThat(result.get(0)).isEqualTo(updatedSourceSystem);
   }
 
   @Test
-  void testGetSourceSystemById() {
+  void testGetSourceSystemById() throws JsonProcessingException {
     // Given
-    var expected = givenSourceSystemRecord();
+    var expected = givenSourceSystem();
     postSourceSystem(List.of(expected));
 
     // When
@@ -90,43 +89,29 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetSourceSystemByIdWasDeleted() {
-    // Given
-    var expected = new SourceSystemRecord(HANDLE, 1, OBJECT_CREATOR, CREATED, CREATED,
-        givenSourceSystem());
-    postSourceSystem(List.of(expected));
-
-    // When
-    var result = repository.getSourceSystem(HANDLE);
-
-    // Then
-    assertThat(result).isEqualTo(expected);
-  }
-
-  @Test
-  void testGetSourceSystems() {
+  void testGetSourceSystems() throws JsonProcessingException {
     // Given
     int pageNum = 1;
     int pageSize = 10;
-    List<SourceSystemRecord> ssRecords = IntStream.range(0, pageSize).boxed()
-        .map(this::givenSourceSystemRecordWithId).toList();
-    postSourceSystem(ssRecords);
+    List<SourceSystem> sourceSystems = IntStream.range(0, pageSize).boxed()
+        .map(this::givenSourceSystemWithId).toList();
+    postSourceSystem(sourceSystems);
 
     // When
     var result = repository.getSourceSystems(pageNum, pageSize);
 
-    assertThat(result).isEqualTo(ssRecords);
+    assertThat(result).isEqualTo(sourceSystems);
   }
 
   @Test
-  void testGetSourceSystemsSecondPage() {
+  void testGetSourceSystemsSecondPage() throws JsonProcessingException {
     // Given
     int pageNum = 2;
     int pageSize = 10;
 
-    List<SourceSystemRecord> ssRecords = IntStream.range(0, pageSize + 1).boxed()
-        .map(this::givenSourceSystemRecordWithId).toList();
-    postSourceSystem(ssRecords);
+    List<SourceSystem> sourceSystems = IntStream.range(0, pageSize + 1).boxed()
+        .map(this::givenSourceSystemWithId).toList();
+    postSourceSystem(sourceSystems);
 
     // When
     var result = repository.getSourceSystems(pageNum, pageSize);
@@ -135,39 +120,41 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testDeleteSourceSystem() {
+  void testDeleteSourceSystem() throws JsonProcessingException {
     // Given
-    var sourceSystemRecord = givenSourceSystemRecord();
-    postSourceSystem(List.of(sourceSystemRecord));
+    var sourceSystem = givenSourceSystem();
+    sourceSystem.withOdsStatus(OdsStatus.ODS_TOMBSTONE);
+    sourceSystem.withOdsTombstoneMetadata(givenTombstoneMetadata());
+    postSourceSystem(List.of(sourceSystem));
 
     // When
-    repository.deleteSourceSystem(sourceSystemRecord.id(), CREATED);
-    var result = getDeleted(HANDLE);
+    repository.deleteSourceSystem(sourceSystem.getId(), Date.from(CREATED));
+    var result = getDeleted(BARE_HANDLE);
 
     // Then
-    assertThat(result).isEqualTo(CREATED);
+    assertThat(result).isEqualTo(sourceSystem);
   }
 
   @Test
-  void testGetActiveSourceSystem() {
+  void testGetActiveSourceSystem() throws JsonProcessingException {
     // Given
-    var sourceSystemRecord = givenSourceSystemRecord();
-    postSourceSystem(List.of(sourceSystemRecord));
+    var sourceSystem = givenSourceSystem();
+    postSourceSystem(List.of(sourceSystem));
 
     // When
-    var result = repository.getActiveSourceSystem(sourceSystemRecord.id());
+    var result = repository.getActiveSourceSystem(sourceSystem.getId());
 
     // Then
-    assertThat(result).contains(sourceSystemRecord);
+    assertThat(result).contains(sourceSystem);
   }
 
   @Test
-  void testGetActiveSourceSystemWasDeleted() {
-    var sourceSystemRecord = givenSourceSystemRecord();
-    postSourceSystem(List.of(sourceSystemRecord));
-    context.update(SOURCE_SYSTEM)
-        .set(SOURCE_SYSTEM.DELETED, CREATED)
-        .where(SOURCE_SYSTEM.ID.eq(HANDLE))
+  void testGetActiveSourceSystemWasDeleted() throws JsonProcessingException {
+    var sourceSystem = givenSourceSystem();
+    postSourceSystem(List.of(sourceSystem));
+    context.update(NEW_SOURCE_SYSTEM)
+        .set(NEW_SOURCE_SYSTEM.DATE_TOMBSTONED, CREATED)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(BARE_HANDLE))
         .execute();
 
     // When
@@ -178,10 +165,10 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testRollback() {
+  void testRollback() throws JsonProcessingException {
     // Given
-    var sourceSystemRecord = givenSourceSystemRecord();
-    postSourceSystem(List.of(sourceSystemRecord));
+    var sourceSystem = givenSourceSystem();
+    postSourceSystem(List.of(sourceSystem));
 
     // When
     repository.rollbackSourceSystemCreation(HANDLE);
@@ -191,68 +178,52 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     assertThat(result).isNull();
   }
 
-  private SourceSystemRecord givenSourceSystemRecordWithId(int id) {
-    return new SourceSystemRecord(String.valueOf(id), 1, OBJECT_CREATOR, CREATED, null,
-        givenSourceSystemWithId(id + "a"));
+  private SourceSystem givenSourceSystemWithId(int id) {
+    return givenSourceSystem(String.valueOf(id), 1, OdsTranslatorType.DWCA);
   }
 
-  private SourceSystem givenSourceSystemWithId(String endPoint) {
-    return new SourceSystem(
-        OBJECT_NAME,
-        endPoint,
-        OBJECT_DESCRIPTION,
-        biocase,
-        HANDLE_ALT
-    );
+  private List<SourceSystem> getAllSourceSystems() {
+    return context.select(NEW_SOURCE_SYSTEM.DATA)
+        .from(NEW_SOURCE_SYSTEM)
+        .fetch(this::mapToSourceSystem);
   }
 
-  private List<SourceSystemRecord> getAllSourceSystems() {
-    return context.select(SOURCE_SYSTEM.asterisk())
-        .from(SOURCE_SYSTEM)
-        .fetch(this::mapToSourceSystemRecord);
+  private SourceSystem getDeleted(String id) {
+    return context.select(NEW_SOURCE_SYSTEM.DATA)
+        .from(NEW_SOURCE_SYSTEM)
+        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+        .fetchOne(this::mapToSourceSystem);
   }
 
-  private Instant getDeleted(String id) {
-    return context.select(SOURCE_SYSTEM.ID, SOURCE_SYSTEM.DELETED)
-        .from(SOURCE_SYSTEM)
-        .where(SOURCE_SYSTEM.ID.eq(id))
-        .fetchOne(this::getInstantDeleted);
+  private SourceSystem mapToSourceSystem(Record1<JSONB> record1) {
+    try {
+      return MAPPER.readValue(record1.get(NEW_SOURCE_SYSTEM.DATA).data(), SourceSystem.class);
+    } catch (JsonProcessingException e) {
+      throw new DisscoJsonBMappingException("Unable to convert jsonb to source system", e);
+    }
   }
 
-  private Instant getInstantDeleted(Record dbRecord) {
-    return dbRecord.get(SOURCE_SYSTEM.DELETED);
-  }
-
-  private SourceSystemRecord mapToSourceSystemRecord(Record row) {
-    return new SourceSystemRecord(
-        row.get(SOURCE_SYSTEM.ID),
-        row.get(SOURCE_SYSTEM.VERSION),
-        row.get(SOURCE_SYSTEM.CREATOR),
-        row.get(SOURCE_SYSTEM.CREATED),
-        null, new SourceSystem(
-        row.get(SOURCE_SYSTEM.NAME),
-        row.get(SOURCE_SYSTEM.ENDPOINT),
-        row.get(SOURCE_SYSTEM.DESCRIPTION),
-        row.get(SOURCE_SYSTEM.TRANSLATOR_TYPE),
-        row.get(SOURCE_SYSTEM.MAPPING_ID)));
-  }
-
-  private void postSourceSystem(List<SourceSystemRecord> ssRecords) {
+  private void postSourceSystem(List<SourceSystem> sourceSystems) throws JsonProcessingException {
     List<Query> queryList = new ArrayList<>();
-    for (var sourceSystemRecord : ssRecords) {
-      queryList.add(context.insertInto(SOURCE_SYSTEM)
-          .set(SOURCE_SYSTEM.ID, sourceSystemRecord.id())
-          .set(SOURCE_SYSTEM.VERSION, sourceSystemRecord.version())
-          .set(SOURCE_SYSTEM.CREATOR, sourceSystemRecord.creator())
-          .set(SOURCE_SYSTEM.NAME, sourceSystemRecord.sourceSystem().name())
-          .set(SOURCE_SYSTEM.ENDPOINT, sourceSystemRecord.sourceSystem().endpoint())
-          .set(SOURCE_SYSTEM.DESCRIPTION, sourceSystemRecord.sourceSystem().description())
-          .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, sourceSystemRecord.sourceSystem().translatorType())
-          .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystemRecord.sourceSystem().mappingId())
-          .set(SOURCE_SYSTEM.DELETED, sourceSystemRecord.deleted())
-          .set(SOURCE_SYSTEM.CREATED, sourceSystemRecord.created()));
+    for (var sourceSystem : sourceSystems) {
+      queryList.add(context.insertInto(NEW_SOURCE_SYSTEM)
+          .set(NEW_SOURCE_SYSTEM.ID, removeProxy(sourceSystem.getId()))
+          .set(NEW_SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
+          .set(NEW_SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
+          .set(NEW_SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
+          .set(NEW_SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
+          .set(NEW_SOURCE_SYSTEM.DATE_CREATED, sourceSystem.getSchemaDateCreated().toInstant())
+          .set(NEW_SOURCE_SYSTEM.DATE_MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
+          .set(NEW_SOURCE_SYSTEM.MAPPING_ID, sourceSystem.getOdsDataMappingID())
+          .set(NEW_SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
+              sourceSystem.getOdsTranslatorType().value()))
+          .set(NEW_SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem)));
     }
     context.batch(queryList).execute();
+  }
+
+  private JSONB mapToJSONB(SourceSystem sourceSystem) throws JsonProcessingException {
+    return JSONB.valueOf(MAPPER.writeValueAsString(sourceSystem));
   }
 
 }

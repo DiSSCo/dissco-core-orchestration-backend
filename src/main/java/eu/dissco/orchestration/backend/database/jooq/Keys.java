@@ -4,13 +4,18 @@
 package eu.dissco.orchestration.backend.database.jooq;
 
 
+import eu.dissco.orchestration.backend.database.jooq.tables.DataMapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
 import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
+import eu.dissco.orchestration.backend.database.jooq.tables.NewMachineAnnotationServices;
+import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
+import eu.dissco.orchestration.backend.database.jooq.tables.records.DataMappingRecord;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.MachineAnnotationServicesRecord;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.MappingRecord;
+import eu.dissco.orchestration.backend.database.jooq.tables.records.NewMachineAnnotationServicesRecord;
+import eu.dissco.orchestration.backend.database.jooq.tables.records.NewSourceSystemRecord;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.SourceSystemRecord;
-
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -18,17 +23,33 @@ import org.jooq.impl.Internal;
 
 
 /**
- * A class modelling foreign key relationships and constraints of tables in
- * public.
+ * A class modelling foreign key relationships and constraints of tables in public.
  */
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({"all", "unchecked", "rawtypes"})
 public class Keys {
 
-    // -------------------------------------------------------------------------
-    // UNIQUE and PRIMARY KEY definitions
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // UNIQUE and PRIMARY KEY definitions
+  // -------------------------------------------------------------------------
 
-    public static final UniqueKey<MachineAnnotationServicesRecord> MACHINE_ANNOTATION_SERVICES_PKEY = Internal.createUniqueKey(MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES, DSL.name("machine_annotation_services_pkey"), new TableField[] { MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES.ID }, true);
-    public static final UniqueKey<MappingRecord> NEW_MAPPING_PK = Internal.createUniqueKey(Mapping.MAPPING, DSL.name("new_mapping_pk"), new TableField[] { Mapping.MAPPING.ID, Mapping.MAPPING.VERSION }, true);
-    public static final UniqueKey<SourceSystemRecord> NEW_SOURCE_SYSTEM_PKEY = Internal.createUniqueKey(SourceSystem.SOURCE_SYSTEM, DSL.name("new_source_system_pkey"), new TableField[] { SourceSystem.SOURCE_SYSTEM.ID }, true);
+  public static final UniqueKey<DataMappingRecord> DATA_MAPPING_PK = Internal.createUniqueKey(
+      DataMapping.DATA_MAPPING, DSL.name("data_mapping_pk"),
+      new TableField[]{DataMapping.DATA_MAPPING.ID, DataMapping.DATA_MAPPING.VERSION}, true);
+  public static final UniqueKey<MachineAnnotationServicesRecord> MACHINE_ANNOTATION_SERVICES_PKEY = Internal.createUniqueKey(
+      MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES,
+      DSL.name("machine_annotation_services_pkey"),
+      new TableField[]{MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES.ID}, true);
+  public static final UniqueKey<MappingRecord> NEW_MAPPING_PK = Internal.createUniqueKey(
+      Mapping.MAPPING, DSL.name("new_mapping_pk"),
+      new TableField[]{Mapping.MAPPING.ID, Mapping.MAPPING.VERSION}, true);
+  public static final UniqueKey<NewMachineAnnotationServicesRecord> NEW_MACHINE_ANNOTATION_SERVICES_PKEY = Internal.createUniqueKey(
+      NewMachineAnnotationServices.NEW_MACHINE_ANNOTATION_SERVICES,
+      DSL.name("new_machine_annotation_services_pkey"),
+      new TableField[]{NewMachineAnnotationServices.NEW_MACHINE_ANNOTATION_SERVICES.ID}, true);
+  public static final UniqueKey<NewSourceSystemRecord> NEWNEW_SOURCE_SYSTEM_PKEY = Internal.createUniqueKey(
+      NewSourceSystem.NEW_SOURCE_SYSTEM, DSL.name("newnew_source_system_pkey"),
+      new TableField[]{NewSourceSystem.NEW_SOURCE_SYSTEM.ID}, true);
+  public static final UniqueKey<SourceSystemRecord> NEW_SOURCE_SYSTEM_PKEY = Internal.createUniqueKey(
+      SourceSystem.SOURCE_SYSTEM, DSL.name("new_source_system_pkey"),
+      new TableField[]{SourceSystem.SOURCE_SYSTEM.ID}, true);
 }

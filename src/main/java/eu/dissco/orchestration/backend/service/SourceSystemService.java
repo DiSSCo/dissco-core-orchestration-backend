@@ -1,15 +1,13 @@
 package eu.dissco.orchestration.backend.service;
 
+import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
+import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.github.fge.jsonpatch.diff.JsonDiff;
-import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.domain.Enrichment;
 import eu.dissco.orchestration.backend.domain.ObjectType;
-import eu.dissco.orchestration.backend.domain.SourceSystem;
-import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
@@ -18,8 +16,15 @@ import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
+import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
+import eu.dissco.orchestration.backend.schema.Agent;
+import eu.dissco.orchestration.backend.schema.Agent.Type;
+import eu.dissco.orchestration.backend.schema.SourceSystem;
+import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
+import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
+import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
@@ -32,9 +37,11 @@ import io.kubernetes.client.openapi.models.V1Job;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.time.Instant;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +58,7 @@ public class SourceSystemService {
   private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
   private final SourceSystemRepository repository;
-  private final MappingService mappingService;
+  private final DataMappingService dataMappingService;
   private final KafkaPublisherService kafkaPublisherService;
   private final ObjectMapper mapper;
   @Qualifier("yamlMapper")
@@ -60,45 +67,89 @@ public class SourceSystemService {
   private final Configuration configuration;
   private final BatchV1Api batchV1Api;
   private final Random random;
+  private final FdoProperties fdoProperties;
 
   private static String getSuffix(String sourceSystemId) {
-    return sourceSystemId.substring(sourceSystemId.indexOf('/') + 1).toLowerCase();
+    return sourceSystemId.substring(sourceSystemId.lastIndexOf('/') + 1).toLowerCase();
   }
 
-  private static String generateJobName(SourceSystemRecord sourceSystem, boolean isCron) {
+  private static String generateJobName(SourceSystem sourceSystem, boolean isCron) {
     var name =
-        sourceSystem.sourceSystem().translatorType().getLiteral().toLowerCase() + "-" +
-            getSuffix(sourceSystem.id()) + "-translator-service";
+        sourceSystem.getOdsTranslatorType().value().toLowerCase() + "-" +
+            getSuffix(sourceSystem.getId()) + "-translator-service";
     if (!isCron) {
       name = name + "-" + RandomStringUtils.randomAlphabetic(6).toLowerCase();
     }
     return name;
   }
 
-  private static void logException(SourceSystemRecord sourceSystemRecord, Exception e) {
+  private static void logException(SourceSystem sourceSystem, Exception e) {
     if (e instanceof IOException || e instanceof TemplateException) {
-      log.error("Failed to create translator template for: {}", sourceSystemRecord, e);
+      log.error("Failed to create translator template for: {}", sourceSystem, e);
     } else if (e instanceof ApiException apiException) {
       log.error("Failed to deploy kubernetes deployment to cluster with code: {} and message: {}",
           apiException.getCode(), apiException.getResponseBody());
     }
   }
 
-  public JsonApiWrapper createSourceSystem(SourceSystem sourceSystem, String userId, String path)
-      throws NotFoundException, ProcessingFailedException {
-    validateMappingExists(sourceSystem.mappingId());
-    String handle = createHandle(sourceSystem);
-    var sourceSystemRecord = new SourceSystemRecord(handle, 1, userId, Instant.now(), null,
-        sourceSystem);
-    repository.createSourceSystem(sourceSystemRecord);
-    createCronJob(sourceSystemRecord);
-    createTranslatorJob(sourceSystemRecord, true);
-    publishCreateEvent(handle, sourceSystemRecord);
-    return wrapSingleResponse(handle, sourceSystemRecord, path);
+  private static boolean isEquals(SourceSystemRequest sourceSystemRequest,
+      SourceSystem currentSourceSystem) {
+    return Objects.equals(sourceSystemRequest.getSchemaName(), currentSourceSystem.getSchemaName())
+        &&
+        Objects.equals(sourceSystemRequest.getSchemaUrl().toString(),
+            currentSourceSystem.getSchemaUrl().toString()) &&
+        Objects.equals(sourceSystemRequest.getSchemaDescription(),
+            currentSourceSystem.getSchemaDescription()) &&
+        Objects.equals(sourceSystemRequest.getOdsTranslatorType().value(),
+            (currentSourceSystem.getOdsTranslatorType().value())) &&
+        Objects.equals(sourceSystemRequest.getOdsDataMappingID(),
+            currentSourceSystem.getOdsDataMappingID()) &&
+        Objects.equals(sourceSystemRequest.getLtcCollectionManagementSystem(),
+            currentSourceSystem.getLtcCollectionManagementSystem());
   }
 
-  private String createHandle(SourceSystem sourceSystem) throws ProcessingFailedException {
-    var request = fdoRecordService.buildCreateRequest(sourceSystem, ObjectType.SOURCE_SYSTEM
+  private SourceSystem buildSourceSystem(
+      SourceSystemRequest sourceSystemRequest, int version, String userId, String handle,
+      Date created) {
+    var id = HANDLE_PROXY + handle;
+    return new SourceSystem()
+        .withId(id)
+        .withOdsID(id)
+        .withType("ods:SourceSystem")
+        .withOdsType(fdoProperties.getSourceSystemType())
+        .withSchemaVersion(version)
+        .withOdsStatus(OdsStatus.ODS_ACTIVE)
+        .withSchemaName(sourceSystemRequest.getSchemaName())
+        .withSchemaDescription(sourceSystemRequest.getSchemaDescription())
+        .withSchemaDateCreated(created)
+        .withSchemaDateModified(Date.from(Instant.now()))
+        .withSchemaCreator(new Agent()
+            .withType(Type.SCHEMA_PERSON)
+            .withId(userId))
+        .withSchemaUrl(sourceSystemRequest.getSchemaUrl())
+        .withOdsDataMappingID(sourceSystemRequest.getOdsDataMappingID())
+        .withOdsTranslatorType(
+            OdsTranslatorType.fromValue(sourceSystemRequest.getOdsTranslatorType().value()))
+        .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem());
+  }
+
+  public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, String userId,
+      String path)
+      throws NotFoundException, ProcessingFailedException {
+    validateMappingExists(sourceSystemRequest.getOdsDataMappingID());
+    String handle = createHandle(sourceSystemRequest);
+    var sourceSystem = buildSourceSystem(sourceSystemRequest, 1, userId, handle,
+        Date.from(Instant.now()));
+    repository.createSourceSystem(sourceSystem);
+    createCronJob(sourceSystem);
+    createTranslatorJob(sourceSystem, true);
+    publishCreateEvent(sourceSystem);
+    return wrapSingleResponse(sourceSystem, path);
+  }
+
+  private String createHandle(SourceSystemRequest sourceSystemRequest)
+      throws ProcessingFailedException {
+    var request = fdoRecordService.buildCreateRequest(sourceSystemRequest, ObjectType.SOURCE_SYSTEM
     );
     try {
       return handleComponent.postHandle(request);
@@ -107,42 +158,42 @@ public class SourceSystemService {
     }
   }
 
-  private void createTranslatorJob(SourceSystemRecord sourceSystemRecord, boolean rollbackOnFailure)
+  private void createTranslatorJob(SourceSystem sourceSystem, boolean rollbackOnFailure)
       throws ProcessingFailedException {
     try {
-      triggerTranslatorJob(sourceSystemRecord);
+      triggerTranslatorJob(sourceSystem);
     } catch (IOException | TemplateException | ApiException e) {
-      logException(sourceSystemRecord, e);
+      logException(sourceSystem, e);
       if (rollbackOnFailure) {
-        rollbackSourceSystemCreation(sourceSystemRecord, true);
+        rollbackSourceSystemCreation(sourceSystem, true);
       }
       throw new ProcessingFailedException("Failed to deploy job to cluster", e);
     }
   }
 
-  private void createCronJob(SourceSystemRecord sourceSystemRecord)
+  private void createCronJob(SourceSystem sourceSystem)
       throws ProcessingFailedException {
     try {
-      deployCronJob(sourceSystemRecord);
+      deployCronJob(sourceSystem);
     } catch (IOException | TemplateException | ApiException e) {
-      logException(sourceSystemRecord, e);
-      rollbackSourceSystemCreation(sourceSystemRecord, false);
+      logException(sourceSystem, e);
+      rollbackSourceSystemCreation(sourceSystem, false);
       throw new ProcessingFailedException("Failed to create new source system", e);
     }
   }
 
-  private void deployCronJob(SourceSystemRecord sourceSystemRecord)
+  private void deployCronJob(SourceSystem sourceSystem)
       throws IOException, TemplateException, ApiException {
-    var k8sCron = setCronJobProperties(sourceSystemRecord);
+    var k8sCron = setCronJobProperties(sourceSystem);
     batchV1Api.createNamespacedCronJob(jobProperties.getNamespace(), k8sCron).execute();
     log.info("Successfully published cronJob: {} to Kubernetes for source system: {}",
-        k8sCron.getMetadata().getName(), sourceSystemRecord.id());
+        k8sCron.getMetadata().getName(), sourceSystem.getId());
   }
 
-  private V1CronJob setCronJobProperties(SourceSystemRecord sourceSystemRecord)
+  private V1CronJob setCronJobProperties(SourceSystem sourceSystem)
       throws IOException, TemplateException {
-    var jobProps = getTemplateProperties(sourceSystemRecord, true);
-    var job = fillTemplate(jobProps, sourceSystemRecord.sourceSystem().translatorType(), true);
+    var jobProps = getTemplateProperties(sourceSystem, true);
+    var job = fillTemplate(jobProps, sourceSystem.getOdsTranslatorType(), true);
     var k8sCron = yamlMapper.readValue(job.toString(), V1CronJob.class);
     addEnrichmentService(
         k8sCron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0),
@@ -150,101 +201,98 @@ public class SourceSystemService {
     return k8sCron;
   }
 
-  private void publishCreateEvent(String handle, SourceSystemRecord sourceSystemRecord)
+  private void publishCreateEvent(SourceSystem sourceSystem)
       throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishCreateEvent(handle, mapper.valueToTree(sourceSystemRecord),
-          SUBJECT_TYPE);
+      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(sourceSystem));
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);
-      rollbackSourceSystemCreation(sourceSystemRecord, true);
+      rollbackSourceSystemCreation(sourceSystem, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
   }
 
-  private void rollbackSourceSystemCreation(SourceSystemRecord sourceSystemRecord,
+  private void rollbackSourceSystemCreation(SourceSystem sourceSystem,
       boolean removeCron) {
-    var request = fdoRecordService.buildRollbackCreateRequest(sourceSystemRecord.id());
+    var request = fdoRecordService.buildRollbackCreateRequest(sourceSystem.getId());
     try {
       handleComponent.rollbackHandleCreation(request);
     } catch (PidAuthenticationException | PidCreationException e) {
       log.error(
           "Unable to rollback handle creation for source system. Manually delete the following handle: {}. Cause of error: ",
-          sourceSystemRecord.id(), e);
+          sourceSystem.getId(), e);
     }
-    repository.rollbackSourceSystemCreation(sourceSystemRecord.id());
+    repository.rollbackSourceSystemCreation(sourceSystem.getId());
     if (removeCron) {
       try {
-        batchV1Api.deleteNamespacedCronJob(generateJobName(sourceSystemRecord, true),
+        batchV1Api.deleteNamespacedCronJob(generateJobName(sourceSystem, true),
             jobProperties.getNamespace()).execute();
       } catch (ApiException e) {
-        log.error("Unable to delete cronJob for source system: {}", sourceSystemRecord.id(), e);
+        log.error("Unable to delete cronJob for source system: {}", sourceSystem.getId(), e);
       }
     }
   }
 
   private void validateMappingExists(String mappingId) throws NotFoundException {
-    var mappingRecord = mappingService.getActiveMapping(mappingId);
-    if (mappingRecord.isEmpty()) {
-      throw new NotFoundException("Unable to locate Mapping record with id " + mappingId);
+    var dataMapping = dataMappingService.getActiveDataMapping(mappingId);
+    if (dataMapping.isEmpty()) {
+      throw new NotFoundException("Unable to locate Data Mapping with id " + mappingId);
     }
   }
 
-  public JsonApiWrapper updateSourceSystem(String id, SourceSystem sourceSystem, String userId,
-      String path)
+  public JsonApiWrapper updateSourceSystem(String id, SourceSystemRequest sourceSystemRequest,
+      String userId, String path)
       throws NotFoundException, ProcessingFailedException {
     var currentSourceSystemOptional = repository.getActiveSourceSystem(id);
     if (currentSourceSystemOptional.isEmpty()) {
       throw new NotFoundException(
           "Could not update Source System " + id + ". Verify resource exists.");
     }
-    if ((currentSourceSystemOptional.get().sourceSystem()).equals(sourceSystem)) {
+    if (isEquals(sourceSystemRequest, currentSourceSystemOptional.get())) {
       return null;
     }
     var currentSourceSystem = currentSourceSystemOptional.get();
-    var sourceSystemRecord = new SourceSystemRecord(id, currentSourceSystem.version() + 1, userId,
-        Instant.now(), null, sourceSystem);
-    repository.updateSourceSystem(sourceSystemRecord);
-    updateCronJob(sourceSystemRecord, currentSourceSystem);
-    publishUpdateEvent(sourceSystemRecord, currentSourceSystem);
-    return wrapSingleResponse(id, sourceSystemRecord, path);
+    var sourceSystem = buildSourceSystem(sourceSystemRequest,
+        currentSourceSystem.getSchemaVersion() + 1, userId, id,
+        currentSourceSystem.getSchemaDateCreated());
+    repository.updateSourceSystem(sourceSystem);
+    updateCronJob(sourceSystem, currentSourceSystem);
+    publishUpdateEvent(sourceSystem, currentSourceSystem);
+    return wrapSingleResponse(sourceSystem, path);
   }
 
-  private void updateCronJob(SourceSystemRecord sourceSystemRecord,
-      SourceSystemRecord currentSourceSystem) throws ProcessingFailedException {
+  private void updateCronJob(SourceSystem sourceSystem, SourceSystem currentSource)
+      throws ProcessingFailedException {
     try {
-      var cronjob = setCronJobProperties(sourceSystemRecord);
-      batchV1Api.replaceNamespacedCronJob(generateJobName(currentSourceSystem, true),
+      var cronjob = setCronJobProperties(sourceSystem);
+      batchV1Api.replaceNamespacedCronJob(generateJobName(currentSource, true),
           jobProperties.getNamespace(), cronjob).execute();
     } catch (IOException | TemplateException | ApiException e) {
-      logException(sourceSystemRecord, e);
-      rollbackToPreviousVersion(currentSourceSystem, false);
+      logException(sourceSystem, e);
+      rollbackToPreviousVersion(currentSource, false);
       throw new ProcessingFailedException("Failed to update new source system", e);
     }
   }
 
-  private void publishUpdateEvent(SourceSystemRecord newSourceSystemRecord,
-      SourceSystemRecord currentSourceSystemRecord) throws ProcessingFailedException {
-    JsonNode jsonPatch = JsonDiff.asJson(mapper.valueToTree(newSourceSystemRecord.sourceSystem()),
-        mapper.valueToTree(currentSourceSystemRecord.sourceSystem()));
+  private void publishUpdateEvent(SourceSystem newSourceSystem,
+      SourceSystem currentSourceSystem) throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishUpdateEvent(newSourceSystemRecord.id(),
-          mapper.valueToTree(newSourceSystemRecord),
-          jsonPatch, SUBJECT_TYPE);
+      kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(newSourceSystem),
+          mapper.valueToTree(currentSourceSystem));
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);
-      rollbackToPreviousVersion(currentSourceSystemRecord, true);
+      rollbackToPreviousVersion(currentSourceSystem, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
   }
 
-  private void rollbackToPreviousVersion(SourceSystemRecord currentSourceSystemRecord,
+  private void rollbackToPreviousVersion(SourceSystem currentSourceSystem,
       boolean rollbackCron) {
-    repository.updateSourceSystem(currentSourceSystemRecord);
+    repository.updateSourceSystem(currentSourceSystem);
     if (rollbackCron) {
       try {
-        var cronjob = setCronJobProperties(currentSourceSystemRecord);
-        batchV1Api.replaceNamespacedCronJob(generateJobName(currentSourceSystemRecord, true),
+        var cronjob = setCronJobProperties(currentSourceSystem);
+        batchV1Api.replaceNamespacedCronJob(generateJobName(currentSourceSystem, true),
             jobProperties.getNamespace(), cronjob).execute();
       } catch (IOException | TemplateException | ApiException e) {
         log.error("Fatal error, unable to rollback to previous cronjob, manual action necessary",
@@ -254,89 +302,88 @@ public class SourceSystemService {
   }
 
   public JsonApiWrapper getSourceSystemById(String id, String path) {
-    var sourceSystemRecord = repository.getSourceSystem(id);
-    return wrapSingleResponse(id, sourceSystemRecord, path);
+    var sourceSystem = repository.getSourceSystem(id);
+    return wrapSingleResponse(sourceSystem, path);
   }
 
-  public JsonApiListWrapper getSourceSystemRecords(int pageNum, int pageSize, String path) {
-    var sourceSystemRecords = repository.getSourceSystems(pageNum, pageSize);
-    return wrapResponse(sourceSystemRecords, pageNum, pageSize, path);
+  public JsonApiListWrapper getSourceSystems(int pageNum, int pageSize, String path) {
+    var sourceSystems = repository.getSourceSystems(pageNum, pageSize);
+    return wrapResponse(sourceSystems, pageNum, pageSize, path);
   }
 
-  private JsonApiWrapper wrapSingleResponse(String id, SourceSystemRecord sourceSystemRecord,
-      String path) {
+  private JsonApiWrapper wrapSingleResponse(SourceSystem sourceSystem, String path) {
     return new JsonApiWrapper(
-        new JsonApiData(id, ObjectType.SOURCE_SYSTEM,
-            flattenSourceSystemRecord(sourceSystemRecord)),
+        new JsonApiData(sourceSystem.getId(), ObjectType.SOURCE_SYSTEM,
+            mapper.valueToTree(sourceSystem)),
         new JsonApiLinks(path)
     );
   }
 
-  public void deleteSourceSystem(String id) throws NotFoundException, ProcessingFailedException {
+  public void deleteSourceSystem(String id, String userId)
+      throws NotFoundException, ProcessingFailedException {
     var result = repository.getActiveSourceSystem(id);
     if (result.isPresent()) {
-      var deleted = Instant.now();
+      var sourceSystem = result.get();
+      sourceSystem.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
+      sourceSystem.setOdsTombstoneMetadata(buildTombstoneMetadata(userId,
+          "Source System tombstoned by user through the orchestration backend."));
       try {
         batchV1Api.deleteNamespacedCronJob(generateJobName(result.get(), true),
             jobProperties.getNamespace()).execute();
       } catch (ApiException e) {
         throw new ProcessingFailedException("Failed to delete cronJob for source system: " + id, e);
       }
-      repository.deleteSourceSystem(id, deleted);
+      repository.deleteSourceSystem(id,
+          sourceSystem.getOdsTombstoneMetadata().getOdsTombstonedDate());
       log.info("Delete request for source system: {} was successful", id);
     } else {
       throw new NotFoundException("Requested source system: " + id + " does not exist");
     }
   }
 
-  private JsonApiListWrapper wrapResponse(List<SourceSystemRecord> sourceSystemRecords, int pageNum,
+  private JsonApiListWrapper wrapResponse(List<SourceSystem> sourceSystems, int pageNum,
       int pageSize, String path) {
-    boolean hasNext = sourceSystemRecords.size() > pageSize;
-    sourceSystemRecords = hasNext ? sourceSystemRecords.subList(0, pageSize) : sourceSystemRecords;
+    boolean hasNext = sourceSystems.size() > pageSize;
+    sourceSystems = hasNext ? sourceSystems.subList(0, pageSize) : sourceSystems;
     var linksNode = new JsonApiLinks(pageSize, pageNum, hasNext, path);
-    var dataNode = wrapData(sourceSystemRecords);
+    var dataNode = wrapData(sourceSystems);
     return new JsonApiListWrapper(dataNode, linksNode);
   }
 
-  private List<JsonApiData> wrapData(List<SourceSystemRecord> sourceSystemRecords) {
-    return sourceSystemRecords.stream()
-        .map(r -> new JsonApiData(r.id(), ObjectType.SOURCE_SYSTEM, flattenSourceSystemRecord(r)))
+  private List<JsonApiData> wrapData(List<SourceSystem> sourceSystems) {
+    return sourceSystems.stream()
+        .map(
+            r -> new JsonApiData(r.getId(), ObjectType.SOURCE_SYSTEM, flattenSourceSystem(r)))
         .toList();
   }
 
-  private JsonNode flattenSourceSystemRecord(SourceSystemRecord sourceSystemRecord) {
-    var sourceSystemNode = (ObjectNode) mapper.valueToTree(sourceSystemRecord.sourceSystem());
-    sourceSystemNode.put("created", sourceSystemRecord.created().toString());
-    sourceSystemNode.put("version", sourceSystemRecord.version());
-    if (sourceSystemRecord.deleted() != null) {
-      sourceSystemNode.put("deleted", sourceSystemRecord.deleted().toString());
-    }
-    return sourceSystemNode;
+  private JsonNode flattenSourceSystem(SourceSystem sourceSystem) {
+    return mapper.valueToTree(sourceSystem);
   }
 
   public void runSourceSystemById(String id) throws ProcessingFailedException {
-    var sourceSystemRecord = repository.getSourceSystem(id);
-    createTranslatorJob(sourceSystemRecord, false);
+    var sourceSystem = repository.getSourceSystem(id);
+    createTranslatorJob(sourceSystem, false);
   }
 
-  private void triggerTranslatorJob(SourceSystemRecord sourceSystemRecord)
+  private void triggerTranslatorJob(SourceSystem sourceSystem)
       throws IOException, TemplateException, ApiException {
-    var jobProps = getTemplateProperties(sourceSystemRecord, false);
-    var job = fillTemplate(jobProps, sourceSystemRecord.sourceSystem().translatorType(), false);
+    var jobProps = getTemplateProperties(sourceSystem, false);
+    var job = fillTemplate(jobProps, sourceSystem.getOdsTranslatorType(), false);
     var k8sJob = yamlMapper.readValue(job.toString(), V1Job.class);
     addEnrichmentService(k8sJob.getSpec().getTemplate().getSpec().getContainers().get(0),
         List.of());
     batchV1Api.createNamespacedJob(jobProperties.getNamespace(), k8sJob).execute();
     log.info("Successfully published job: {} to Kubernetes for source system: {}",
-        k8sJob.getMetadata().getName(), sourceSystemRecord.id());
+        k8sJob.getMetadata().getName(), sourceSystem.getId());
   }
 
-  private Map<String, Object> getTemplateProperties(SourceSystemRecord sourceSystem,
+  private Map<String, Object> getTemplateProperties(SourceSystem sourceSystem,
       boolean isCronJob) {
     var map = new HashMap<String, Object>();
     var jobName = generateJobName(sourceSystem, isCronJob);
     map.put("image", jobProperties.getImage());
-    map.put("sourceSystemId", sourceSystem.id());
+    map.put("sourceSystemId", sourceSystem.getId());
     map.put("jobName", jobName);
     map.put("namespace", jobProperties.getNamespace());
     map.put("containerName", jobName);
@@ -356,7 +403,7 @@ public class SourceSystemService {
   }
 
   private StringWriter fillTemplate(Map<String, Object> templateProperties,
-      TranslatorType translatorType, boolean isCron) throws IOException, TemplateException {
+      OdsTranslatorType translatorType, boolean isCron) throws IOException, TemplateException {
     var writer = new StringWriter();
     var templateFile = determineTemplate(translatorType, isCron);
     var template = configuration.getTemplate(templateFile);
@@ -364,16 +411,16 @@ public class SourceSystemService {
     return writer;
   }
 
-  private String determineTemplate(TranslatorType translatorType, boolean isCron) {
+  private String determineTemplate(OdsTranslatorType translatorType, boolean isCron) {
     if (isCron) {
       return switch (translatorType) {
-        case dwca -> "dwca-cron-job.ftl";
-        case biocase -> "biocase-cron-job.ftl";
+        case DWCA -> "dwca-cron-job.ftl";
+        case BIOCASE -> "biocase-cron-job.ftl";
       };
     } else {
       return switch (translatorType) {
-        case dwca -> "dwca-translator-job.ftl";
-        case biocase -> "biocase-translator-job.ftl";
+        case DWCA -> "dwca-translator-job.ftl";
+        case BIOCASE -> "biocase-translator-job.ftl";
       };
     }
   }

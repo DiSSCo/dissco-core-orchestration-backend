@@ -1,22 +1,20 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOTATION_SERVICES;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MACHINE_ANNOTATION_SERVICES;
 import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.orchestration.backend.database.jooq.tables.records.MachineAnnotationServicesRecord;
-import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
-import eu.dissco.orchestration.backend.domain.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
-import java.time.Instant;
-import java.util.Arrays;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -26,160 +24,115 @@ public class MachineAnnotationServiceRepository {
   private final DSLContext context;
   private final ObjectMapper mapper;
 
-  public void createMachineAnnotationService(MachineAnnotationServiceRecord masRecord) {
-    context.insertInto(MACHINE_ANNOTATION_SERVICES)
-        .set(MACHINE_ANNOTATION_SERVICES.ID, masRecord.id())
-        .set(MACHINE_ANNOTATION_SERVICES.VERSION, masRecord.version())
-        .set(MACHINE_ANNOTATION_SERVICES.NAME, masRecord.mas().getName())
-        .set(MACHINE_ANNOTATION_SERVICES.CREATED, masRecord.created())
-        .set(MACHINE_ANNOTATION_SERVICES.ADMINISTRATOR, masRecord.administrator())
-        .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE, masRecord.mas().getContainerImage())
-        .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE_TAG, masRecord.mas().getContainerTag())
-        .set(MACHINE_ANNOTATION_SERVICES.TARGET_DIGITAL_OBJECT_FILTERS,
-            masRecord.mas().getTargetDigitalObjectFilters() != null ? JSONB.jsonb(
-                masRecord.mas().getTargetDigitalObjectFilters().toString()) : null
-        )
-        .set(MACHINE_ANNOTATION_SERVICES.SERVICE_DESCRIPTION,
-            masRecord.mas().getServiceDescription())
-        .set(MACHINE_ANNOTATION_SERVICES.SERVICE_STATE, masRecord.mas().getServiceState())
-        .set(MACHINE_ANNOTATION_SERVICES.SERVICE_AVAILABILITY,
-            masRecord.mas().getServiceAvailability())
-        .set(MACHINE_ANNOTATION_SERVICES.SOURCE_CODE_REPOSITORY,
-            masRecord.mas().getSourceCodeRepository())
-        .set(MACHINE_ANNOTATION_SERVICES.CODE_MAINTAINER, masRecord.mas().getCodeMaintainer())
-        .set(MACHINE_ANNOTATION_SERVICES.CODE_LICENSE, masRecord.mas().getCodeLicense())
-        .set(MACHINE_ANNOTATION_SERVICES.DEPENDENCIES,
-            masRecord.mas().getDependencies() != null ? masRecord.mas().getDependencies()
-                .toArray(new String[0]) : null
-        )
-        .set(MACHINE_ANNOTATION_SERVICES.SUPPORT_CONTACT, masRecord.mas().getSupportContact())
-        .set(MACHINE_ANNOTATION_SERVICES.SLA_DOCUMENTATION, masRecord.mas().getSlaDocumentation())
-        .set(MACHINE_ANNOTATION_SERVICES.TOPICNAME, masRecord.mas().getTopicName())
-        .set(MACHINE_ANNOTATION_SERVICES.MAXREPLICAS, masRecord.mas().getMaxReplicas())
-        .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, masRecord.deleted())
-        .set(MACHINE_ANNOTATION_SERVICES.BATCHING_PERMITTED, masRecord.mas().isBatchingPermitted())
-        .set(MACHINE_ANNOTATION_SERVICES.TIME_TO_LIVE, getTTL(masRecord))
+  public void createMachineAnnotationService(MachineAnnotationService mas) {
+    mas.setOdsTimeToLive(getTTL(mas));
+    context.insertInto(NEW_MACHINE_ANNOTATION_SERVICES)
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.ID, removeProxy(mas.getId()))
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.VERSION, mas.getSchemaVersion())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.NAME, mas.getSchemaName())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_CREATED, mas.getSchemaDateCreated().toInstant())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_MODIFIED, mas.getSchemaDateModified().toInstant())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CREATOR, mas.getSchemaCreator().getId())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE, mas.getOdsContainerImage())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE_TAG, mas.getOdsContainerTag())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CREATIVE_WORK_STATE,
+            mas.getSchemaCreativeWorkStatus())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.SERVICE_AVAILABILITY,
+            mas.getOdsServiceAvailability())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.SOURCE_CODE_REPOSITORY,
+            mas.getSchemaCodeRepository())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CODE_MAINTAINER, mas.getSchemaMaintainer().getId())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CODE_LICENSE, mas.getSchemaLicense())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.TIME_TO_LIVE, mas.getOdsTimeToLive())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATA, mapToJSONB(mas))
         .execute();
   }
 
-  public Optional<MachineAnnotationServiceRecord> getActiveMachineAnnotationService(String id) {
-    return context.selectFrom(MACHINE_ANNOTATION_SERVICES)
-        .where(MACHINE_ANNOTATION_SERVICES.ID.eq(id))
-        .and(MACHINE_ANNOTATION_SERVICES.DELETED_ON.isNull())
-        .fetchOptional(this::mapToMasRecord);
-  }
-
-  private MachineAnnotationServiceRecord mapToMasRecord(
-      MachineAnnotationServicesRecord machineAnnotationServicesRecord) {
-    return new MachineAnnotationServiceRecord(
-        machineAnnotationServicesRecord.getId(),
-        machineAnnotationServicesRecord.getVersion(),
-        machineAnnotationServicesRecord.getCreated(),
-        machineAnnotationServicesRecord.getAdministrator(),
-        new MachineAnnotationService(
-            machineAnnotationServicesRecord.getName(),
-            machineAnnotationServicesRecord.getContainerImage(),
-            machineAnnotationServicesRecord.getContainerImageTag(),
-            mapToJson(machineAnnotationServicesRecord.getTargetDigitalObjectFilters()),
-            machineAnnotationServicesRecord.getServiceDescription(),
-            machineAnnotationServicesRecord.getServiceState(),
-            machineAnnotationServicesRecord.getSourceCodeRepository(),
-            machineAnnotationServicesRecord.getServiceAvailability(),
-            machineAnnotationServicesRecord.getCodeMaintainer(),
-            machineAnnotationServicesRecord.getCodeLicense(),
-            machineAnnotationServicesRecord.getDependencies() != null ? Arrays.stream(
-                machineAnnotationServicesRecord.getDependencies()).toList() : null,
-            machineAnnotationServicesRecord.getSupportContact(),
-            machineAnnotationServicesRecord.getSlaDocumentation(),
-            machineAnnotationServicesRecord.getTopicname(),
-            machineAnnotationServicesRecord.getMaxreplicas(),
-            machineAnnotationServicesRecord.getBatchingPermitted(),
-            machineAnnotationServicesRecord.getTimeToLive()
-        ),
-        machineAnnotationServicesRecord.getDeletedOn()
-    );
-  }
-
-  private JsonNode mapToJson(JSONB jsonb) {
+  private JSONB mapToJSONB(MachineAnnotationService mas) {
     try {
-      if (jsonb != null) {
-        return mapper.readTree(jsonb.data());
-      }
+      return JSONB.valueOf(mapper.writeValueAsString(mas));
     } catch (JsonProcessingException e) {
-      throw new DisscoJsonBMappingException("Failed to parse jsonb field to json: " + jsonb.data(),
+      throw new DisscoJsonBMappingException("Unable to map data mapping to jsonb", e);
+    }
+  }
+
+  public Optional<MachineAnnotationService> getActiveMachineAnnotationService(String id) {
+    return context.select(NEW_MACHINE_ANNOTATION_SERVICES.DATA)
+        .from(NEW_MACHINE_ANNOTATION_SERVICES)
+        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(id)))
+        .and(NEW_MACHINE_ANNOTATION_SERVICES.DATE_TOMBSTONED.isNull())
+        .fetchOptional(this::mapToMas);
+  }
+
+  private MachineAnnotationService mapToMas(Record1<JSONB> record1) {
+    try {
+      return mapper.readValue(record1.get(NEW_MACHINE_ANNOTATION_SERVICES.DATA).data(),
+          MachineAnnotationService.class);
+    } catch (JsonProcessingException e) {
+      throw new DisscoJsonBMappingException("Unable to convert jsonb to machine annotation service",
           e);
     }
-    return null;
   }
 
-  public void deleteMachineAnnotationService(String id, Instant deleted) {
-    context.update(MACHINE_ANNOTATION_SERVICES)
-        .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, deleted)
-        .where(MACHINE_ANNOTATION_SERVICES.ID.eq(id))
+  public void deleteMachineAnnotationService(String id, Date deleted) {
+    context.update(NEW_MACHINE_ANNOTATION_SERVICES)
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_TOMBSTONED, deleted.toInstant())
+        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(id)))
         .execute();
   }
 
-  public MachineAnnotationServiceRecord getMachineAnnotationService(String id) {
-    return context.selectFrom(MACHINE_ANNOTATION_SERVICES)
-        .where(MACHINE_ANNOTATION_SERVICES.ID.eq(id))
-        .fetchOne(this::mapToMasRecord);
+  public MachineAnnotationService getMachineAnnotationService(String id) {
+    return context.select(NEW_MACHINE_ANNOTATION_SERVICES.DATA)
+        .from(NEW_MACHINE_ANNOTATION_SERVICES)
+        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(id)))
+        .fetchOne(this::mapToMas);
   }
 
-  public List<MachineAnnotationServiceRecord> getMachineAnnotationServices(int pageNum,
+  public List<MachineAnnotationService> getMachineAnnotationServices(int pageNum,
       int pageSize) {
     int offset = getOffset(pageNum, pageSize);
-    return context.selectFrom(MACHINE_ANNOTATION_SERVICES)
-        .where(MACHINE_ANNOTATION_SERVICES.DELETED_ON.isNull())
+    return context.select(NEW_MACHINE_ANNOTATION_SERVICES.DATA)
+        .from(NEW_MACHINE_ANNOTATION_SERVICES)
+        .where(NEW_MACHINE_ANNOTATION_SERVICES.DATE_TOMBSTONED.isNull())
         .limit(pageSize + 1)
         .offset(offset)
-        .fetch(this::mapToMasRecord);
+        .fetch(this::mapToMas);
   }
 
-  public void updateMachineAnnotationService(MachineAnnotationServiceRecord masRecord) {
-    context.update(MACHINE_ANNOTATION_SERVICES)
-        .set(MACHINE_ANNOTATION_SERVICES.VERSION, masRecord.version())
-        .set(MACHINE_ANNOTATION_SERVICES.NAME, masRecord.mas().getName())
-        .set(MACHINE_ANNOTATION_SERVICES.CREATED, masRecord.created())
-        .set(MACHINE_ANNOTATION_SERVICES.CREATED, masRecord.created())
-        .set(MACHINE_ANNOTATION_SERVICES.ADMINISTRATOR, masRecord.administrator())
-        .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE, masRecord.mas().getContainerImage())
-        .set(MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE_TAG, masRecord.mas().getContainerTag())
-        .set(MACHINE_ANNOTATION_SERVICES.TARGET_DIGITAL_OBJECT_FILTERS,
-            masRecord.mas().getTargetDigitalObjectFilters() != null ? JSONB.jsonb(
-                masRecord.mas().getTargetDigitalObjectFilters().toString()) : null
-        )
-        .set(MACHINE_ANNOTATION_SERVICES.SERVICE_DESCRIPTION,
-            masRecord.mas().getServiceDescription())
-        .set(MACHINE_ANNOTATION_SERVICES.SERVICE_STATE, masRecord.mas().getServiceState())
-        .set(MACHINE_ANNOTATION_SERVICES.SERVICE_AVAILABILITY,
-            masRecord.mas().getServiceAvailability())
-        .set(MACHINE_ANNOTATION_SERVICES.SOURCE_CODE_REPOSITORY,
-            masRecord.mas().getSourceCodeRepository())
-        .set(MACHINE_ANNOTATION_SERVICES.CODE_MAINTAINER, masRecord.mas().getCodeMaintainer())
-        .set(MACHINE_ANNOTATION_SERVICES.CODE_LICENSE, masRecord.mas().getCodeLicense())
-        .set(MACHINE_ANNOTATION_SERVICES.DEPENDENCIES,
-            masRecord.mas().getDependencies() != null ? masRecord.mas().getDependencies()
-                .toArray(new String[0]) : null
-        )
-        .set(MACHINE_ANNOTATION_SERVICES.SUPPORT_CONTACT, masRecord.mas().getSupportContact())
-        .set(MACHINE_ANNOTATION_SERVICES.SLA_DOCUMENTATION, masRecord.mas().getSlaDocumentation())
-        .set(MACHINE_ANNOTATION_SERVICES.TOPICNAME, masRecord.mas().getTopicName())
-        .set(MACHINE_ANNOTATION_SERVICES.MAXREPLICAS, masRecord.mas().getMaxReplicas())
-        .set(MACHINE_ANNOTATION_SERVICES.DELETED_ON, masRecord.deleted())
-        .set(MACHINE_ANNOTATION_SERVICES.BATCHING_PERMITTED, masRecord.mas().isBatchingPermitted())
-        .set(MACHINE_ANNOTATION_SERVICES.TIME_TO_LIVE, getTTL(masRecord))
-        .where(MACHINE_ANNOTATION_SERVICES.ID.eq(masRecord.id()))
+  public void updateMachineAnnotationService(MachineAnnotationService mas) {
+    mas.setOdsTimeToLive(getTTL(mas));
+    context.update(NEW_MACHINE_ANNOTATION_SERVICES)
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.VERSION, mas.getSchemaVersion())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.NAME, mas.getSchemaName())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_CREATED, mas.getSchemaDateCreated().toInstant())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_MODIFIED, mas.getSchemaDateModified().toInstant())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CREATOR, mas.getSchemaCreator().getId())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE, mas.getOdsContainerImage())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE_TAG, mas.getOdsContainerTag())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CREATIVE_WORK_STATE,
+            mas.getSchemaCreativeWorkStatus())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.SERVICE_AVAILABILITY,
+            mas.getOdsServiceAvailability())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.SOURCE_CODE_REPOSITORY,
+            mas.getSchemaCodeRepository())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CODE_MAINTAINER, mas.getSchemaMaintainer().getId())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.CODE_LICENSE, mas.getSchemaLicense())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.TIME_TO_LIVE, mas.getOdsTimeToLive())
+        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATA, mapToJSONB(mas))
+        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(mas.getId())))
         .execute();
   }
 
   public void rollbackMasCreation(String pid) {
-    context.deleteFrom(MACHINE_ANNOTATION_SERVICES)
-        .where(MACHINE_ANNOTATION_SERVICES.ID.eq(pid))
+    context.deleteFrom(NEW_MACHINE_ANNOTATION_SERVICES)
+        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(pid)))
         .execute();
   }
 
-  private Integer getTTL(MachineAnnotationServiceRecord masRecord){
-    return masRecord.mas().getTimeToLive() == null ? 86400 : masRecord.mas().getTimeToLive();
+  private Integer getTTL(MachineAnnotationService mas) {
+    return mas.getOdsTimeToLive() == null ? 86400 : mas.getOdsTimeToLive();
   }
 
 }
