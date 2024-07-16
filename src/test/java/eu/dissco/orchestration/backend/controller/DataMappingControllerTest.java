@@ -81,7 +81,7 @@ class DataMappingControllerTest {
     givenAuthentication();
     var requestBody = givenDataMappingRequestJson();
     given(service.updateDataMapping(BARE_HANDLE, givenDataMappingRequest(), OBJECT_CREATOR,
-        "null/mapping")).willReturn(
+        "null/data-mapping")).willReturn(
         givenDataMappingSingleJsonApiWrapper());
 
     // When

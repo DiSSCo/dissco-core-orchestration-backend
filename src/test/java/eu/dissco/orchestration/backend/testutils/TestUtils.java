@@ -37,6 +37,8 @@ import java.util.List;
 
 public class TestUtils {
 
+  public static final String APP_NAME = "dissco-core-orchestration-backend";
+  public static final String APP_HANDLE = "https://hdl.handle.net/TEST/123-123-123";
   public static final String OBJECT_NAME = "Naturalis Tunicate DWCA endpoint";
   public static final String MAS_NAME = "A Machine Annotation Service";
   public static final String OBJECT_CREATOR = "e2befba6-9324-4bb4-9f41-d7dfae4a44b0";

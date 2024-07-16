@@ -38,8 +38,7 @@ public class ProvenanceService {
   private CreateUpdateTombstoneEvent generateCreateUpdateTombStoneEvent(
       JsonNode digitalObject, ProvActivity.Type activityType, JsonNode jsonPatch)
       throws JsonProcessingException {
-    var entityID = digitalObject.get("@id").textValue() + "/" + digitalObject.get("schema:version")
-        .textValue();
+    var entityID = digitalObject.get("@id").asText() + "/" + digitalObject.get("schema:version").asText();
     var activityID = UUID.randomUUID().toString();
     Agent creator = mapper.treeToValue(digitalObject.get("schema:creator"), Agent.class);
     return new CreateUpdateTombstoneEvent()
@@ -102,6 +101,6 @@ public class ProvenanceService {
   }
 
   private JsonNode createJsonPatch(JsonNode digitalObject, JsonNode currentDigitalObject) {
-    return JsonDiff.asJson(digitalObject, currentDigitalObject);
+    return JsonDiff.asJson(currentDigitalObject, digitalObject);
   }
 }
