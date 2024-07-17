@@ -24,7 +24,7 @@ public class DataMappingRepository {
   private final ObjectMapper mapper;
   private final DSLContext context;
 
-  public void createMapping(DataMapping dataMapping) {
+  public void createDataMapping(DataMapping dataMapping) {
     context.insertInto(DATA_MAPPING)
         .set(DATA_MAPPING.ID, removeProxy(dataMapping.getId()))
         .set(DATA_MAPPING.VERSION, dataMapping.getSchemaVersion())
@@ -45,7 +45,7 @@ public class DataMappingRepository {
     }
   }
 
-  public void updateMapping(DataMapping dataMapping) {
+  public void updateDataMapping(DataMapping dataMapping) {
     context.update(DATA_MAPPING)
         .set(DATA_MAPPING.VERSION, dataMapping.getSchemaVersion())
         .set(DATA_MAPPING.NAME, dataMapping.getSchemaName())
@@ -54,45 +54,46 @@ public class DataMappingRepository {
         .set(DATA_MAPPING.CREATOR, dataMapping.getSchemaCreator().getId())
         .set(DATA_MAPPING.MAPPING_DATA_STANDARD, dataMapping.getOdsMappingDataStandard().value())
         .set(DATA_MAPPING.DATA, mapToJSONB(dataMapping))
+        .where(DATA_MAPPING.ID.eq(removeProxy(dataMapping.getId())))
         .execute();
   }
 
 
-  public DataMapping getMapping(String id) {
+  public DataMapping getDataMapping(String id) {
     return context.select(DATA_MAPPING.DATA)
         .distinctOn(DATA_MAPPING.ID)
         .from(DATA_MAPPING)
         .where(DATA_MAPPING.ID.eq(removeProxy(id)))
-        .fetchOne(this::mapToMapping);
+        .fetchOne(this::mapToDataMapping);
   }
 
-  public Optional<DataMapping> getActiveMapping(String id) {
+  public Optional<DataMapping> getActiveDataMapping(String id) {
     return context.select(DATA_MAPPING.DATA)
         .distinctOn(DATA_MAPPING.ID)
         .from(DATA_MAPPING)
         .where(DATA_MAPPING.ID.eq(removeProxy(id)))
         .and(DATA_MAPPING.DATE_TOMBSTONED.isNull())
-        .fetchOptional(this::mapToMapping);
+        .fetchOptional(this::mapToDataMapping);
   }
 
-  public List<DataMapping> getMappings(int pageNum, int pageSize) {
+  public List<DataMapping> getDataMappings(int pageNum, int pageSize) {
     int offset = getOffset(pageNum, pageSize);
     return context.select(DATA_MAPPING.DATA)
         .from(DATA_MAPPING)
         .where(DATA_MAPPING.DATE_TOMBSTONED.isNull())
         .offset(offset)
         .limit(pageSize + 1)
-        .fetch(this::mapToMapping);
+        .fetch(this::mapToDataMapping);
   }
 
-  public void deleteMapping(String id, Date deleted) {
+  public void deleteDataMapping(String id, Date deleted) {
     context.update(DATA_MAPPING)
         .set(DATA_MAPPING.DATE_TOMBSTONED, deleted.toInstant())
         .where(DATA_MAPPING.ID.eq(removeProxy(id)))
         .execute();
   }
 
-  private DataMapping mapToMapping(Record1<JSONB> record1) {
+  private DataMapping mapToDataMapping(Record1<JSONB> record1) {
     try {
       return mapper.readValue(record1.get(DATA_MAPPING.DATA).data(), DataMapping.class);
     } catch (JsonProcessingException e) {
@@ -100,7 +101,7 @@ public class DataMappingRepository {
     }
   }
 
-  public void rollbackMappingCreation(String id) {
+  public void rollbackDataMappingCreation(String id) {
     context.deleteFrom(DATA_MAPPING)
         .where(DATA_MAPPING.ID.eq(removeProxy(id)))
         .execute();

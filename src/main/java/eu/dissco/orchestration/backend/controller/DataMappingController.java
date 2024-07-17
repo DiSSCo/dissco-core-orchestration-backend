@@ -105,7 +105,7 @@ public class DataMappingController {
 
   private DataMappingRequest getDataMappingRequestFromRequest(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
-    if (!requestBody.data().type().equals(ObjectType.MAPPING)) {
+    if (!requestBody.data().type().equals(ObjectType.DATA_MAPPING)) {
       log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }

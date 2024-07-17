@@ -92,19 +92,18 @@ public class SourceSystemService {
     }
   }
 
-  private static boolean isEquals(SourceSystemRequest sourceSystemRequest,
-      SourceSystem currentSourceSystem) {
-    return Objects.equals(sourceSystemRequest.getSchemaName(), currentSourceSystem.getSchemaName())
+  private static boolean isEquals(SourceSystem sourceSystem, SourceSystem currentSourceSystem) {
+    return Objects.equals(sourceSystem.getSchemaName(), currentSourceSystem.getSchemaName())
         &&
-        Objects.equals(sourceSystemRequest.getSchemaUrl().toString(),
+        Objects.equals(sourceSystem.getSchemaUrl().toString(),
             currentSourceSystem.getSchemaUrl().toString()) &&
-        Objects.equals(sourceSystemRequest.getSchemaDescription(),
+        Objects.equals(sourceSystem.getSchemaDescription(),
             currentSourceSystem.getSchemaDescription()) &&
-        Objects.equals(sourceSystemRequest.getOdsTranslatorType().value(),
+        Objects.equals(sourceSystem.getOdsTranslatorType().value(),
             (currentSourceSystem.getOdsTranslatorType().value())) &&
-        Objects.equals(sourceSystemRequest.getOdsDataMappingID(),
+        Objects.equals(sourceSystem.getOdsDataMappingID(),
             currentSourceSystem.getOdsDataMappingID()) &&
-        Objects.equals(sourceSystemRequest.getLtcCollectionManagementSystem(),
+        Objects.equals(sourceSystem.getLtcCollectionManagementSystem(),
             currentSourceSystem.getLtcCollectionManagementSystem());
   }
 
@@ -115,7 +114,7 @@ public class SourceSystemService {
     return new SourceSystem()
         .withId(id)
         .withOdsID(id)
-        .withType("ods:SourceSystem")
+        .withType(ObjectType.SOURCE_SYSTEM.getFullName())
         .withOdsType(fdoProperties.getSourceSystemType())
         .withSchemaVersion(version)
         .withOdsStatus(OdsStatus.ODS_ACTIVE)
@@ -248,13 +247,13 @@ public class SourceSystemService {
       throw new NotFoundException(
           "Could not update Source System " + id + ". Verify resource exists.");
     }
-    if (isEquals(sourceSystemRequest, currentSourceSystemOptional.get())) {
-      return null;
-    }
     var currentSourceSystem = currentSourceSystemOptional.get();
     var sourceSystem = buildSourceSystem(sourceSystemRequest,
         currentSourceSystem.getSchemaVersion() + 1, userId, id,
         currentSourceSystem.getSchemaDateCreated());
+    if (isEquals(sourceSystem, currentSourceSystem)) {
+      return null;
+    }
     repository.updateSourceSystem(sourceSystem);
     updateCronJob(sourceSystem, currentSourceSystem);
     publishUpdateEvent(sourceSystem, currentSourceSystem);

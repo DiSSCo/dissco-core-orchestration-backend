@@ -48,17 +48,16 @@ public class DataMappingService {
   private final ObjectMapper mapper;
   private final FdoProperties fdoProperties;
 
-  private static boolean isEqual(DataMappingRequest dataMappingRequest,
+  private static boolean isEqual(DataMapping dataMapping,
       DataMapping currentDataMapping) {
-    return Objects.equals(dataMappingRequest.getSchemaName(), currentDataMapping.getSchemaName()) &&
-        Objects.equals(dataMappingRequest.getSchemaDescription(),
+    return Objects.equals(dataMapping.getSchemaName(), currentDataMapping.getSchemaName()) &&
+        Objects.equals(dataMapping.getSchemaDescription(),
             currentDataMapping.getSchemaDescription()) &&
-        Objects.equals(buildDefaultMapping(dataMappingRequest),
+        Objects.equals(dataMapping.getOdsDefaultMapping(),
             currentDataMapping.getOdsDefaultMapping()) &&
-        Objects.equals(buildFieldMapping(dataMappingRequest),
-            currentDataMapping.getOdsFieldMapping()) &&
-        Objects.equals(dataMappingRequest.getOdsMappingDataStandard().value(),
-            currentDataMapping.getOdsMappingDataStandard().value());
+        Objects.equals(dataMapping.getOdsFieldMapping(), currentDataMapping.getOdsFieldMapping()) &&
+        Objects.equals(dataMapping.getOdsMappingDataStandard(),
+            currentDataMapping.getOdsMappingDataStandard());
   }
 
   private static List<OdsDefaultMapping__1> buildDefaultMapping(
@@ -92,7 +91,7 @@ public class DataMappingService {
   public JsonApiWrapper createDataMapping(DataMappingRequest mappingRequest, String userId,
       String path)
       throws ProcessingFailedException {
-    var requestBody = fdoRecordService.buildCreateRequest(mappingRequest, ObjectType.MAPPING);
+    var requestBody = fdoRecordService.buildCreateRequest(mappingRequest, ObjectType.DATA_MAPPING);
     String handle = null;
     try {
       handle = handleComponent.postHandle(requestBody);
@@ -101,7 +100,7 @@ public class DataMappingService {
     }
     var dataMapping = buildDataMapping(mappingRequest, 1, userId, handle,
         Date.from(Instant.now()));
-    repository.createMapping(dataMapping);
+    repository.createDataMapping(dataMapping);
     publishCreateEvent(dataMapping);
     return wrapSingleResponse(dataMapping, path);
   }
@@ -112,7 +111,7 @@ public class DataMappingService {
     return new DataMapping()
         .withId(id)
         .withOdsID(id)
-        .withType("ods:DataMapping")
+        .withType(ObjectType.DATA_MAPPING.getFullName())
         .withOdsType(fdoProperties.getDataMappingType())
         .withSchemaVersion(version)
         .withOdsStatus(OdsStatus.ODS_ACTIVE)
@@ -147,24 +146,25 @@ public class DataMappingService {
           "Unable to rollback handle creation for data mapping. Manually delete the following handle: {}. Cause of error: ",
           dataMapping.getId(), e);
     }
-    repository.rollbackMappingCreation(dataMapping.getId());
+    repository.rollbackDataMappingCreation(dataMapping.getId());
   }
 
-  public JsonApiWrapper updateDataMapping(String id, DataMappingRequest dataMappingRequest, String userId,
-      String path)
-      throws NotFoundException, ProcessingFailedException {
-    var currentVersion = repository.getActiveMapping(id);
-    if (currentVersion.isEmpty()) {
+  public JsonApiWrapper updateDataMapping(String id, DataMappingRequest dataMappingRequest,
+      String userId, String path) throws NotFoundException, ProcessingFailedException {
+    var currentDataMappingOptional = repository.getActiveDataMapping(id);
+    if (currentDataMappingOptional.isEmpty()) {
       throw new NotFoundException("Requested data mapping does not exist");
     }
-    if (isEqual(dataMappingRequest, currentVersion.get())) {
+    var currentDataMapping = currentDataMappingOptional.get();
+    var dataMapping = buildDataMapping(dataMappingRequest,
+        currentDataMapping.getSchemaVersion() + 1,
+        userId, id, currentDataMapping.getSchemaDateCreated());
+    if (isEqual(dataMapping, currentDataMapping)) {
       return null;
     } else {
-      var newMapping = buildDataMapping(dataMappingRequest, currentVersion.get().getSchemaVersion() + 1,
-          userId, id, currentVersion.get().getSchemaDateCreated());
-      repository.updateMapping(newMapping);
-      publishUpdateEvent(newMapping, currentVersion.get());
-      return wrapSingleResponse(newMapping, path);
+      repository.updateDataMapping(dataMapping);
+      publishUpdateEvent(dataMapping, currentDataMappingOptional.get());
+      return wrapSingleResponse(dataMapping, path);
     }
   }
 
@@ -181,39 +181,39 @@ public class DataMappingService {
   }
 
   private void rollbackToPreviousVersion(DataMapping currentDataMapping) {
-    repository.updateMapping(currentDataMapping);
+    repository.updateDataMapping(currentDataMapping);
   }
 
   public void deleteDataMapping(String id, String userId) throws NotFoundException {
-    var result = repository.getActiveMapping(id);
+    var result = repository.getActiveDataMapping(id);
     if (result.isPresent()) {
       var dataMapping = result.get();
       dataMapping.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
       dataMapping.setOdsTombstoneMetadata(TombstoneUtils.buildTombstoneMetadata(userId,
           "Data Mapping tombstoned by the user through the orchestration backend"));
-      repository.deleteMapping(id, dataMapping.getOdsTombstoneMetadata().getOdsTombstonedDate());
+      repository.deleteDataMapping(id, dataMapping.getOdsTombstoneMetadata().getOdsTombstonedDate());
     } else {
       throw new NotFoundException("Requested data mapping " + id + " does not exist");
     }
   }
 
   protected Optional<DataMapping> getActiveDataMapping(String id) {
-    return repository.getActiveMapping(id);
+    return repository.getActiveDataMapping(id);
   }
 
   public JsonApiListWrapper getDataMappings(int pageNum, int pageSize, String path) {
-    var dataMappings = repository.getMappings(pageNum, pageSize);
+    var dataMappings = repository.getDataMappings(pageNum, pageSize);
     return wrapResponse(dataMappings, pageNum, pageSize, path);
   }
 
   public JsonApiWrapper getDataMappingById(String id, String path) {
-    var dataMapping = repository.getMapping(id);
+    var dataMapping = repository.getDataMapping(id);
     return wrapSingleResponse(dataMapping, path);
   }
 
   private JsonApiWrapper wrapSingleResponse(DataMapping dataMapping, String path) {
     return new JsonApiWrapper(
-        new JsonApiData(dataMapping.getId(), ObjectType.MAPPING, flattenDataMapping(dataMapping)),
+        new JsonApiData(dataMapping.getId(), ObjectType.DATA_MAPPING, flattenDataMapping(dataMapping)),
         new JsonApiLinks(path)
     );
   }
@@ -229,7 +229,7 @@ public class DataMappingService {
 
   private List<JsonApiData> wrapData(List<DataMapping> dataMappings) {
     return dataMappings.stream()
-        .map(r -> new JsonApiData(r.getId(), ObjectType.MAPPING, flattenDataMapping(r)))
+        .map(r -> new JsonApiData(r.getId(), ObjectType.DATA_MAPPING, flattenDataMapping(r)))
         .toList();
   }
 

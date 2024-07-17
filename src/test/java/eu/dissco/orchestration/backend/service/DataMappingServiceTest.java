@@ -94,8 +94,8 @@ class DataMappingServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
-    then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.MAPPING);
-    then(repository).should().createMapping(givenDataMapping(HANDLE, 1));
+    then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
+    then(repository).should().createDataMapping(givenDataMapping(HANDLE, 1));
     then(kafkaPublisherService).should()
         .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)));
   }
@@ -114,11 +114,11 @@ class DataMappingServiceTest {
         () -> service.createDataMapping(dataMapping, OBJECT_CREATOR, MAPPING_PATH));
 
     // Then
-    then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.MAPPING);
-    then(repository).should().createMapping(givenDataMapping(HANDLE, 1));
+    then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
+    then(repository).should().createDataMapping(givenDataMapping(HANDLE, 1));
     then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
-    then(repository).should().rollbackMappingCreation(HANDLE);
+    then(repository).should().rollbackDataMappingCreation(HANDLE);
   }
 
   @Test
@@ -147,11 +147,11 @@ class DataMappingServiceTest {
         () -> service.createDataMapping(dataMapping, OBJECT_CREATOR, MAPPING_PATH));
 
     // Then
-    then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.MAPPING);
-    then(repository).should().createMapping(givenDataMapping(HANDLE, 1));
+    then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
+    then(repository).should().createDataMapping(givenDataMapping(HANDLE, 1));
     then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
-    then(repository).should().rollbackMappingCreation(HANDLE);
+    then(repository).should().rollbackDataMappingCreation(HANDLE);
   }
 
 
@@ -162,14 +162,14 @@ class DataMappingServiceTest {
     var dataMapping = givenDataMappingRequest();
     var expected = TestUtils.givenDataMappingSingleJsonApiWrapper(2);
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
-    given(repository.getActiveMapping(BARE_HANDLE)).willReturn(Optional.of(prevDataMapping));
+    given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(Optional.of(prevDataMapping));
 
     // When
     var result = service.updateDataMapping(BARE_HANDLE, dataMapping, OBJECT_CREATOR, MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
-    then(repository).should().updateMapping(givenDataMapping(HANDLE, 2));
+    then(repository).should().updateDataMapping(givenDataMapping(HANDLE, 2));
     then(kafkaPublisherService).should()
         .publishUpdateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 2)),
             MAPPER.valueToTree(prevDataMapping));
@@ -180,7 +180,7 @@ class DataMappingServiceTest {
     // Given
     var prevDataMapping = givenDataMapping(HANDLE, 1, "old name");
     var dataMapping = givenDataMappingRequest();
-    given(repository.getActiveMapping(BARE_HANDLE)).willReturn(Optional.of(prevDataMapping));
+    given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(Optional.of(prevDataMapping));
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishUpdateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 2)),
@@ -191,8 +191,8 @@ class DataMappingServiceTest {
         () -> service.updateDataMapping(BARE_HANDLE, dataMapping, OBJECT_CREATOR, MAPPING_PATH));
 
     // Then
-    then(repository).should().updateMapping(givenDataMapping(HANDLE, 2));
-    then(repository).should().updateMapping(prevDataMapping);
+    then(repository).should().updateDataMapping(givenDataMapping(HANDLE, 2));
+    then(repository).should().updateDataMapping(prevDataMapping);
   }
 
   @Test
@@ -201,7 +201,7 @@ class DataMappingServiceTest {
     var prevMapping = Optional.of(givenDataMapping(HANDLE, 1));
     var dataMapping = givenDataMappingRequest();
 
-    given(repository.getActiveMapping(BARE_HANDLE)).willReturn(prevMapping);
+    given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(prevMapping);
 
     // When
     var result = service.updateDataMapping(BARE_HANDLE, dataMapping, OBJECT_CREATOR, MAPPING_PATH);
@@ -213,7 +213,7 @@ class DataMappingServiceTest {
   @Test
   void testUpdateDataMappingNotFound() {
     // Given
-    given(repository.getActiveMapping(BARE_HANDLE)).willReturn(Optional.empty());
+    given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrows(NotFoundException.class,
@@ -226,7 +226,7 @@ class DataMappingServiceTest {
   void testGetDataMappingById() {
     // Given
     var dataMapping = givenDataMapping(HANDLE, 1);
-    given(repository.getMapping(BARE_HANDLE)).willReturn(dataMapping);
+    given(repository.getDataMapping(BARE_HANDLE)).willReturn(dataMapping);
     var expected = givenDataMappingSingleJsonApiWrapper();
 
     // When
@@ -240,9 +240,9 @@ class DataMappingServiceTest {
   void testGetDataMappingByIdIsDeleted() {
     // Given
     var dataMapping = givenDataMapping();
-    given(repository.getMapping(BARE_HANDLE)).willReturn(dataMapping);
+    given(repository.getDataMapping(BARE_HANDLE)).willReturn(dataMapping);
     var expected = new JsonApiWrapper(
-        new JsonApiData(HANDLE, ObjectType.MAPPING, flattenDataMapping(dataMapping)),
+        new JsonApiData(HANDLE, ObjectType.DATA_MAPPING, flattenDataMapping(dataMapping)),
         new JsonApiLinks(MAPPING_PATH));
 
     // When
@@ -255,7 +255,7 @@ class DataMappingServiceTest {
   @Test
   void testDeleteDataMapping() {
     // Given
-    given(repository.getActiveMapping(BARE_HANDLE)).willReturn(
+    given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(
         Optional.of(givenDataMapping(HANDLE, 1)));
 
     // Then
@@ -265,7 +265,7 @@ class DataMappingServiceTest {
   @Test
   void testDeleteDataMappingNotFound() {
     // Given
-    given(repository.getActiveMapping(BARE_HANDLE)).willReturn(Optional.empty());
+    given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrowsExactly(NotFoundException.class,
@@ -279,7 +279,7 @@ class DataMappingServiceTest {
     int pageNum = 1;
     List<DataMapping> dataMappings = Collections.nCopies(pageSize + 1,
         givenDataMapping(HANDLE, 1));
-    given(repository.getMappings(pageNum, pageSize)).willReturn(dataMappings);
+    given(repository.getDataMappings(pageNum, pageSize)).willReturn(dataMappings);
     var linksNode = new JsonApiLinks(pageSize, pageNum, true, SANDBOX_URI);
     var expected = givenMappingResponse(dataMappings.subList(0, pageSize), linksNode);
 
@@ -297,7 +297,7 @@ class DataMappingServiceTest {
     int pageNum = 2;
     List<DataMapping> dataMappings = Collections.nCopies(pageSize,
         givenDataMapping(HANDLE, 1));
-    given(repository.getMappings(pageNum, pageSize)).willReturn(dataMappings);
+    given(repository.getDataMappings(pageNum, pageSize)).willReturn(dataMappings);
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, SANDBOX_URI);
     var expected = givenMappingResponse(dataMappings, linksNode);
 

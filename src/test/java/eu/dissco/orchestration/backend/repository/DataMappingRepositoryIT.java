@@ -45,8 +45,8 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
     var dataMapping = givenDataMapping(HANDLE, 1);
 
     // When
-    repository.createMapping(dataMapping);
-    var result = readAllMappings();
+    repository.createDataMapping(dataMapping);
+    var result = readAllDataMappings();
 
     // Then
     assertThat(result).hasSize(1);
@@ -57,12 +57,12 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
   void testUpdateDataMapping() throws JsonProcessingException {
     // Given
     var dataMapping = givenDataMapping(HANDLE, 1);
-    postMappingRecords(List.of(dataMapping));
+    postDataMappings(List.of(dataMapping));
     var updatedDataMapping = givenDataMapping(HANDLE, 2, "Updated name");
 
     // When
-    repository.updateMapping(updatedDataMapping);
-    var result = readAllMappings();
+    repository.updateDataMapping(updatedDataMapping);
+    var result = readAllDataMappings();
 
     // Then
     assertThat(result).containsExactly(updatedDataMapping);
@@ -72,10 +72,10 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
   void testGetDataMapping() throws JsonProcessingException {
     // Given
     var dataMapping = givenDataMapping(HANDLE, 1);
-    postMappingRecords(List.of(dataMapping));
+    postDataMappings(List.of(dataMapping));
 
     // When
-    var result = repository.getMapping(HANDLE);
+    var result = repository.getDataMapping(HANDLE);
 
     // Then
     assertThat(result).isEqualTo(dataMapping);
@@ -85,86 +85,86 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
   void testGetDataMappingIsDeleted() throws JsonProcessingException {
     // Given
     var dataMapping = givenDataMapping();
-    postMappingRecords(List.of(dataMapping));
+    postDataMappings(List.of(dataMapping));
 
-    var result = repository.getMapping(HANDLE);
+    var result = repository.getDataMapping(HANDLE);
 
     // Then
     assertThat(result).isEqualTo(dataMapping);
   }
 
   @Test
-  void testGetActiveMappingIsPresent() throws JsonProcessingException {
+  void testGetActiveDataMappingIsPresent() throws JsonProcessingException {
     // Given
     var dataMapping = givenDataMapping(HANDLE, 1);
-    postMappingRecords(List.of(dataMapping));
+    postDataMappings(List.of(dataMapping));
 
     // When
-    var result = repository.getActiveMapping(HANDLE);
+    var result = repository.getActiveDataMapping(HANDLE);
 
     // Then
     assertThat(result).contains(dataMapping);
   }
 
   @Test
-  void testGetActiveMappingNotPresent() throws JsonProcessingException {
+  void testGetActiveDataMappingNotPresent() throws JsonProcessingException {
     // Given
     var dataMapping = givenDataMapping(HANDLE, 1);
-    postMappingRecords(List.of(dataMapping));
+    postDataMappings(List.of(dataMapping));
     context.update(DATA_MAPPING)
         .set(DATA_MAPPING.DATE_TOMBSTONED, CREATED)
         .where(DATA_MAPPING.ID.eq(BARE_HANDLE))
         .execute();
 
     // When
-    var result = repository.getActiveMapping(HANDLE);
+    var result = repository.getActiveDataMapping(HANDLE);
 
     // Then
     assertThat(result).isEmpty();
   }
 
   @Test
-  void testGetMappings() throws JsonProcessingException {
+  void testGetDataMappings() throws JsonProcessingException {
     // Given
     int pageNum = 1;
     int pageSize = 10;
     List<DataMapping> mappingRecords = IntStream.range(0, pageSize).boxed()
         .map(i -> givenDataMapping(String.valueOf(i), 1)).toList();
-    postMappingRecords(mappingRecords);
+    postDataMappings(mappingRecords);
 
     // When
-    var result = repository.getMappings(pageNum, pageSize);
+    var result = repository.getDataMappings(pageNum, pageSize);
 
     //Then
     assertThat(result).isEqualTo(mappingRecords);
   }
 
   @Test
-  void testGetMappingsLastPage() throws JsonProcessingException {
+  void testGetDataMappingsLastPage() throws JsonProcessingException {
     // Given
     int pageNum = 2;
     int pageSize = 10;
     List<DataMapping> mappingRecords = IntStream.range(0, pageSize + 1).boxed()
         .map(i -> givenDataMapping(String.valueOf(i), 1)).toList();
-    postMappingRecords(mappingRecords);
+    postDataMappings(mappingRecords);
 
     // When
-    var result = repository.getMappings(pageNum, pageSize);
+    var result = repository.getDataMappings(pageNum, pageSize);
 
     //Then
     assertThat(result).hasSize(1);
   }
 
   @Test
-  void testDeleteMapping() throws JsonProcessingException {
+  void testDeleteDataMapping() throws JsonProcessingException {
     // Given
     var dataMapping = givenDataMapping(HANDLE, 1);
     dataMapping.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
     dataMapping.setOdsTombstoneMetadata(givenTombstoneMetadata());
-    postMappingRecords(List.of(dataMapping));
+    postDataMappings(List.of(dataMapping));
 
     // When
-    repository.deleteMapping(HANDLE, Date.from(CREATED));
+    repository.deleteDataMapping(HANDLE, Date.from(CREATED));
     var result = getDeleted(BARE_HANDLE);
 
     // Then
@@ -178,7 +178,7 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
         .fetchOne(this::mapToDataMapping);
   }
 
-  List<DataMapping> readAllMappings() {
+  List<DataMapping> readAllDataMappings() {
     return context.select(DATA_MAPPING.DATA)
         .from(DATA_MAPPING)
         .fetch(this::mapToDataMapping);
@@ -192,7 +192,7 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
     }
   }
 
-  private void postMappingRecords(List<DataMapping> dataMappings) throws JsonProcessingException {
+  private void postDataMappings(List<DataMapping> dataMappings) throws JsonProcessingException {
     List<Query> queryList = new ArrayList<>();
     for (var dataMapping : dataMappings) {
       queryList.add(context.insertInto(DATA_MAPPING)
@@ -211,13 +211,13 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
   @Test
   void testRollback() throws JsonProcessingException {
     // Given
-    postMappingRecords(List.of(givenDataMapping(HANDLE, 1)));
+    postDataMappings(List.of(givenDataMapping(HANDLE, 1)));
 
     // When
-    repository.rollbackMappingCreation(HANDLE);
+    repository.rollbackDataMappingCreation(HANDLE);
 
     // Then
-    var result = repository.getMapping(HANDLE);
+    var result = repository.getDataMapping(HANDLE);
     assertThat(result).isNull();
   }
 

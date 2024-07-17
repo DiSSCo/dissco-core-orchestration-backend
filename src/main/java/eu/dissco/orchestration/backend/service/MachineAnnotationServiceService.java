@@ -111,7 +111,7 @@ public class MachineAnnotationServiceService {
     return new MachineAnnotationService()
         .withId(id)
         .withOdsID(id)
-        .withType("ods:MachineAnnotationService")
+        .withType(ObjectType.MAS.getFullName())
         .withOdsType(fdoProperties.getMasType())
         .withOdsStatus(OdsStatus.ODS_ACTIVE)
         .withSchemaVersion(version)
@@ -313,46 +313,43 @@ public class MachineAnnotationServiceService {
     if (currentMasOptional.isPresent()) {
       var currentMas = currentMasOptional.get();
       setDefaultMas(masRequest, id);
-      if (isEquals(masRequest, currentMas)) {
+      var machineAnnotationService = buildMachineAnnotationService(masRequest,
+          currentMas.getSchemaVersion() + 1, userId, id, Instant.now());
+      if (isEqual(machineAnnotationService, currentMas)) {
         return null;
       } else {
-        var newMas = buildMachineAnnotationService(masRequest,
-            currentMas.getSchemaVersion() + 1, userId, id, Instant.now());
-        repository.updateMachineAnnotationService(newMas);
-        updateDeployment(newMas, currentMas);
-        publishUpdateEvent(newMas, currentMas);
-        return wrapSingleResponse(newMas, path);
+        repository.updateMachineAnnotationService(machineAnnotationService);
+        updateDeployment(machineAnnotationService, currentMas);
+        publishUpdateEvent(machineAnnotationService, currentMas);
+        return wrapSingleResponse(machineAnnotationService, path);
       }
     } else {
       throw new NotFoundException("Requested machine annotation system: " + id + "does not exist");
     }
   }
 
-  private boolean isEquals(MachineAnnotationServiceRequest masRequest,
-      MachineAnnotationService currentMas) {
-    return Objects.equals(masRequest.getSchemaName(), currentMas.getSchemaName()) &&
-        Objects.equals(masRequest.getSchemaDescription(), currentMas.getSchemaDescription()) &&
-        Objects.equals(masRequest.getOdsContainerTag(), currentMas.getOdsContainerTag()) &&
-        Objects.equals(masRequest.getOdsContainerImage(), currentMas.getOdsContainerImage()) &&
-        Objects.equals(buildTargetFilters(masRequest.getOdsTargetDigitalObjectFilter()),
+  private boolean isEqual(MachineAnnotationService mas, MachineAnnotationService currentMas) {
+    return Objects.equals(mas.getSchemaName(), currentMas.getSchemaName()) &&
+        Objects.equals(mas.getSchemaDescription(), currentMas.getSchemaDescription()) &&
+        Objects.equals(mas.getOdsContainerTag(), currentMas.getOdsContainerTag()) &&
+        Objects.equals(mas.getOdsContainerImage(), currentMas.getOdsContainerImage()) &&
+        Objects.equals(mas.getOdsTargetDigitalObjectFilter(),
             currentMas.getOdsTargetDigitalObjectFilter()) &&
-        Objects.equals(masRequest.getSchemaCreativeWorkStatus(),
+        Objects.equals(mas.getSchemaCreativeWorkStatus(),
             currentMas.getSchemaCreativeWorkStatus()) &&
-        Objects.equals(masRequest.getSchemaCodeRepository(), currentMas.getSchemaCodeRepository())
-        && Objects.equals(masRequest.getSchemaProgrammingLanguage(),
+        Objects.equals(mas.getSchemaCodeRepository(), currentMas.getSchemaCodeRepository())
+        && Objects.equals(mas.getSchemaProgrammingLanguage(),
         currentMas.getSchemaProgrammingLanguage()) &&
-        Objects.equals(masRequest.getOdsServiceAvailability(),
-            currentMas.getOdsServiceAvailability()) &&
-        Objects.equals(masRequest.getSchemaMaintainer(), currentMas.getSchemaMaintainer()) &&
-        Objects.equals(masRequest.getSchemaLicense(), currentMas.getSchemaLicense()) &&
-        Objects.equals(masRequest.getOdsDependency(), currentMas.getOdsDependency()) &&
-        Objects.equals(buildContactPoint(masRequest.getSchemaContactPoint()),
-            currentMas.getSchemaContactPoint()) &&
-        Objects.equals(masRequest.getOdsSlaDocumentation(), currentMas.getOdsSlaDocumentation()) &&
-        Objects.equals(masRequest.getOdsTopicName(), currentMas.getOdsTopicName()) &&
-        Objects.equals(masRequest.getOdsMaxReplicas(), currentMas.getOdsMaxReplicas()) &&
-        Objects.equals(masRequest.getOdsBatchingPermitted(), currentMas.getOdsBatchingPermitted())
-        && Objects.equals(masRequest.getOdsTimeToLive(), currentMas.getOdsTimeToLive());
+        Objects.equals(mas.getOdsServiceAvailability(), currentMas.getOdsServiceAvailability()) &&
+        Objects.equals(mas.getSchemaMaintainer(), currentMas.getSchemaMaintainer()) &&
+        Objects.equals(mas.getSchemaLicense(), currentMas.getSchemaLicense()) &&
+        Objects.equals(mas.getOdsDependency(), currentMas.getOdsDependency()) &&
+        Objects.equals(mas.getSchemaContactPoint(), currentMas.getSchemaContactPoint()) &&
+        Objects.equals(mas.getOdsSlaDocumentation(), currentMas.getOdsSlaDocumentation()) &&
+        Objects.equals(mas.getOdsTopicName(), currentMas.getOdsTopicName()) &&
+        Objects.equals(mas.getOdsMaxReplicas(), currentMas.getOdsMaxReplicas()) &&
+        Objects.equals(mas.getOdsBatchingPermitted(), currentMas.getOdsBatchingPermitted())
+        && Objects.equals(mas.getOdsTimeToLive(), currentMas.getOdsTimeToLive());
   }
 
   private void updateDeployment(MachineAnnotationService mas,

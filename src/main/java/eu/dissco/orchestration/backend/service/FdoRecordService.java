@@ -1,10 +1,10 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.MAS_NAME;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_DATA_STANDARD;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_SYSTEM_NAME;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,14 +37,14 @@ public class FdoRecordService {
   }
 
   public JsonNode buildRollbackCreateRequest(String handle) {
-    var dataNode = List.of(mapper.createObjectNode().put("id", handle.replace(HANDLE_PROXY, "")));
+    var dataNode = List.of(mapper.createObjectNode().put("id", removeProxy(handle)));
     ArrayNode dataArrayNode = mapper.valueToTree(dataNode);
     return mapper.createObjectNode().set("data", dataArrayNode);
   }
 
   private JsonNode buildRequestAttributes(Object object, ObjectType type) {
     switch (type) {
-      case MAPPING -> {
+      case DATA_MAPPING -> {
         return buildMappingAttributes(((DataMappingRequest) object));
       }
       case MAS -> {
@@ -77,7 +77,7 @@ public class FdoRecordService {
       case MAS -> {
         return fdoProperties.getMasType();
       }
-      case MAPPING -> {
+      case DATA_MAPPING -> {
         return fdoProperties.getDataMappingType();
       }
       case SOURCE_SYSTEM -> {

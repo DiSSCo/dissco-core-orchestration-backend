@@ -42,7 +42,7 @@ class FdoRecordServiceTest {
   @Test
   void testCreateRequestMapping() throws Exception {
     // When
-    var result = builder.buildCreateRequest(givenDataMappingRequest(), ObjectType.MAPPING);
+    var result = builder.buildCreateRequest(givenDataMappingRequest(), ObjectType.DATA_MAPPING);
 
     // Then
     assertThat(result).isEqualTo(givenMappingHandleRequest());

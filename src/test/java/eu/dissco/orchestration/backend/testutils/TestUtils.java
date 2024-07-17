@@ -103,7 +103,7 @@ public class TestUtils {
     var dataMapping = givenDataMapping(HANDLE, version);
     return new JsonApiWrapper(new JsonApiData(
         dataMapping.getId(),
-        ObjectType.MAPPING,
+        ObjectType.DATA_MAPPING,
         flattenDataMapping(dataMapping)
     ), new JsonApiLinks(MAPPING_PATH));
   }
@@ -120,7 +120,7 @@ public class TestUtils {
   public static JsonApiRequestWrapper givenDataMappingRequestJson() {
     return new JsonApiRequestWrapper(
         new JsonApiRequest(
-            ObjectType.MAPPING,
+            ObjectType.DATA_MAPPING,
             MAPPER.valueToTree(givenDataMappingRequest())
         )
     );
@@ -247,7 +247,7 @@ public class TestUtils {
       JsonApiLinks linksNode) {
     List<JsonApiData> dataNode = new ArrayList<>();
     dataMappings.forEach(
-        m -> dataNode.add(new JsonApiData(m.getId(), ObjectType.MAPPING, flattenDataMapping(m))));
+        m -> dataNode.add(new JsonApiData(m.getId(), ObjectType.DATA_MAPPING, flattenDataMapping(m))));
     return new JsonApiListWrapper(dataNode, linksNode);
   }
 
