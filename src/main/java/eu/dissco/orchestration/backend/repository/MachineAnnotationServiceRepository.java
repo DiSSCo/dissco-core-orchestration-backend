@@ -1,6 +1,6 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MACHINE_ANNOTATION_SERVICES;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOTATION_SERVICE;
 import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
 import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
@@ -26,26 +26,26 @@ public class MachineAnnotationServiceRepository {
 
   public void createMachineAnnotationService(MachineAnnotationService mas) {
     mas.setOdsTimeToLive(getTTL(mas));
-    context.insertInto(NEW_MACHINE_ANNOTATION_SERVICES)
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.ID, removeProxy(mas.getId()))
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.VERSION, mas.getSchemaVersion())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.NAME, mas.getSchemaName())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_CREATED, mas.getSchemaDateCreated().toInstant())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_MODIFIED, mas.getSchemaDateModified().toInstant())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CREATOR, mas.getSchemaCreator().getId())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE, mas.getOdsContainerImage())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE_TAG, mas.getOdsContainerTag())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CREATIVE_WORK_STATE,
+    context.insertInto(MACHINE_ANNOTATION_SERVICE)
+        .set(MACHINE_ANNOTATION_SERVICE.ID, removeProxy(mas.getId()))
+        .set(MACHINE_ANNOTATION_SERVICE.VERSION, mas.getSchemaVersion())
+        .set(MACHINE_ANNOTATION_SERVICE.NAME, mas.getSchemaName())
+        .set(MACHINE_ANNOTATION_SERVICE.DATE_CREATED, mas.getSchemaDateCreated().toInstant())
+        .set(MACHINE_ANNOTATION_SERVICE.DATE_MODIFIED, mas.getSchemaDateModified().toInstant())
+        .set(MACHINE_ANNOTATION_SERVICE.CREATOR, mas.getSchemaCreator().getId())
+        .set(MACHINE_ANNOTATION_SERVICE.CONTAINER_IMAGE, mas.getOdsContainerImage())
+        .set(MACHINE_ANNOTATION_SERVICE.CONTAINER_IMAGE_TAG, mas.getOdsContainerTag())
+        .set(MACHINE_ANNOTATION_SERVICE.CREATIVE_WORK_STATE,
             mas.getSchemaCreativeWorkStatus())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.SERVICE_AVAILABILITY,
+        .set(MACHINE_ANNOTATION_SERVICE.SERVICE_AVAILABILITY,
             mas.getOdsServiceAvailability())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.SOURCE_CODE_REPOSITORY,
+        .set(MACHINE_ANNOTATION_SERVICE.SOURCE_CODE_REPOSITORY,
             mas.getSchemaCodeRepository())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CODE_MAINTAINER, mas.getSchemaMaintainer().getId())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CODE_LICENSE, mas.getSchemaLicense())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.TIME_TO_LIVE, mas.getOdsTimeToLive())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATA, mapToJSONB(mas))
+        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER, mas.getSchemaMaintainer().getId())
+        .set(MACHINE_ANNOTATION_SERVICE.CODE_LICENSE, mas.getSchemaLicense())
+        .set(MACHINE_ANNOTATION_SERVICE.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
+        .set(MACHINE_ANNOTATION_SERVICE.TIME_TO_LIVE, mas.getOdsTimeToLive())
+        .set(MACHINE_ANNOTATION_SERVICE.DATA, mapToJSONB(mas))
         .execute();
   }
 
@@ -58,16 +58,16 @@ public class MachineAnnotationServiceRepository {
   }
 
   public Optional<MachineAnnotationService> getActiveMachineAnnotationService(String id) {
-    return context.select(NEW_MACHINE_ANNOTATION_SERVICES.DATA)
-        .from(NEW_MACHINE_ANNOTATION_SERVICES)
-        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(id)))
-        .and(NEW_MACHINE_ANNOTATION_SERVICES.DATE_TOMBSTONED.isNull())
+    return context.select(MACHINE_ANNOTATION_SERVICE.DATA)
+        .from(MACHINE_ANNOTATION_SERVICE)
+        .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(id)))
+        .and(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED.isNull())
         .fetchOptional(this::mapToMas);
   }
 
   private MachineAnnotationService mapToMas(Record1<JSONB> record1) {
     try {
-      return mapper.readValue(record1.get(NEW_MACHINE_ANNOTATION_SERVICES.DATA).data(),
+      return mapper.readValue(record1.get(MACHINE_ANNOTATION_SERVICE.DATA).data(),
           MachineAnnotationService.class);
     } catch (JsonProcessingException e) {
       throw new DisscoJsonBMappingException("Unable to convert jsonb to machine annotation service",
@@ -76,25 +76,25 @@ public class MachineAnnotationServiceRepository {
   }
 
   public void deleteMachineAnnotationService(String id, Date deleted) {
-    context.update(NEW_MACHINE_ANNOTATION_SERVICES)
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_TOMBSTONED, deleted.toInstant())
-        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(id)))
+    context.update(MACHINE_ANNOTATION_SERVICE)
+        .set(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED, deleted.toInstant())
+        .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(id)))
         .execute();
   }
 
   public MachineAnnotationService getMachineAnnotationService(String id) {
-    return context.select(NEW_MACHINE_ANNOTATION_SERVICES.DATA)
-        .from(NEW_MACHINE_ANNOTATION_SERVICES)
-        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(id)))
+    return context.select(MACHINE_ANNOTATION_SERVICE.DATA)
+        .from(MACHINE_ANNOTATION_SERVICE)
+        .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(id)))
         .fetchOne(this::mapToMas);
   }
 
   public List<MachineAnnotationService> getMachineAnnotationServices(int pageNum,
       int pageSize) {
     int offset = getOffset(pageNum, pageSize);
-    return context.select(NEW_MACHINE_ANNOTATION_SERVICES.DATA)
-        .from(NEW_MACHINE_ANNOTATION_SERVICES)
-        .where(NEW_MACHINE_ANNOTATION_SERVICES.DATE_TOMBSTONED.isNull())
+    return context.select(MACHINE_ANNOTATION_SERVICE.DATA)
+        .from(MACHINE_ANNOTATION_SERVICE)
+        .where(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED.isNull())
         .limit(pageSize + 1)
         .offset(offset)
         .fetch(this::mapToMas);
@@ -102,32 +102,32 @@ public class MachineAnnotationServiceRepository {
 
   public void updateMachineAnnotationService(MachineAnnotationService mas) {
     mas.setOdsTimeToLive(getTTL(mas));
-    context.update(NEW_MACHINE_ANNOTATION_SERVICES)
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.VERSION, mas.getSchemaVersion())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.NAME, mas.getSchemaName())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_CREATED, mas.getSchemaDateCreated().toInstant())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATE_MODIFIED, mas.getSchemaDateModified().toInstant())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CREATOR, mas.getSchemaCreator().getId())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE, mas.getOdsContainerImage())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CONTAINER_IMAGE_TAG, mas.getOdsContainerTag())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CREATIVE_WORK_STATE,
+    context.update(MACHINE_ANNOTATION_SERVICE)
+        .set(MACHINE_ANNOTATION_SERVICE.VERSION, mas.getSchemaVersion())
+        .set(MACHINE_ANNOTATION_SERVICE.NAME, mas.getSchemaName())
+        .set(MACHINE_ANNOTATION_SERVICE.DATE_CREATED, mas.getSchemaDateCreated().toInstant())
+        .set(MACHINE_ANNOTATION_SERVICE.DATE_MODIFIED, mas.getSchemaDateModified().toInstant())
+        .set(MACHINE_ANNOTATION_SERVICE.CREATOR, mas.getSchemaCreator().getId())
+        .set(MACHINE_ANNOTATION_SERVICE.CONTAINER_IMAGE, mas.getOdsContainerImage())
+        .set(MACHINE_ANNOTATION_SERVICE.CONTAINER_IMAGE_TAG, mas.getOdsContainerTag())
+        .set(MACHINE_ANNOTATION_SERVICE.CREATIVE_WORK_STATE,
             mas.getSchemaCreativeWorkStatus())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.SERVICE_AVAILABILITY,
+        .set(MACHINE_ANNOTATION_SERVICE.SERVICE_AVAILABILITY,
             mas.getOdsServiceAvailability())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.SOURCE_CODE_REPOSITORY,
+        .set(MACHINE_ANNOTATION_SERVICE.SOURCE_CODE_REPOSITORY,
             mas.getSchemaCodeRepository())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CODE_MAINTAINER, mas.getSchemaMaintainer().getId())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.CODE_LICENSE, mas.getSchemaLicense())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.TIME_TO_LIVE, mas.getOdsTimeToLive())
-        .set(NEW_MACHINE_ANNOTATION_SERVICES.DATA, mapToJSONB(mas))
-        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(mas.getId())))
+        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER, mas.getSchemaMaintainer().getId())
+        .set(MACHINE_ANNOTATION_SERVICE.CODE_LICENSE, mas.getSchemaLicense())
+        .set(MACHINE_ANNOTATION_SERVICE.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
+        .set(MACHINE_ANNOTATION_SERVICE.TIME_TO_LIVE, mas.getOdsTimeToLive())
+        .set(MACHINE_ANNOTATION_SERVICE.DATA, mapToJSONB(mas))
+        .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(mas.getId())))
         .execute();
   }
 
   public void rollbackMasCreation(String pid) {
-    context.deleteFrom(NEW_MACHINE_ANNOTATION_SERVICES)
-        .where(NEW_MACHINE_ANNOTATION_SERVICES.ID.eq(removeProxy(pid)))
+    context.deleteFrom(MACHINE_ANNOTATION_SERVICE)
+        .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(pid)))
         .execute();
   }
 

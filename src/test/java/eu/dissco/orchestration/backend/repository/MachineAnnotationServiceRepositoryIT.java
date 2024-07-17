@@ -1,6 +1,6 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_MACHINE_ANNOTATION_SERVICES;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOTATION_SERVICE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
@@ -30,7 +30,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(NEW_MACHINE_ANNOTATION_SERVICES).execute();
+    context.truncate(MACHINE_ANNOTATION_SERVICE).execute();
   }
 
   @Test
@@ -122,7 +122,8 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     // Given
     int pageNum = 2;
     int pageSize = 10;
-    var machineAnnotationServices = IntStream.range(0, pageSize + 1).boxed().map(this::givenMasWithId)
+    var machineAnnotationServices = IntStream.range(0, pageSize + 1).boxed()
+        .map(this::givenMasWithId)
         .toList();
     postMass(machineAnnotationServices);
 

@@ -5,10 +5,7 @@ package eu.dissco.orchestration.backend.database.jooq;
 
 
 import eu.dissco.orchestration.backend.database.jooq.tables.DataMapping;
-import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
-import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
-import eu.dissco.orchestration.backend.database.jooq.tables.NewMachineAnnotationServices;
-import eu.dissco.orchestration.backend.database.jooq.tables.NewSourceSystem;
+import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationService;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 
 
@@ -24,24 +21,9 @@ public class Tables {
     public static final DataMapping DATA_MAPPING = DataMapping.DATA_MAPPING;
 
     /**
-     * The table <code>public.machine_annotation_services</code>.
+     * The table <code>public.machine_annotation_service</code>.
      */
-    public static final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
-
-    /**
-     * The table <code>public.mapping</code>.
-     */
-    public static final Mapping MAPPING = Mapping.MAPPING;
-
-    /**
-     * The table <code>public.new_machine_annotation_services</code>.
-     */
-    public static final NewMachineAnnotationServices NEW_MACHINE_ANNOTATION_SERVICES = NewMachineAnnotationServices.NEW_MACHINE_ANNOTATION_SERVICES;
-
-    /**
-     * The table <code>public.new_source_system</code>.
-     */
-    public static final NewSourceSystem NEW_SOURCE_SYSTEM = NewSourceSystem.NEW_SOURCE_SYSTEM;
+    public static final MachineAnnotationService MACHINE_ANNOTATION_SERVICE = MachineAnnotationService.MACHINE_ANNOTATION_SERVICE;
 
     /**
      * The table <code>public.source_system</code>.

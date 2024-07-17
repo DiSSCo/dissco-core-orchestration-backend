@@ -1,7 +1,7 @@
 package eu.dissco.orchestration.backend.repository;
 
 import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
-import static eu.dissco.orchestration.backend.database.jooq.Tables.NEW_SOURCE_SYSTEM;
+import static eu.dissco.orchestration.backend.database.jooq.Tables.SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
@@ -42,7 +42,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(NEW_SOURCE_SYSTEM).execute();
+    context.truncate(SOURCE_SYSTEM).execute();
   }
 
   @Test
@@ -152,9 +152,9 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   void testGetActiveSourceSystemWasDeleted() throws JsonProcessingException {
     var sourceSystem = givenSourceSystem();
     postSourceSystem(List.of(sourceSystem));
-    context.update(NEW_SOURCE_SYSTEM)
-        .set(NEW_SOURCE_SYSTEM.DATE_TOMBSTONED, CREATED)
-        .where(NEW_SOURCE_SYSTEM.ID.eq(BARE_HANDLE))
+    context.update(SOURCE_SYSTEM)
+        .set(SOURCE_SYSTEM.DATE_TOMBSTONED, CREATED)
+        .where(SOURCE_SYSTEM.ID.eq(BARE_HANDLE))
         .execute();
 
     // When
@@ -183,21 +183,21 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   private List<SourceSystem> getAllSourceSystems() {
-    return context.select(NEW_SOURCE_SYSTEM.DATA)
-        .from(NEW_SOURCE_SYSTEM)
+    return context.select(SOURCE_SYSTEM.DATA)
+        .from(SOURCE_SYSTEM)
         .fetch(this::mapToSourceSystem);
   }
 
   private SourceSystem getDeleted(String id) {
-    return context.select(NEW_SOURCE_SYSTEM.DATA)
-        .from(NEW_SOURCE_SYSTEM)
-        .where(NEW_SOURCE_SYSTEM.ID.eq(id))
+    return context.select(SOURCE_SYSTEM.DATA)
+        .from(SOURCE_SYSTEM)
+        .where(SOURCE_SYSTEM.ID.eq(id))
         .fetchOne(this::mapToSourceSystem);
   }
 
   private SourceSystem mapToSourceSystem(Record1<JSONB> record1) {
     try {
-      return MAPPER.readValue(record1.get(NEW_SOURCE_SYSTEM.DATA).data(), SourceSystem.class);
+      return MAPPER.readValue(record1.get(SOURCE_SYSTEM.DATA).data(), SourceSystem.class);
     } catch (JsonProcessingException e) {
       throw new DisscoJsonBMappingException("Unable to convert jsonb to source system", e);
     }
@@ -206,18 +206,18 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   private void postSourceSystem(List<SourceSystem> sourceSystems) throws JsonProcessingException {
     List<Query> queryList = new ArrayList<>();
     for (var sourceSystem : sourceSystems) {
-      queryList.add(context.insertInto(NEW_SOURCE_SYSTEM)
-          .set(NEW_SOURCE_SYSTEM.ID, removeProxy(sourceSystem.getId()))
-          .set(NEW_SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
-          .set(NEW_SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
-          .set(NEW_SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
-          .set(NEW_SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
-          .set(NEW_SOURCE_SYSTEM.DATE_CREATED, sourceSystem.getSchemaDateCreated().toInstant())
-          .set(NEW_SOURCE_SYSTEM.DATE_MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
-          .set(NEW_SOURCE_SYSTEM.MAPPING_ID, sourceSystem.getOdsDataMappingID())
-          .set(NEW_SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
+      queryList.add(context.insertInto(SOURCE_SYSTEM)
+          .set(SOURCE_SYSTEM.ID, removeProxy(sourceSystem.getId()))
+          .set(SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
+          .set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
+          .set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
+          .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
+          .set(SOURCE_SYSTEM.DATE_CREATED, sourceSystem.getSchemaDateCreated().toInstant())
+          .set(SOURCE_SYSTEM.DATE_MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
+          .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystem.getOdsDataMappingID())
+          .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
               sourceSystem.getOdsTranslatorType().value()))
-          .set(NEW_SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem)));
+          .set(SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem)));
     }
     context.batch(queryList).execute();
   }
