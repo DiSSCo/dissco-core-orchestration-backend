@@ -2,13 +2,13 @@ package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMapping;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingHandleRequest;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasHandleRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenRollbackCreationRequest;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemHandleRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -29,10 +29,11 @@ class FdoRecordServiceTest {
   void setup() {
     this.builder = new FdoRecordService(MAPPER, new FdoProperties());
   }
+
   @Test
   void testCreateRequestSourceSystem() throws Exception {
     // When
-    var result = builder.buildCreateRequest(givenSourceSystem(), ObjectType.SOURCE_SYSTEM);
+    var result = builder.buildCreateRequest(givenSourceSystemRequest(), ObjectType.SOURCE_SYSTEM);
 
     // Then
     assertThat(result).isEqualTo(givenSourceSystemHandleRequest());
@@ -41,7 +42,7 @@ class FdoRecordServiceTest {
   @Test
   void testCreateRequestMapping() throws Exception {
     // When
-    var result = builder.buildCreateRequest(givenMapping(), ObjectType.MAPPING);
+    var result = builder.buildCreateRequest(givenDataMappingRequest(), ObjectType.DATA_MAPPING);
 
     // Then
     assertThat(result).isEqualTo(givenMappingHandleRequest());
@@ -50,7 +51,7 @@ class FdoRecordServiceTest {
   @Test
   void testCreateRequestMas() throws Exception {
     // When
-    var result = builder.buildCreateRequest(givenMas(), ObjectType.MAS);
+    var result = builder.buildCreateRequest(givenMasRequest(), ObjectType.MAS);
 
     // Then
     assertThat(result).isEqualTo(givenMasHandleRequest());

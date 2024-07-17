@@ -4,16 +4,17 @@ import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.ISSUED
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.MAS_NAME;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_DATA_STANDARD;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_SYSTEM_NAME;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import eu.dissco.orchestration.backend.domain.MachineAnnotationService;
-import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.ObjectType;
-import eu.dissco.orchestration.backend.domain.SourceSystem;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
+import eu.dissco.orchestration.backend.schema.DataMappingRequest;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
+import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,39 +37,39 @@ public class FdoRecordService {
   }
 
   public JsonNode buildRollbackCreateRequest(String handle) {
-    var dataNode = List.of(mapper.createObjectNode().put("id", handle));
+    var dataNode = List.of(mapper.createObjectNode().put("id", removeProxy(handle)));
     ArrayNode dataArrayNode = mapper.valueToTree(dataNode);
     return mapper.createObjectNode().set("data", dataArrayNode);
   }
 
   private JsonNode buildRequestAttributes(Object object, ObjectType type) {
     switch (type) {
-      case MAPPING -> {
-        return buildMappingAttributes(((Mapping) object));
+      case DATA_MAPPING -> {
+        return buildMappingAttributes(((DataMappingRequest) object));
       }
       case MAS -> {
-        return buildMasAttributes((MachineAnnotationService) object);
+        return buildMasAttributes((MachineAnnotationServiceRequest) object);
       }
       case SOURCE_SYSTEM -> {
-        return buildSourceSystemAttributes((SourceSystem) object);
+        return buildSourceSystemAttributes((SourceSystemRequest) object);
       }
     }
     throw new IllegalStateException();
   }
 
-  private JsonNode buildMappingAttributes(Mapping mapping) {
+  private JsonNode buildMappingAttributes(DataMappingRequest mapping) {
     return buildGeneralAttributes()
-        .put(SOURCE_DATA_STANDARD.getAttribute(), mapping.sourceDataStandard().toString());
+        .put(SOURCE_DATA_STANDARD.getAttribute(), mapping.getOdsMappingDataStandard().toString());
   }
 
-  private JsonNode buildMasAttributes(MachineAnnotationService mas) {
+  private JsonNode buildMasAttributes(MachineAnnotationServiceRequest mas) {
     return buildGeneralAttributes()
-        .put(MAS_NAME.getAttribute(), mas.getName());
+        .put(MAS_NAME.getAttribute(), mas.getSchemaName());
   }
 
-  private JsonNode buildSourceSystemAttributes(SourceSystem sourceSystem) {
+  private JsonNode buildSourceSystemAttributes(SourceSystemRequest sourceSystemRequest) {
     return buildGeneralAttributes()
-        .put(SOURCE_SYSTEM_NAME.getAttribute(), sourceSystem.name());
+        .put(SOURCE_SYSTEM_NAME.getAttribute(), sourceSystemRequest.getSchemaName());
   }
 
   private String getFdoType(ObjectType type) {
@@ -76,8 +77,8 @@ public class FdoRecordService {
       case MAS -> {
         return fdoProperties.getMasType();
       }
-      case MAPPING -> {
-        return fdoProperties.getMappingType();
+      case DATA_MAPPING -> {
+        return fdoProperties.getDataMappingType();
       }
       case SOURCE_SYSTEM -> {
         return fdoProperties.getSourceSystemType();

@@ -4,8 +4,8 @@
 package eu.dissco.orchestration.backend.database.jooq;
 
 
-import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
-import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
+import eu.dissco.orchestration.backend.database.jooq.tables.DataMapping;
+import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationService;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 
 import java.util.Arrays;
@@ -30,14 +30,14 @@ public class Public extends SchemaImpl {
     public static final Public PUBLIC = new Public();
 
     /**
-     * The table <code>public.machine_annotation_services</code>.
+     * The table <code>public.data_mapping</code>.
      */
-    public final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
+    public final DataMapping DATA_MAPPING = DataMapping.DATA_MAPPING;
 
     /**
-     * The table <code>public.mapping</code>.
+     * The table <code>public.machine_annotation_service</code>.
      */
-    public final Mapping MAPPING = Mapping.MAPPING;
+    public final MachineAnnotationService MACHINE_ANNOTATION_SERVICE = MachineAnnotationService.MACHINE_ANNOTATION_SERVICE;
 
     /**
      * The table <code>public.source_system</code>.
@@ -60,8 +60,8 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
-            MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES,
-            Mapping.MAPPING,
+            DataMapping.DATA_MAPPING,
+            MachineAnnotationService.MACHINE_ANNOTATION_SERVICE,
             SourceSystem.SOURCE_SYSTEM
         );
     }

@@ -2,7 +2,6 @@ package eu.dissco.orchestration.backend.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.orchestration.backend.domain.Mapping;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
@@ -10,7 +9,8 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
-import eu.dissco.orchestration.backend.service.MappingService;
+import eu.dissco.orchestration.backend.schema.DataMappingRequest;
+import eu.dissco.orchestration.backend.service.DataMappingService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,35 +33,35 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/mapping")
 @RequiredArgsConstructor
-public class MappingController {
+public class DataMappingController {
 
-  private final MappingService service;
+  private final DataMappingService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> createMapping(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> createDataMapping(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException, ProcessingFailedException {
-    var mapping = getMappingFromRequest(requestBody);
+    var dataMapping = getDataMappingRequestFromRequest(requestBody);
     var userId = authentication.getName();
-    log.info("Received create request for mapping: {} from user: {}", mapping, userId);
+    log.info("Received create request for data mapping: {} from user: {}", dataMapping, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.createMapping(mapping, userId, path);
+    var result = service.createDataMapping(dataMapping, userId, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> updateMapping(Authentication authentication,
+  public ResponseEntity<JsonApiWrapper> updateDataMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException, NotFoundException, ProcessingFailedException {
-    var mapping = getMappingFromRequest(requestBody);
+    var dataMapping = getDataMappingRequestFromRequest(requestBody);
     var id = prefix + '/' + suffix;
     var userId = authentication.getName();
-    log.info("Received update request for mapping: {} from user: {}", mapping, userId);
+    log.info("Received update request for data mapping: {} from user: {}", dataMapping, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateMapping(id, mapping, userId, path);
+    var result = service.updateDataMapping(id, dataMapping, userId, path);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {
@@ -71,45 +71,45 @@ public class MappingController {
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteMapping(Authentication authentication,
+  public ResponseEntity<Void> deleteDataMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException {
     String id = prefix + "/" + suffix;
-    log.info("Received delete request for mapping: {} from user: {}", id,
-        authentication.getName());
-    service.deleteMapping(id);
+    var userId = authentication.getName();
+    log.info("Received delete request for mapping: {} from user: {}", id, userId);
+    service.deleteDataMapping(id, userId);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> getMappingById(@PathVariable("prefix") String prefix,
+  public ResponseEntity<JsonApiWrapper> getDataMappingById(@PathVariable("prefix") String prefix,
       @PathVariable("suffix") String suffix, HttpServletRequest servletRequest) {
     var id = prefix + '/' + suffix;
     log.info("Received get request for mapping with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var mapping = service.getMappingById(id, path);
+    var mapping = service.getDataMappingById(id, path);
     return ResponseEntity.ok(mapping);
   }
 
   @GetMapping(value = "")
-  public ResponseEntity<JsonApiListWrapper> getMappings(
+  public ResponseEntity<JsonApiListWrapper> getDataMappings(
       @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
       HttpServletRequest servletRequest) {
     log.info("Received get request for mappings with pageNumber: {} and pageSzie: {}: ", pageNum,
         pageSize);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    return ResponseEntity.status(HttpStatus.OK).body(service.getMappings(pageNum, pageSize, path));
+    return ResponseEntity.status(HttpStatus.OK).body(service.getDataMappings(pageNum, pageSize, path));
   }
 
-  private Mapping getMappingFromRequest(JsonApiRequestWrapper requestBody)
+  private DataMappingRequest getDataMappingRequestFromRequest(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
-    if (!requestBody.data().type().equals(ObjectType.MAPPING)) {
+    if (!requestBody.data().type().equals(ObjectType.DATA_MAPPING)) {
       log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(), Mapping.class);
+    return mapper.treeToValue(requestBody.data().attributes(), DataMappingRequest.class);
   }
 
 }

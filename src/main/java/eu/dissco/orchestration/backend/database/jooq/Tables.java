@@ -4,8 +4,8 @@
 package eu.dissco.orchestration.backend.database.jooq;
 
 
-import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationServices;
-import eu.dissco.orchestration.backend.database.jooq.tables.Mapping;
+import eu.dissco.orchestration.backend.database.jooq.tables.DataMapping;
+import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationService;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 
 
@@ -16,14 +16,14 @@ import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 public class Tables {
 
     /**
-     * The table <code>public.machine_annotation_services</code>.
+     * The table <code>public.data_mapping</code>.
      */
-    public static final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
+    public static final DataMapping DATA_MAPPING = DataMapping.DATA_MAPPING;
 
     /**
-     * The table <code>public.mapping</code>.
+     * The table <code>public.machine_annotation_service</code>.
      */
-    public static final Mapping MAPPING = Mapping.MAPPING;
+    public static final MachineAnnotationService MACHINE_ANNOTATION_SERVICE = MachineAnnotationService.MACHINE_ANNOTATION_SERVICE;
 
     /**
      * The table <code>public.source_system</code>.

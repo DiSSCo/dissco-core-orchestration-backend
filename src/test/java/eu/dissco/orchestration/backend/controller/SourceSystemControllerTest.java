@@ -1,25 +1,25 @@
 package eu.dissco.orchestration.backend.controller;
 
-import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_URI;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequestJson;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecord;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRecordResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequestJson;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 
-import eu.dissco.orchestration.backend.domain.SourceSystemRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
+import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import java.util.Collections;
 import java.util.List;
@@ -54,7 +54,7 @@ class SourceSystemControllerTest {
   @Test
   void testCreateSourceSystem() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystemRequest();
+    var sourceSystem = givenSourceSystemRequestJson();
     givenAuthentication();
 
     // When
@@ -67,7 +67,7 @@ class SourceSystemControllerTest {
   @Test
   void testCreateSourceSystemBadType() {
     // Given
-    var sourceSystem = givenMappingRequest();
+    var sourceSystem = givenDataMappingRequestJson();
 
     // When
     assertThrowsExactly(
@@ -78,9 +78,9 @@ class SourceSystemControllerTest {
   @Test
   void testUpdateSourceSystem() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystemRequest();
+    var sourceSystem = givenSourceSystemRequestJson();
     givenAuthentication();
-    given(service.updateSourceSystem(HANDLE, givenSourceSystem(), "",
+    given(service.updateSourceSystem(BARE_HANDLE, givenSourceSystemRequest(), "",
         "null/source-system")).willReturn(
         givenSourceSystemSingleJsonApiWrapper());
 
@@ -95,7 +95,7 @@ class SourceSystemControllerTest {
   @Test
   void testUpdateSourceSystemNoChanges() throws Exception {
     // Given
-    var sourceSystem = givenSourceSystemRequest();
+    var sourceSystem = givenSourceSystemRequestJson();
     givenAuthentication();
 
     // When
@@ -121,10 +121,10 @@ class SourceSystemControllerTest {
     // Given
     int pageNum = 1;
     int pageSize = 10;
-    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
+    List<SourceSystem> sourceSystems = Collections.nCopies(pageSize, givenSourceSystem());
     var linksNode = new JsonApiLinks(pageSize, pageNum, true, SYSTEM_PATH);
-    var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
-    given(service.getSourceSystemRecords(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
+    var expected = givenSourceSystemResponse(sourceSystems, linksNode);
+    given(service.getSourceSystems(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
     given(appProperties.getBaseUrl()).willReturn(SANDBOX_URI);
 
     // When
@@ -140,10 +140,10 @@ class SourceSystemControllerTest {
     // Given
     int pageNum = 2;
     int pageSize = 10;
-    List<SourceSystemRecord> ssRecords = Collections.nCopies(pageSize, givenSourceSystemRecord());
+    List<SourceSystem> ssRecords = Collections.nCopies(pageSize, givenSourceSystem());
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, SYSTEM_PATH);
-    var expected = givenSourceSystemRecordResponse(ssRecords, linksNode);
-    given(service.getSourceSystemRecords(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
+    var expected = givenSourceSystemResponse(ssRecords, linksNode);
+    given(service.getSourceSystems(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
     given(appProperties.getBaseUrl()).willReturn(SANDBOX_URI);
 
     // When

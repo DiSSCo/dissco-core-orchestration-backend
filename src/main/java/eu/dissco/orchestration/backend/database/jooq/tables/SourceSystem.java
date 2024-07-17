@@ -10,17 +10,18 @@ import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.SourceSystemRecord;
 
 import java.time.Instant;
-import java.util.function.Function;
+import java.util.Collection;
 
+import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
-import org.jooq.Function10;
+import org.jooq.JSONB;
 import org.jooq.Name;
-import org.jooq.Record;
-import org.jooq.Records;
-import org.jooq.Row10;
+import org.jooq.PlainSQL;
+import org.jooq.QueryPart;
+import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.SelectField;
+import org.jooq.Select;
+import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.TableOptions;
@@ -57,6 +58,11 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
     public final TableField<SourceSystemRecord, String> ID = createField(DSL.name("id"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
+     * The column <code>public.source_system.version</code>.
+     */
+    public final TableField<SourceSystemRecord, Integer> VERSION = createField(DSL.name("version"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "");
+
+    /**
      * The column <code>public.source_system.name</code>.
      */
     public final TableField<SourceSystemRecord, String> NAME = createField(DSL.name("name"), SQLDataType.CLOB.nullable(false), this, "");
@@ -67,19 +73,19 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
     public final TableField<SourceSystemRecord, String> ENDPOINT = createField(DSL.name("endpoint"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
-     * The column <code>public.source_system.description</code>.
+     * The column <code>public.source_system.date_created</code>.
      */
-    public final TableField<SourceSystemRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.CLOB, this, "");
+    public final TableField<SourceSystemRecord, Instant> DATE_CREATED = createField(DSL.name("date_created"), SQLDataType.INSTANT.nullable(false), this, "");
 
     /**
-     * The column <code>public.source_system.created</code>.
+     * The column <code>public.source_system.date_modified</code>.
      */
-    public final TableField<SourceSystemRecord, Instant> CREATED = createField(DSL.name("created"), SQLDataType.INSTANT.nullable(false), this, "");
+    public final TableField<SourceSystemRecord, Instant> DATE_MODIFIED = createField(DSL.name("date_modified"), SQLDataType.INSTANT.nullable(false), this, "");
 
     /**
-     * The column <code>public.source_system.deleted</code>.
+     * The column <code>public.source_system.date_tombstoned</code>.
      */
-    public final TableField<SourceSystemRecord, Instant> DELETED = createField(DSL.name("deleted"), SQLDataType.INSTANT, this, "");
+    public final TableField<SourceSystemRecord, Instant> DATE_TOMBSTONED = createField(DSL.name("date_tombstoned"), SQLDataType.INSTANT, this, "");
 
     /**
      * The column <code>public.source_system.mapping_id</code>.
@@ -87,26 +93,26 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
     public final TableField<SourceSystemRecord, String> MAPPING_ID = createField(DSL.name("mapping_id"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
-     * The column <code>public.source_system.version</code>.
-     */
-    public final TableField<SourceSystemRecord, Integer> VERSION = createField(DSL.name("version"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "");
-
-    /**
      * The column <code>public.source_system.creator</code>.
      */
-    public final TableField<SourceSystemRecord, String> CREATOR = createField(DSL.name("creator"), SQLDataType.CLOB.nullable(false).defaultValue(DSL.field(DSL.raw("'0000-0002-5669-2769'::text"), SQLDataType.CLOB)), this, "");
+    public final TableField<SourceSystemRecord, String> CREATOR = createField(DSL.name("creator"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.source_system.translator_type</code>.
      */
-    public final TableField<SourceSystemRecord, TranslatorType> TRANSLATOR_TYPE = createField(DSL.name("translator_type"), SQLDataType.VARCHAR.asEnumDataType(eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType.class), this, "");
+    public final TableField<SourceSystemRecord, TranslatorType> TRANSLATOR_TYPE = createField(DSL.name("translator_type"), SQLDataType.VARCHAR.nullable(false).asEnumDataType(TranslatorType.class), this, "");
+
+    /**
+     * The column <code>public.source_system.data</code>.
+     */
+    public final TableField<SourceSystemRecord, JSONB> DATA = createField(DSL.name("data"), SQLDataType.JSONB.nullable(false), this, "");
 
     private SourceSystem(Name alias, Table<SourceSystemRecord> aliased) {
-        this(alias, aliased, null);
+        this(alias, aliased, (Field<?>[]) null, null);
     }
 
-    private SourceSystem(Name alias, Table<SourceSystemRecord> aliased, Field<?>[] parameters) {
-        super(alias, null, aliased, parameters, DSL.comment(""), TableOptions.table());
+    private SourceSystem(Name alias, Table<SourceSystemRecord> aliased, Field<?>[] parameters, Condition where) {
+        super(alias, null, aliased, parameters, DSL.comment(""), TableOptions.table(), where);
     }
 
     /**
@@ -130,10 +136,6 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
         this(DSL.name("source_system"), null);
     }
 
-    public <O extends Record> SourceSystem(Table<O> child, ForeignKey<O, SourceSystemRecord> key) {
-        super(child, key, SOURCE_SYSTEM);
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -141,7 +143,7 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
 
     @Override
     public UniqueKey<SourceSystemRecord> getPrimaryKey() {
-        return Keys.NEW_SOURCE_SYSTEM_PKEY;
+        return Keys.SOURCE_SYSTEM_PKEY;
     }
 
     @Override
@@ -183,27 +185,87 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
         return new SourceSystem(name.getQualifiedName(), null);
     }
 
-    // -------------------------------------------------------------------------
-    // Row10 type methods
-    // -------------------------------------------------------------------------
-
+    /**
+     * Create an inline derived table from this table
+     */
     @Override
-    public Row10<String, String, String, String, Instant, Instant, String, Integer, String, TranslatorType> fieldsRow() {
-        return (Row10) super.fieldsRow();
+    public SourceSystem where(Condition condition) {
+        return new SourceSystem(getQualifiedName(), aliased() ? this : null, null, condition);
     }
 
     /**
-     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     * Create an inline derived table from this table
      */
-    public <U> SelectField<U> mapping(Function10<? super String, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Integer, ? super String, ? super TranslatorType, ? extends U> from) {
-        return convertFrom(Records.mapping(from));
+    @Override
+    public SourceSystem where(Collection<? extends Condition> conditions) {
+        return where(DSL.and(conditions));
     }
 
     /**
-     * Convenience mapping calling {@link SelectField#convertFrom(Class,
-     * Function)}.
+     * Create an inline derived table from this table
      */
-    public <U> SelectField<U> mapping(Class<U> toType, Function10<? super String, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Integer, ? super String, ? super TranslatorType, ? extends U> from) {
-        return convertFrom(toType, Records.mapping(from));
+    @Override
+    public SourceSystem where(Condition... conditions) {
+        return where(DSL.and(conditions));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    public SourceSystem where(Field<Boolean> condition) {
+        return where(DSL.condition(condition));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    @PlainSQL
+    public SourceSystem where(SQL condition) {
+        return where(DSL.condition(condition));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    @PlainSQL
+    public SourceSystem where(@Stringly.SQL String condition) {
+        return where(DSL.condition(condition));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    @PlainSQL
+    public SourceSystem where(@Stringly.SQL String condition, Object... binds) {
+        return where(DSL.condition(condition, binds));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    @PlainSQL
+    public SourceSystem where(@Stringly.SQL String condition, QueryPart... parts) {
+        return where(DSL.condition(condition, parts));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    public SourceSystem whereExists(Select<?> select) {
+        return where(DSL.exists(select));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    public SourceSystem whereNotExists(Select<?> select) {
+        return where(DSL.notExists(select));
     }
 }

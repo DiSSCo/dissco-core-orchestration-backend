@@ -13,7 +13,12 @@
     <database>
       <name>org.jooq.meta.postgres.PostgresDatabase</name>
       <inputSchema>public</inputSchema>
-      <includes>mapping | source_system | machine_annotation_services | translator_type</includes>
+      <includes>
+        source_system |
+        machine_annotation_service |
+        translator_type|
+        data_mapping
+      </includes>
       <forcedTypes>
         <forcedType>
           <name>INSTANT</name>

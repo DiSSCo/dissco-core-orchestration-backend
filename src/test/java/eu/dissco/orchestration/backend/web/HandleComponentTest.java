@@ -1,6 +1,6 @@
 package eu.dissco.orchestration.backend.web;
 
-import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasHandleRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenRollbackCreationRequest;
@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import java.io.IOException;
-import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
@@ -28,16 +27,20 @@ import org.springframework.web.reactive.function.client.WebClient;
 @ExtendWith(MockitoExtension.class)
 class HandleComponentTest {
 
+  private static MockWebServer mockHandleServer;
   @Mock
   private TokenAuthenticator tokenAuthenticator;
   private HandleComponent handleComponent;
-
-  private static MockWebServer mockHandleServer;
 
   @BeforeAll
   static void init() throws IOException {
     mockHandleServer = new MockWebServer();
     mockHandleServer.start();
+  }
+
+  @AfterAll
+  static void destroy() throws IOException {
+    mockHandleServer.shutdown();
   }
 
   @BeforeEach
@@ -46,11 +49,6 @@ class HandleComponentTest {
         String.format("http://%s:%s", mockHandleServer.getHostName(), mockHandleServer.getPort()));
     handleComponent = new HandleComponent(webClient, tokenAuthenticator);
 
-  }
-
-  @AfterAll
-  static void destroy() throws IOException {
-    mockHandleServer.shutdown();
   }
 
   @Test
@@ -66,7 +64,7 @@ class HandleComponentTest {
     var response = handleComponent.postHandle(requestBody);
 
     // Then
-    assertThat(response).isEqualTo(HANDLE);
+    assertThat(response).isEqualTo(BARE_HANDLE);
   }
 
   @Test
@@ -94,7 +92,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testBadRequest() throws Exception {
+  void testBadRequest() {
     // Given
     var requestBody = MAPPER.createObjectNode();
 
@@ -121,7 +119,7 @@ class HandleComponentTest {
     var response = handleComponent.postHandle(requestBody);
 
     // Then
-    assertThat(response).isEqualTo(HANDLE);
+    assertThat(response).isEqualTo(BARE_HANDLE);
     assertThat(mockHandleServer.getRequestCount() - requestCount).isEqualTo(2);
   }
 
