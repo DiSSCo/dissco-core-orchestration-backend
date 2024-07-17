@@ -34,7 +34,7 @@ public class SourceSystemRepository {
         .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
         .set(SOURCE_SYSTEM.DATE_CREATED, sourceSystem.getSchemaDateCreated().toInstant())
         .set(SOURCE_SYSTEM.DATE_MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
-        .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystem.getOdsDataMappingID())
+        .set(SOURCE_SYSTEM.MAPPING_ID, removeProxy(sourceSystem.getOdsDataMappingID()))
         .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
             sourceSystem.getOdsTranslatorType().value()))
         .set(SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem))
@@ -57,7 +57,7 @@ public class SourceSystemRepository {
         .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
         .set(SOURCE_SYSTEM.DATE_CREATED, sourceSystem.getSchemaDateCreated().toInstant())
         .set(SOURCE_SYSTEM.DATE_MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
-        .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystem.getOdsDataMappingID())
+        .set(SOURCE_SYSTEM.MAPPING_ID, removeProxy(sourceSystem.getOdsDataMappingID()))
         .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
             sourceSystem.getOdsTranslatorType().value()))
         .set(SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem))

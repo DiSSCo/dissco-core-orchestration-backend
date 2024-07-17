@@ -38,7 +38,7 @@ spec:
                 secretKeyRef:
                   name: db-secrets
                   key: db-password
-            - name: fdo.digital-media-object-type
+            - name: fdo.digital-media-type
               value: https://doi.org/21.T11148/bbad8c4e101e8af01115
             - name: fdo.digital-specimen-type
               value: https://doi.org/21.T11148/894b1e6cad57e921764e
