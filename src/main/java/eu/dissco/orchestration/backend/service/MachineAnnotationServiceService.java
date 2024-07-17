@@ -1,6 +1,7 @@
 package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -247,7 +248,7 @@ public class MachineAnnotationServiceService {
     map.put("imageTag", mas.getOdsContainerTag());
     map.put("pid", shortPid);
     map.put("name", mas.getSchemaName());
-    map.put("id", mas.getId());
+    map.put("id", removeProxy(mas.getId()));
     map.put("kafkaHost", properties.getKafkaHost());
     map.put("topicName", mas.getOdsTopicName());
     return map;

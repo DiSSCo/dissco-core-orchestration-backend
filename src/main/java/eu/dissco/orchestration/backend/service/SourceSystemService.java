@@ -1,6 +1,7 @@
 package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -382,7 +383,7 @@ public class SourceSystemService {
     var map = new HashMap<String, Object>();
     var jobName = generateJobName(sourceSystem, isCronJob);
     map.put("image", jobProperties.getImage());
-    map.put("sourceSystemId", sourceSystem.getId());
+    map.put("sourceSystemId", removeProxy(sourceSystem.getId()));
     map.put("jobName", jobName);
     map.put("namespace", jobProperties.getNamespace());
     map.put("containerName", jobName);
