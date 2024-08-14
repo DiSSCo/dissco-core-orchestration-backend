@@ -146,7 +146,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     var result = repository.getMachineAnnotationService(HANDLE);
 
     // Then
-    assertThat(result.getOdsTombstoneMetadata().getOdsTombstonedDate()).isEqualTo(
+    assertThat(result.getOdsTombstoneMetadata().getOdsTombstoneDate()).isEqualTo(
         Date.from(CREATED));
   }
 

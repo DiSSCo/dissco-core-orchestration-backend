@@ -22,8 +22,8 @@ import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsMappingDataStandard;
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsStatus;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
-import eu.dissco.orchestration.backend.schema.OdsDefaultMapping__1;
-import eu.dissco.orchestration.backend.schema.OdsFieldMapping__1;
+import eu.dissco.orchestration.backend.schema.DefaultMapping;
+import eu.dissco.orchestration.backend.schema.FieldMapping;
 import eu.dissco.orchestration.backend.utils.TombstoneUtils;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
@@ -60,11 +60,11 @@ public class DataMappingService {
             currentDataMapping.getOdsMappingDataStandard());
   }
 
-  private static List<OdsDefaultMapping__1> buildDefaultMapping(
+  private static List<DefaultMapping> buildDefaultMapping(
       DataMappingRequest dataMappingRequest) {
-    var mappedList = new ArrayList<OdsDefaultMapping__1>();
+    var mappedList = new ArrayList<DefaultMapping>();
     for (var odsDefaultMapping : dataMappingRequest.getOdsDefaultMapping()) {
-      var mappedOdsDefaultMapping = new OdsDefaultMapping__1();
+      var mappedOdsDefaultMapping = new DefaultMapping();
       for (var property : odsDefaultMapping.getAdditionalProperties()
           .entrySet()) {
         mappedOdsDefaultMapping.setAdditionalProperty(property.getKey(), property.getValue());
@@ -74,11 +74,11 @@ public class DataMappingService {
     return mappedList;
   }
 
-  private static List<OdsFieldMapping__1> buildFieldMapping(
+  private static List<FieldMapping> buildFieldMapping(
       DataMappingRequest dataMappingRequest) {
-    var mappedList = new ArrayList<OdsFieldMapping__1>();
+    var mappedList = new ArrayList<FieldMapping>();
     for (var odsDefaultMapping : dataMappingRequest.getOdsFieldMapping()) {
-      var mappedOdsFieldMapping = new OdsFieldMapping__1();
+      var mappedOdsFieldMapping = new FieldMapping();
       for (var property : odsDefaultMapping.getAdditionalProperties()
           .entrySet()) {
         mappedOdsFieldMapping.setAdditionalProperty(property.getKey(), property.getValue());
@@ -191,7 +191,7 @@ public class DataMappingService {
       dataMapping.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
       dataMapping.setOdsTombstoneMetadata(TombstoneUtils.buildTombstoneMetadata(userId,
           "Data Mapping tombstoned by the user through the orchestration backend"));
-      repository.deleteDataMapping(id, dataMapping.getOdsTombstoneMetadata().getOdsTombstonedDate());
+      repository.deleteDataMapping(id, dataMapping.getOdsTombstoneMetadata().getOdsTombstoneDate());
     } else {
       throw new NotFoundException("Requested data mapping " + id + " does not exist");
     }
