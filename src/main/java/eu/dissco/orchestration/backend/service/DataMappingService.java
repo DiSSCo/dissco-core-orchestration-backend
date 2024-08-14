@@ -22,6 +22,7 @@ import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsMappingDataStandard;
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsStatus;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
+import eu.dissco.orchestration.backend.schema.OdsDefaultMapping;
 import eu.dissco.orchestration.backend.schema.OdsDefaultMapping__1;
 import eu.dissco.orchestration.backend.schema.OdsFieldMapping__1;
 import eu.dissco.orchestration.backend.utils.TombstoneUtils;
@@ -191,7 +192,7 @@ public class DataMappingService {
       dataMapping.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
       dataMapping.setOdsTombstoneMetadata(TombstoneUtils.buildTombstoneMetadata(userId,
           "Data Mapping tombstoned by the user through the orchestration backend"));
-      repository.deleteDataMapping(id, dataMapping.getOdsTombstoneMetadata().getOdsTombstonedDate());
+      repository.deleteDataMapping(id, dataMapping.getOdsTombstoneMetadata().getOdsTombstoneDate());
     } else {
       throw new NotFoundException("Requested data mapping " + id + " does not exist");
     }

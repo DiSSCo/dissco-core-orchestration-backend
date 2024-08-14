@@ -447,7 +447,7 @@ public class MachineAnnotationServiceService {
           "Machine Annotation Service tombstoned by user through the orchestration backend."));
       mas.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
       repository.deleteMachineAnnotationService(id,
-          mas.getOdsTombstoneMetadata().getOdsTombstonedDate());
+          mas.getOdsTombstoneMetadata().getOdsTombstoneDate());
       deleteDeployment(currentMasOptional.get());
     } else {
       throw new NotFoundException("Requested machine annotation system: " + id + "does not exist");

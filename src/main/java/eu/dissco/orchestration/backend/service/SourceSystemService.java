@@ -334,7 +334,7 @@ public class SourceSystemService {
         throw new ProcessingFailedException("Failed to delete cronJob for source system: " + id, e);
       }
       repository.deleteSourceSystem(id,
-          sourceSystem.getOdsTombstoneMetadata().getOdsTombstonedDate());
+          sourceSystem.getOdsTombstoneMetadata().getOdsTombstoneDate());
       log.info("Delete request for source system: {} was successful", id);
     } else {
       throw new NotFoundException("Requested source system: " + id + " does not exist");

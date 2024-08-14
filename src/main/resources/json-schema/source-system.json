@@ -126,7 +126,6 @@
     "schema:dateCreated",
     "schema:dateModified",
     "schema:creator",
-    "schema:name",
     "schema:uri",
     "ods:translatorType",
     "ods:mappingID"

@@ -16,7 +16,7 @@ public class TombstoneUtils {
     return new TombstoneMetadata()
         .withType("ods:TombstoneMetadata")
         .withOdsTombstonedByAgent(new Agent().withType(Type.SCHEMA_PERSON).withId(userID))
-        .withOdsTombstonedDate(Date.from(Instant.now()))
-        .withOdsTombstonedText(text);
+        .withOdsTombstoneDate(Date.from(Instant.now()))
+        .withOdsTombstoneText(text);
   }
 }
