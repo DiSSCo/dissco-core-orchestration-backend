@@ -14,12 +14,10 @@ import eu.dissco.orchestration.backend.schema.Agent.Type;
 import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest.OdsMappingDataStandard;
+import eu.dissco.orchestration.backend.schema.DefaultMapping;
+import eu.dissco.orchestration.backend.schema.FieldMapping;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
-import eu.dissco.orchestration.backend.schema.OdsDefaultMapping;
-import eu.dissco.orchestration.backend.schema.OdsDefaultMapping__1;
-import eu.dissco.orchestration.backend.schema.OdsFieldMapping;
-import eu.dissco.orchestration.backend.schema.OdsFieldMapping__1;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
@@ -221,10 +219,10 @@ public class TestUtils {
         .withSchemaDateCreated(Date.from(CREATED))
         .withSchemaDateModified(Date.from(CREATED))
         .withOdsDefaultMapping(List.of(
-            new OdsDefaultMapping__1().withAdditionalProperty("ods:organisationID",
+            new DefaultMapping().withAdditionalProperty("ods:organisationID",
                 "https://ror.org/05xg72x27")))
         .withOdsFieldMapping(List.of(
-            new OdsFieldMapping__1().withAdditionalProperty("ods:physicalSpecimenID",
+            new FieldMapping().withAdditionalProperty("ods:physicalSpecimenID",
                 "dwc:catalogNumber")))
         .withSchemaCreator(new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR))
         .withOdsMappingDataStandard(DataMapping.OdsMappingDataStandard.DWC);
@@ -235,10 +233,10 @@ public class TestUtils {
         .withSchemaName(OBJECT_NAME)
         .withSchemaDescription(OBJECT_DESCRIPTION)
         .withOdsDefaultMapping(List.of(
-            new OdsDefaultMapping().withAdditionalProperty("ods:organisationID",
+            new DefaultMapping().withAdditionalProperty("ods:organisationID",
                 "https://ror.org/05xg72x27")))
         .withOdsFieldMapping(List.of(
-            new OdsFieldMapping().withAdditionalProperty("ods:physicalSpecimenID",
+            new FieldMapping().withAdditionalProperty("ods:physicalSpecimenID",
                 "dwc:catalogNumber")))
         .withOdsMappingDataStandard(OdsMappingDataStandard.DWC);
   }
@@ -382,7 +380,7 @@ public class TestUtils {
     return new TombstoneMetadata()
         .withType("ods:TomstoneMetadata")
         .withOdsTombstonedByAgent(new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR))
-        .withOdsTombstonedDate(Date.from(CREATED))
-        .withOdsTombstonedText("Tombstoned");
+        .withOdsTombstoneDate(Date.from(CREATED))
+        .withOdsTombstoneText("Tombstoned");
   }
 }
