@@ -9,7 +9,9 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_TYPE_DOI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.TTL;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequestWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
@@ -28,7 +30,9 @@ import static org.mockito.Mockito.times;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.domain.ObjectType;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.PidCreationException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
@@ -37,6 +41,8 @@ import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequestWrapper;
+import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
 import io.kubernetes.client.openapi.ApiException;
@@ -143,6 +149,53 @@ class MachineAnnotationServiceServiceTest {
             any(Object.class));
     then(kafkaPublisherService).should()
         .publishCreateEvent(MAPPER.valueToTree(givenMas()));
+  }
+
+  @Test
+  void testCreateMasMinimum() throws Exception {
+    // Given
+    var mas = givenMas()
+        .withSchemaContactPoint(new SchemaContactPoint__1())
+        .withOdsTopicName(SUFFIX.toLowerCase())
+        .withOdsMaxReplicas(1);
+    var expected = new JsonApiWrapper(new JsonApiData(
+        mas.getId(),
+        ObjectType.MAS,
+        flattenMas(mas)
+    ), new JsonApiLinks(MAS_PATH));
+
+    var masRequest = new MachineAnnotationServiceRequestWrapper()
+        .withMas(
+            givenMasRequest()
+                .withSchemaContactPoint(null)
+                .withOdsTopicName(null)
+                .withOdsMaxReplicas(0)
+        );
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
+    given(properties.getNamespace()).willReturn("namespace");
+    given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
+    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
+    given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
+        .willReturn(createDeploy);
+    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq("namespace"),
+        anyString(), any(Object.class))).willReturn(createCustom);
+
+    // When
+    var result = service.createMachineAnnotationService(masRequest, OBJECT_CREATOR, MAS_PATH);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+    then(fdoRecordService).should().buildCreateRequest(masRequest.getMas(), ObjectType.MAS);
+    then(repository).should().createMachineAnnotationService(mas);
+    then(appsV1Api).should()
+        .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
+    then(customObjectsApi).should()
+        .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
+            any(Object.class));
+    then(kafkaPublisherService).should()
+        .publishCreateEvent(MAPPER.valueToTree(mas));
   }
 
   @Test
@@ -501,7 +554,8 @@ class MachineAnnotationServiceServiceTest {
     int pageNum = 1;
     int pageSize = 10;
     var machineAnnotationServices = Collections.nCopies(pageSize + 1, givenMas());
-    given(repository.getMachineAnnotationServices(pageNum, pageSize)).willReturn(machineAnnotationServices);
+    given(repository.getMachineAnnotationServices(pageNum, pageSize)).willReturn(
+        machineAnnotationServices);
     var linksNode = new JsonApiLinks(pageSize, pageNum, true, MAS_PATH);
     var expected = givenMasResponse(machineAnnotationServices.subList(0, pageSize), linksNode);
 
@@ -518,7 +572,8 @@ class MachineAnnotationServiceServiceTest {
     int pageNum = 2;
     int pageSize = 10;
     var machineAnnotationServices = Collections.nCopies(pageSize, givenMas());
-    given(repository.getMachineAnnotationServices(pageNum, pageSize)).willReturn(machineAnnotationServices);
+    given(repository.getMachineAnnotationServices(pageNum, pageSize)).willReturn(
+        machineAnnotationServices);
     var linksNode = new JsonApiLinks(pageSize, pageNum, false, MAS_PATH);
     var expected = givenMasResponse(machineAnnotationServices.subList(0, pageSize), linksNode);
 
