@@ -1,0 +1,30 @@
+{
+  "$id": "https://schemas.dissco.tech/schemas/fdo-type/machine-annotation-service/0.3.0/machine-annotation-service-request-wrapper.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Machine Annotation Service RequestVersion 0.3.0",
+  "title": "MachineAnnotationServiceRequestWrapper",
+  "type": "object",
+  "properties": {
+    "mas": {
+      "$ref": "https://schemas.dissco.tech/schemas/developer-schema/machine-annotation-service/0.3.0/machine-annotation-service-request.json"
+    },
+    "environment": {
+      "type": "array",
+      "description": "Environmental variables to supply to the MAS, non-sensitive",
+      "items": {
+        "$ref": "mas-name-value.json"
+      }
+    },
+    "secrets": {
+      "type": "array",
+      "description": "Remote secrets to supply to the MAS",
+      "items": {
+        "$ref": "mas-key-ref.json"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "mas"
+  ]
+}
