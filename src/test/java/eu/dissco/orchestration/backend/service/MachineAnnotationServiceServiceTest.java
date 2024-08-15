@@ -11,9 +11,11 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.TTL;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasEnvironment;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequestWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSecrets;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -40,9 +42,11 @@ import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
+import eu.dissco.orchestration.backend.schema.Environment;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequestWrapper;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
+import eu.dissco.orchestration.backend.schema.Secret;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
 import io.kubernetes.client.openapi.ApiException;
@@ -61,11 +65,18 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -119,11 +130,15 @@ class MachineAnnotationServiceServiceTest {
     mockedClock.close();
   }
 
-  @Test
-  void testCreateMas() throws Exception {
+  @ParameterizedTest
+  @MethodSource("masKeys")
+  void testCreateMas(List<Environment> masEnv, List<Secret> masSecret) throws Exception {
     // Given
     var expected = givenMasSingleJsonApiWrapper();
-    var masRequest = givenMasRequestWrapper();
+    var masRequest = new MachineAnnotationServiceRequestWrapper()
+        .withMas(givenMasRequest())
+        .withEnvironment(masEnv)
+        .withSecrets(masSecret);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
@@ -151,8 +166,10 @@ class MachineAnnotationServiceServiceTest {
         .publishCreateEvent(MAPPER.valueToTree(givenMas()));
   }
 
-  @Test
-  void testCreateMasMinimum() throws Exception {
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(ints = -1)
+  void testCreateMasMinimum(Integer maxReplicas) throws Exception {
     // Given
     var mas = givenMas()
         .withSchemaContactPoint(new SchemaContactPoint__1())
@@ -169,7 +186,7 @@ class MachineAnnotationServiceServiceTest {
             givenMasRequest()
                 .withSchemaContactPoint(null)
                 .withOdsTopicName(null)
-                .withOdsMaxReplicas(0)
+                .withOdsMaxReplicas(maxReplicas)
         );
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
@@ -690,6 +707,15 @@ class MachineAnnotationServiceServiceTest {
     then(appsV1Api).should()
         .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
     then(kafkaPublisherService).shouldHaveNoInteractions();
+  }
+
+  private static Stream<Arguments> masKeys() {
+    return Stream.of(
+        Arguments.of(null, null),
+        Arguments.of(givenMasEnvironment(), givenMasSecrets()),
+        Arguments.of(List.of(new Environment("name", 1)), givenMasSecrets()),
+        Arguments.of(List.of(new Environment("name", true)), givenMasSecrets())
+        );
   }
 
   private Optional<MachineAnnotationService> buildOptionalPrev() {
