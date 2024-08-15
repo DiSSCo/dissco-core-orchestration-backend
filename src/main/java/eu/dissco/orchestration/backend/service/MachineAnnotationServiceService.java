@@ -7,6 +7,8 @@ import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombston
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonParser;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
@@ -42,6 +44,7 @@ import io.kubernetes.client.openapi.models.V1Deployment;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +62,8 @@ public class MachineAnnotationServiceService {
 
   private static final String DEPLOYMENT = "-deployment";
   private static final String SCALED_OBJECT = "-scaled-object";
+  private static final String NAME = "name";
+  private static final String VALUE = "value";
 
   private final HandleComponent handleComponent;
   private final FdoRecordService fdoRecordService;
@@ -220,9 +225,9 @@ public class MachineAnnotationServiceService {
   private V1Deployment getV1Deployment(MachineAnnotationService mas, String shortPid,
       MachineAnnotationServiceRequestWrapper masRequest)
       throws IOException, TemplateException {
-    var templateProperties = getDeploymentTemplateProperties(mas, shortPid, masRequest);
-    var deploymentString = fillDeploymentTemplate(templateProperties);
-    return mapper.readValue(deploymentString.toString(), V1Deployment.class);
+    var templateProperties = getDeploymentTemplateProperties(mas, shortPid);
+    var deploymentString = fillDeploymentTemplate(templateProperties, masRequest);
+    return mapper.readValue(deploymentString, V1Deployment.class);
   }
 
   private Object createKedaFiles(MachineAnnotationService mas, String name)
@@ -235,7 +240,7 @@ public class MachineAnnotationServiceService {
   private Map<String, Object> getKedaTemplateProperties(MachineAnnotationService mas,
       String name) {
     var map = new HashMap<String, Object>();
-    map.put("name", name);
+    map.put(NAME, name);
     map.put("kafkaHost", properties.getKafkaHost());
     map.put("maxReplicas", mas.getOdsMaxReplicas());
     map.put("topicName", mas.getOdsTopicName());
@@ -250,43 +255,62 @@ public class MachineAnnotationServiceService {
   }
 
   private Map<String, Object> getDeploymentTemplateProperties(MachineAnnotationService mas,
-      String shortPid, MachineAnnotationServiceRequestWrapper masRequest) {
+      String shortPid) {
     var map = new HashMap<String, Object>();
     map.put("image", mas.getOdsContainerImage());
     map.put("imageTag", mas.getOdsContainerTag());
     map.put("pid", shortPid);
-    map.put("name", mas.getSchemaName());
+    map.put(NAME, mas.getSchemaName());
     map.put("id", removeProxy(mas.getId()));
     map.put("kafkaHost", properties.getKafkaHost());
     map.put("topicName", mas.getOdsTopicName());
-    addMasSecrets(masRequest, map);
     return map;
   }
 
-  private void addMasSecrets(MachineAnnotationServiceRequestWrapper masRequest,
-      HashMap<String, Object> map) {
+  private List<JsonNode> addMasKeys(MachineAnnotationServiceRequestWrapper masRequest) {
+    var keyNode = new ArrayList<JsonNode>();
     if (masRequest == null) {
-      return;
+      return List.of(mapper.createObjectNode());
     }
     if (masRequest.getEnvironment() != null) {
-      masRequest.getEnvironment().forEach(env -> map.put(env.getName(), env.getValue()));
+      masRequest.getEnvironment().forEach(env -> {
+        if (env.getValue() instanceof String stringVal) {
+          keyNode.add(mapper.createObjectNode()
+              .put(NAME, env.getName())
+              .put(VALUE, stringVal));
+        } else if (env.getValue() instanceof Integer intVal) {
+          keyNode.add(mapper.createObjectNode()
+              .put(NAME, env.getName())
+              .put(VALUE, intVal));
+        } else if (env.getValue() instanceof Boolean boolValue) {
+          keyNode.add(mapper.createObjectNode()
+              .put(NAME, env.getName())
+              .put(VALUE, boolValue));
+        } else {
+          throw new IllegalArgumentException();
+        }
+      });
+      if (masRequest.getSecrets() != null) {
+        masRequest.getSecrets().forEach(secret -> keyNode.add(mapper.createObjectNode()
+            .put(NAME, secret.getName())
+            .set("valueFrom", mapper.createObjectNode()
+                .set("secretKeyRef", mapper.createObjectNode()
+                    .put(NAME, secret.getSecretKeyRef().getName())
+                    .put("key", secret.getSecretKeyRef().getKey())))));
+      }
     }
-    if (masRequest.getSecrets() != null) {
-      masRequest.getSecrets().forEach(
-          keyRef -> map.put(keyRef.getName(), mapper.createObjectNode()
-              .set("valueFrom", mapper.createObjectNode()
-                  .set("secretKeyRef", mapper.createObjectNode()
-                      .put(keyRef.getSecretKeyRef().getName(),
-                          keyRef.getSecretKeyRef().getKey()))))
-      );
-    }
+    return keyNode;
   }
 
-  private StringWriter fillDeploymentTemplate(Map<String, Object> templateProperties)
+  private String fillDeploymentTemplate(Map<String, Object> templateProperties,
+      MachineAnnotationServiceRequestWrapper masRequest)
       throws IOException, TemplateException {
     var writer = new StringWriter();
     deploymentTemplate.process(templateProperties, writer);
-    return writer;
+    var templateAsNode = (ObjectNode) mapper.readTree(writer.toString());
+    var defaultKeyNode = (ArrayNode) templateAsNode.get("spec").get("template").get("spec").get("containers").get(0).get("env");
+    defaultKeyNode.addAll(addMasKeys(masRequest));
+    return mapper.writeValueAsString(templateAsNode);
   }
 
   private void publishCreateEvent(MachineAnnotationService mas)
@@ -382,7 +406,8 @@ public class MachineAnnotationServiceService {
   }
 
   private void updateDeployment(MachineAnnotationService mas,
-      MachineAnnotationService currentMas,MachineAnnotationServiceRequestWrapper masRequest) throws ProcessingFailedException {
+      MachineAnnotationService currentMas, MachineAnnotationServiceRequestWrapper masRequest)
+      throws ProcessingFailedException {
     var successfulDeployment = false;
     try {
       successfulDeployment = deployMasToCluster(mas, false, masRequest);
@@ -432,7 +457,8 @@ public class MachineAnnotationServiceService {
   }
 
   private void publishUpdateEvent(MachineAnnotationService mas,
-      MachineAnnotationService currentMas,MachineAnnotationServiceRequestWrapper masRequest) throws ProcessingFailedException {
+      MachineAnnotationService currentMas, MachineAnnotationServiceRequestWrapper masRequest)
+      throws ProcessingFailedException {
     try {
       kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(mas),
           mapper.valueToTree(currentMas));
@@ -444,7 +470,8 @@ public class MachineAnnotationServiceService {
   }
 
   private void rollbackToPreviousVersion(MachineAnnotationService currentMas,
-      boolean rollbackDeployment, boolean rollbackKeda,MachineAnnotationServiceRequestWrapper masRequest)
+      boolean rollbackDeployment, boolean rollbackKeda,
+      MachineAnnotationServiceRequestWrapper masRequest)
       throws ProcessingFailedException {
     repository.updateMachineAnnotationService(currentMas);
     if (rollbackDeployment) {
