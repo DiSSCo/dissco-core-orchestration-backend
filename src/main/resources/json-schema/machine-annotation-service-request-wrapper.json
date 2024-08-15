@@ -12,14 +12,81 @@
       "type": "array",
       "description": "Environmental variables to supply to the MAS, non-sensitive",
       "items": {
-        "$ref": "mas-name-value.json"
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of a non-sensitive property or environmental variable",
+            "examples": [
+              "server.port",
+              "spring.profiles.active"
+            ]
+          },
+          "value": {
+            "type": [
+              "string",
+              "integer",
+              "boolean",
+              "null"
+            ],
+            "description": "Value to be stored in the \"name\" field. NOT for sensitive information.",
+            "examples": [
+              8080,
+              "web-profile"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "value"
+        ]
       }
     },
     "secrets": {
       "type": "array",
       "description": "Remote secrets to supply to the MAS",
       "items": {
-        "$ref": "mas-key-ref.json"
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of an environmental variable stored remotely",
+            "examples": [
+              "database.password",
+              "keycloak.secret"
+            ]
+          },
+          "secretKeyRef": {
+            "type": "object",
+            "description": "Key-value pair of a remote secret.",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the secret store within DiSSCo",
+                "examples": [
+                  "aws-secrets",
+                  "db-secrets"
+                ]
+              },
+              "key": {
+                "type": "string",
+                "description": "The name of the key stored in the above secret store. NOT the key's value.",
+                "example": [
+                  "db-password"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "key"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "secretKeyRef"
+        ]
       }
     }
   },

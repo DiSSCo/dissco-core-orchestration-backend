@@ -209,6 +209,20 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     assertThat(result.get(0).getOdsTimeToLive()).isEqualTo(TTL);
   }
 
+  @Test
+  void testCreateMasNullSchemaMaintainer() {
+    // Given
+    var mas = givenMas()
+        .withSchemaMaintainer(null);
+
+    // When
+    repository.createMachineAnnotationService(mas);
+    var result = repository.getMachineAnnotationServices(1, 10);
+
+    // Then
+    assertThat(result.get(0).getSchemaMaintainer()).isNull();
+  }
+
 
   private void postMass(List<MachineAnnotationService> originalMas) {
     originalMas.forEach(mas -> repository.createMachineAnnotationService(mas));

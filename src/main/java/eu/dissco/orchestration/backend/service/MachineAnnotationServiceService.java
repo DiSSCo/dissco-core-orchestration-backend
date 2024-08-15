@@ -28,8 +28,6 @@ import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService.OdsStatus;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequestWrapper;
-import eu.dissco.orchestration.backend.schema.MasKeyRef;
-import eu.dissco.orchestration.backend.schema.MasNameValue;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;

@@ -15,16 +15,16 @@ import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest.OdsMappingDataStandard;
 import eu.dissco.orchestration.backend.schema.DefaultMapping;
+import eu.dissco.orchestration.backend.schema.Environment;
 import eu.dissco.orchestration.backend.schema.FieldMapping;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequestWrapper;
-import eu.dissco.orchestration.backend.schema.MasKeyRef;
-import eu.dissco.orchestration.backend.schema.MasNameValue;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
+import eu.dissco.orchestration.backend.schema.Secret;
 import eu.dissco.orchestration.backend.schema.SecretKeyRef;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
@@ -296,14 +296,14 @@ public class TestUtils {
         .withSecrets(givenMasSecrets());
   }
 
-  public static List<MasNameValue> givenMasEnvironment() {
-    return List.of(new MasNameValue()
+  public static List<Environment> givenMasEnvironment() {
+    return List.of(new Environment()
         .withName("server.port")
         .withValue(8080));
   }
 
-  public static List<MasKeyRef> givenMasSecrets(){
-    return List.of(new MasKeyRef()
+  public static List<Secret> givenMasSecrets(){
+    return List.of(new Secret()
         .withName("spring.datasource.password")
         .withSecretKeyRef(new SecretKeyRef()
             .withName("aws-secrets")
