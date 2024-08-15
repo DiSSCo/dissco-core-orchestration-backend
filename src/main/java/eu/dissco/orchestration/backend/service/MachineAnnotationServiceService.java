@@ -203,10 +203,15 @@ public class MachineAnnotationServiceService {
       throws KubernetesFailedException {
     var shortPid = getName(mas.getId());
     try {
-      var deployment = getV1Deployment(mas, shortPid, masRequest);
+      V1Deployment deployment;
+      if (masRequest == null) { // Null only when we're deploying a previous version
+        deployment = appsV1Api.readNamespacedDeployment(properties.getNamespace(),
+            getName((mas.getId()) + DEPLOYMENT)).execute();
+      } else {
+        deployment = getV1Deployment(mas, shortPid, masRequest);
+      }
       if (create) {
-        appsV1Api.createNamespacedDeployment(properties.getNamespace(),
-            deployment).execute();
+        appsV1Api.createNamespacedDeployment(properties.getNamespace(), deployment).execute();
       } else {
         appsV1Api.replaceNamespacedDeployment(shortPid + DEPLOYMENT,
             properties.getNamespace(), deployment).execute();
@@ -308,7 +313,8 @@ public class MachineAnnotationServiceService {
     var writer = new StringWriter();
     deploymentTemplate.process(templateProperties, writer);
     var templateAsNode = (ObjectNode) mapper.readTree(writer.toString());
-    var defaultKeyNode = (ArrayNode) templateAsNode.get("spec").get("template").get("spec").get("containers").get(0).get("env");
+    var defaultKeyNode = (ArrayNode) templateAsNode.get("spec").get("template").get("spec")
+        .get("containers").get(0).get("env");
     defaultKeyNode.addAll(addMasKeys(masRequest));
     return mapper.writeValueAsString(templateAsNode);
   }

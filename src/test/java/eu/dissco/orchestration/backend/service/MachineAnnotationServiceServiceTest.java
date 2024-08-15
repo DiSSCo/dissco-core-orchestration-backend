@@ -53,6 +53,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.AppsV1Api.APIcreateNamespacedDeploymentRequest;
 import io.kubernetes.client.openapi.apis.AppsV1Api.APIdeleteNamespacedDeploymentRequest;
+import io.kubernetes.client.openapi.apis.AppsV1Api.APIreadNamespacedDeploymentRequest;
 import io.kubernetes.client.openapi.apis.AppsV1Api.APIreplaceNamespacedDeploymentRequest;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi.APIcreateNamespacedCustomObjectRequest;
@@ -681,7 +682,6 @@ class MachineAnnotationServiceServiceTest {
     // Given
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
         Optional.of(givenMas()));
-    given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
@@ -689,6 +689,9 @@ class MachineAnnotationServiceServiceTest {
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
         "namespace")).willReturn(deleteDeploy);
+    var deleteRead = mock(APIreadNamespacedDeploymentRequest.class);
+    given(appsV1Api.readNamespacedDeployment(any(), anyString())).willReturn(deleteRead);
+    given(deleteRead.execute()).willReturn(mock(V1Deployment.class));
     var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
     given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", "namespace",
         "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
