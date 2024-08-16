@@ -333,7 +333,7 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "type": "https://hdl.handle.net/21.T11148/22e71a0015cbcfba8ffa",
+            "type": "https://doi.org/21.T11148/22e71a0015cbcfba8ffa",
             "attributes": {
               "issuedForAgent": "https://ror.org/0566bfb96",
               "machineAnnotationServiceName":"A Machine Annotation Service"
@@ -346,7 +346,7 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "type": "https://hdl.handle.net/21.T11148/417a4f472f60f7974c12",
+            "type": "https://doi.org/21.T11148/417a4f472f60f7974c12",
             "attributes": {
               "issuedForAgent": "https://ror.org/0566bfb96",
               "sourceSystemName":"Naturalis Tunicate DWCA endpoint"
@@ -359,7 +359,7 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "type": "https://hdl.handle.net/21.T11148/ce794a6f4df42eb7e77e",
+            "type": "https://doi.org/21.T11148/ce794a6f4df42eb7e77e",
             "attributes": {
               "issuedForAgent": "https://ror.org/0566bfb96",
               "sourceDataStandard": "dwc"
