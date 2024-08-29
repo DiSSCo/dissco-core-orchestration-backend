@@ -10,6 +10,7 @@ import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequestWrapper;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -109,14 +110,14 @@ public class MachineAnnotationServiceController {
         .body(service.getMachineAnnotationServices(pageNum, pageSize, path));
   }
 
-  private MachineAnnotationServiceRequest getMachineAnnotation(JsonApiRequestWrapper requestBody)
+  private MachineAnnotationServiceRequestWrapper getMachineAnnotation(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
     if (!requestBody.data().type().equals(ObjectType.MAS)) {
       log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
     return mapper.treeToValue(requestBody.data().attributes(),
-        MachineAnnotationServiceRequest.class);
+        MachineAnnotationServiceRequestWrapper.class);
   }
 
 }

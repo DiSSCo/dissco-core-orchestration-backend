@@ -15,13 +15,17 @@ import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest.OdsMappingDataStandard;
 import eu.dissco.orchestration.backend.schema.DefaultMapping;
+import eu.dissco.orchestration.backend.schema.Environment;
 import eu.dissco.orchestration.backend.schema.FieldMapping;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequestWrapper;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
+import eu.dissco.orchestration.backend.schema.Secret;
+import eu.dissco.orchestration.backend.schema.SecretKeyRef;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
@@ -245,7 +249,8 @@ public class TestUtils {
       JsonApiLinks linksNode) {
     List<JsonApiData> dataNode = new ArrayList<>();
     dataMappings.forEach(
-        m -> dataNode.add(new JsonApiData(m.getId(), ObjectType.DATA_MAPPING, flattenDataMapping(m))));
+        m -> dataNode.add(
+            new JsonApiData(m.getId(), ObjectType.DATA_MAPPING, flattenDataMapping(m))));
     return new JsonApiListWrapper(dataNode, linksNode);
   }
 
@@ -256,7 +261,7 @@ public class TestUtils {
   public static JsonApiRequestWrapper givenMasRequestJson() {
     return new JsonApiRequestWrapper(new JsonApiRequest(
         ObjectType.MAS,
-        MAPPER.valueToTree(givenMasRequest())
+        MAPPER.valueToTree(givenMasRequestWrapper())
     ));
   }
 
@@ -282,6 +287,27 @@ public class TestUtils {
         .withOdsBatchingPermitted(false)
         .withOdsTimeToLive(TTL);
 
+  }
+
+  public static MachineAnnotationServiceRequestWrapper givenMasRequestWrapper() {
+    return new MachineAnnotationServiceRequestWrapper()
+        .withMas(givenMasRequest())
+        .withEnvironment(givenMasEnvironment())
+        .withSecrets(givenMasSecrets());
+  }
+
+  public static List<Environment> givenMasEnvironment() {
+    return List.of(new Environment()
+        .withName("server.port")
+        .withValue(8080));
+  }
+
+  public static List<Secret> givenMasSecrets(){
+    return List.of(new Secret()
+        .withName("spring.datasource.password")
+        .withSecretKeyRef(new SecretKeyRef()
+            .withName("aws-secrets")
+            .withKey("db-password")));
   }
 
   public static MachineAnnotationService givenMas() {
@@ -336,7 +362,7 @@ public class TestUtils {
             "type": "https://doi.org/21.T11148/22e71a0015cbcfba8ffa",
             "attributes": {
               "issuedForAgent": "https://ror.org/0566bfb96",
-              "machineAnnotationServiceName":"A Machine Annotation Service"
+              "masName":"A Machine Annotation Service"
             }
           }
         }""");

@@ -7,6 +7,7 @@ import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
+import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import java.util.Date;
 import java.util.List;
@@ -41,7 +42,7 @@ public class MachineAnnotationServiceRepository {
             mas.getOdsServiceAvailability())
         .set(MACHINE_ANNOTATION_SERVICE.SOURCE_CODE_REPOSITORY,
             mas.getSchemaCodeRepository())
-        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER, mas.getSchemaMaintainer().getId())
+        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER, getSchemaMaintainerId(mas.getSchemaMaintainer()))
         .set(MACHINE_ANNOTATION_SERVICE.CODE_LICENSE, mas.getSchemaLicense())
         .set(MACHINE_ANNOTATION_SERVICE.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
         .set(MACHINE_ANNOTATION_SERVICE.TIME_TO_LIVE, mas.getOdsTimeToLive())
@@ -116,7 +117,7 @@ public class MachineAnnotationServiceRepository {
             mas.getOdsServiceAvailability())
         .set(MACHINE_ANNOTATION_SERVICE.SOURCE_CODE_REPOSITORY,
             mas.getSchemaCodeRepository())
-        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER, mas.getSchemaMaintainer().getId())
+        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER, getSchemaMaintainerId(mas.getSchemaMaintainer()))
         .set(MACHINE_ANNOTATION_SERVICE.CODE_LICENSE, mas.getSchemaLicense())
         .set(MACHINE_ANNOTATION_SERVICE.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
         .set(MACHINE_ANNOTATION_SERVICE.TIME_TO_LIVE, mas.getOdsTimeToLive())
@@ -131,8 +132,15 @@ public class MachineAnnotationServiceRepository {
         .execute();
   }
 
-  private Integer getTTL(MachineAnnotationService mas) {
+  private static Integer getTTL(MachineAnnotationService mas) {
     return mas.getOdsTimeToLive() == null ? 86400 : mas.getOdsTimeToLive();
+  }
+
+  private static String getSchemaMaintainerId(Agent schemaMaintainer) {
+    if (schemaMaintainer == null){
+      return null;
+    }
+    else return schemaMaintainer.getId();
   }
 
 }
