@@ -70,6 +70,11 @@ public class SourceSystemService {
   private final Random random;
   private final FdoProperties fdoProperties;
 
+  @PostConstruct
+  public void setup() throws ApiException {
+    updateCronsToImageTag();
+  }
+
   private static String getSuffix(String sourceSystemId) {
     return sourceSystemId.substring(sourceSystemId.lastIndexOf('/') + 1).toLowerCase();
   }
@@ -106,11 +111,6 @@ public class SourceSystemService {
             currentSourceSystem.getOdsDataMappingID()) &&
         Objects.equals(sourceSystem.getLtcCollectionManagementSystem(),
             currentSourceSystem.getLtcCollectionManagementSystem());
-  }
-
-  @PostConstruct
-  public void setup() throws ApiException {
-    updateCronsToImageTag();
   }
 
   private void updateCronsToImageTag() throws ApiException {
