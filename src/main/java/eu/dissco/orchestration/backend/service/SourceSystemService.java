@@ -280,11 +280,14 @@ public class SourceSystemService {
         currentSourceSystem.getSchemaVersion() + 1, userId, id,
         currentSourceSystem.getSchemaDateCreated());
     if (isEquals(sourceSystem, currentSourceSystem)) {
+      log.info("Update request for source system: {} is identical to current version, no action taken",
+          id);
       return null;
     }
     repository.updateSourceSystem(sourceSystem);
     updateCronJob(sourceSystem, currentSourceSystem);
     if (trigger) {
+      log.info("Translator Job requested for updated source system: {}", id);
       triggerTranslatorForUpdatedSourceSystem(sourceSystem, currentSourceSystem);
     }
     publishUpdateEvent(sourceSystem, currentSourceSystem);
