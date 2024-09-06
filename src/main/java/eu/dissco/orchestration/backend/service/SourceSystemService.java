@@ -35,6 +35,7 @@ import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1CronJob;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -55,7 +56,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SourceSystemService {
 
-  public static final String SUBJECT_TYPE = "SourceSystem";
   private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
   private final SourceSystemRepository repository;
@@ -106,6 +106,33 @@ public class SourceSystemService {
             currentSourceSystem.getOdsDataMappingID()) &&
         Objects.equals(sourceSystem.getLtcCollectionManagementSystem(),
             currentSourceSystem.getLtcCollectionManagementSystem());
+  }
+
+  @PostConstruct
+  public void setup() throws ApiException {
+    updateCronsToImageTag();
+  }
+
+  private void updateCronsToImageTag() throws ApiException {
+    log.info("Updating all cron jobs to use image tag: {}", jobProperties.getImage());
+    var cronJobs = batchV1Api.listNamespacedCronJob(jobProperties.getNamespace()).execute();
+    log.info("Found a total of: {} cron jobs", cronJobs.getItems().size());
+    for (var cron : cronJobs.getItems()) {
+      var currentImage = cron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec()
+          .getContainers().get(0).getImage();
+      if (!jobProperties.getImage().equals(currentImage)) {
+        log.info("Updating cron job: {} to use image tag: {}", cron.getMetadata().getName(),
+            jobProperties.getImage());
+        cron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0)
+            .setImage(jobProperties.getImage());
+        batchV1Api.replaceNamespacedCronJob(cron.getMetadata().getName(),
+            jobProperties.getNamespace(), cron).execute();
+      } else {
+        log.info("Cron job: {} already uses image tag: {}", cron.getMetadata().getName(),
+            jobProperties.getImage());
+      }
+    }
+    log.info("Successfully updated all cron jobs to use image tag: {}", jobProperties.getImage());
   }
 
   private SourceSystem buildSourceSystem(

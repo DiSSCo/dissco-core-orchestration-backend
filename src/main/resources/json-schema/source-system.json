@@ -126,9 +126,9 @@
     "schema:dateCreated",
     "schema:dateModified",
     "schema:creator",
-    "schema:uri",
+    "schema:url",
     "ods:translatorType",
-    "ods:mappingID"
+    "ods:dataMappingID"
   ],
   "additionalProperties": false
 }

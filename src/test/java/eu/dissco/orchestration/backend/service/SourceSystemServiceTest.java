@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,9 +51,18 @@ import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.BatchV1Api.APIcreateNamespacedCronJobRequest;
 import io.kubernetes.client.openapi.apis.BatchV1Api.APIcreateNamespacedJobRequest;
 import io.kubernetes.client.openapi.apis.BatchV1Api.APIdeleteNamespacedCronJobRequest;
+import io.kubernetes.client.openapi.apis.BatchV1Api.APIlistNamespacedCronJobRequest;
 import io.kubernetes.client.openapi.apis.BatchV1Api.APIreplaceNamespacedCronJobRequest;
+import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1CronJob;
+import io.kubernetes.client.openapi.models.V1CronJobList;
+import io.kubernetes.client.openapi.models.V1CronJobSpec;
 import io.kubernetes.client.openapi.models.V1Job;
+import io.kubernetes.client.openapi.models.V1JobSpec;
+import io.kubernetes.client.openapi.models.V1JobTemplateSpec;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1PodSpec;
+import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
 import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
@@ -102,12 +112,32 @@ class SourceSystemServiceTest {
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
 
+  private static V1CronJob getV1CronJob(String image, String name) {
+    var container = new V1Container();
+    container.setImage(image);
+    var podSpec = new V1PodSpec();
+    podSpec.addContainersItem(container);
+    var podTemplateSpec = new V1PodTemplateSpec();
+    podTemplateSpec.setSpec(podSpec);
+    var jobSpec = new V1JobSpec();
+    jobSpec.setTemplate(podTemplateSpec);
+    var job = new V1Job();
+    job.setSpec(jobSpec);
+    var jobTemplateSpec = new V1JobTemplateSpec();
+    jobTemplateSpec.setSpec(jobSpec);
+    var cronJobSpec = new V1CronJobSpec();
+    cronJobSpec.setJobTemplate(jobTemplateSpec);
+    var cronJob = new V1CronJob().metadata(new V1ObjectMeta().name(name));
+    cronJob.setSpec(cronJobSpec);
+    return cronJob;
+  }
+
   @BeforeEach
   void setup() throws IOException {
     jobProperties.setDatabaseUrl("jdbc:postgresql://localhost:5432/translator");
-    service = new SourceSystemService(fdoRecordService, handleComponent, repository, dataMappingService,
-        kafkaPublisherService, MAPPER, yamlMapper, jobProperties, configuration, batchV1Api,
-        random, fdoProperties);
+    service = new SourceSystemService(fdoRecordService, handleComponent, repository,
+        dataMappingService, kafkaPublisherService, MAPPER, yamlMapper, jobProperties, configuration,
+        batchV1Api, random, fdoProperties);
     initTime();
     initFreeMaker();
   }
@@ -494,6 +524,29 @@ class SourceSystemServiceTest {
     // Then
     assertThrowsExactly(NotFoundException.class,
         () -> service.deleteSourceSystem(BARE_HANDLE, OBJECT_CREATOR));
+  }
+
+  @Test
+  void setupTest() throws ApiException {
+    // Given
+    var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
+    var cronName = "cron-1";
+    var updatedCron = getV1CronJob("a-random-image", cronName);
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
+    var equalCron = getV1CronJob(jobProperties.getImage(), "cron-2");
+    given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
+    given(cronResponse.execute()).willReturn(
+        new V1CronJobList().addItemsItem(updatedCron).addItemsItem(equalCron));
+    var replaceResponse = mock(APIreplaceNamespacedCronJobRequest.class);
+    given(batchV1Api.replaceNamespacedCronJob(cronName, NAMESPACE, expectedCron)).willReturn(
+        replaceResponse);
+
+    // When
+    service.setup();
+
+    // Then
+    then(batchV1Api).should(times(1)).replaceNamespacedCronJob(cronName, NAMESPACE,
+        expectedCron);
   }
 
   private void initTime() {
