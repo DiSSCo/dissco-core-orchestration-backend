@@ -76,6 +76,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -329,8 +331,9 @@ class SourceSystemServiceTest {
     assertDoesNotThrow(() -> service.runSourceSystemById(HANDLE));
   }
 
-  @Test
-  void testUpdateSourceSystem() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void testUpdateSourceSystem(boolean triggerTranslator) throws Exception {
     var sourceSystem = givenSourceSystemRequest();
     var prevSourceSystem = Optional.of(givenSourceSystem(OdsTranslatorType.DWCA));
     given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
@@ -339,13 +342,22 @@ class SourceSystemServiceTest {
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
+    if (triggerTranslator) {
+      var createJob = mock(APIcreateNamespacedJobRequest.class);
+      given(
+          batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
+    }
 
     // When
-    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
+    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+        triggerTranslator);
 
     // Then
     assertThat(result).isEqualTo(expected);
     then(repository).should().updateSourceSystem(givenSourceSystem(2));
+    if (!triggerTranslator) {
+      then(batchV1Api).shouldHaveNoMoreInteractions();
+    }
     then(kafkaPublisherService).should()
         .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
             MAPPER.valueToTree(prevSourceSystem.get()));
@@ -364,7 +376,8 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+            false));
 
     // Then
     then(repository).should().updateSourceSystem(givenSourceSystem(2));
@@ -386,11 +399,38 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+            false));
 
     // Then
     then(repository).should().updateSourceSystem(givenSourceSystem(2));
     then(repository).should().updateSourceSystem(prevSourceSystem.get());
+  }
+
+  @Test
+  void testUpdateSourceSystemTriggerTranslatorFails() throws Exception {
+    var sourceSystem = givenSourceSystemRequest();
+    var prevSourceSystem = Optional.of(givenSourceSystem(OdsTranslatorType.DWCA));
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
+    given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
+        .willReturn(updateCron);
+    var createJob = mock(APIcreateNamespacedJobRequest.class);
+    given(
+        batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
+    given(createJob.execute()).willThrow(ApiException.class);
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+            true));
+
+    // Then
+    then(repository).should().updateSourceSystem(givenSourceSystem(2));
+    then(repository).should().updateSourceSystem(prevSourceSystem.get());
+    then(batchV1Api).should(times(2)).replaceNamespacedCronJob(anyString(), eq(NAMESPACE),
+        any(V1CronJob.class));
   }
 
   @Test
@@ -401,7 +441,7 @@ class SourceSystemServiceTest {
 
     // Then
     assertThrowsExactly(NotFoundException.class,
-        () -> service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH, true));
   }
 
   @Test
@@ -412,7 +452,8 @@ class SourceSystemServiceTest {
         Optional.of(givenSourceSystem()));
 
     // When
-    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
+    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+        false);
 
     // Then
     assertThat(result).isNull();

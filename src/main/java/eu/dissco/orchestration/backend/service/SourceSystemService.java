@@ -268,7 +268,7 @@ public class SourceSystemService {
   }
 
   public JsonApiWrapper updateSourceSystem(String id, SourceSystemRequest sourceSystemRequest,
-      String userId, String path)
+      String userId, String path, boolean trigger)
       throws NotFoundException, ProcessingFailedException {
     var currentSourceSystemOptional = repository.getActiveSourceSystem(id);
     if (currentSourceSystemOptional.isEmpty()) {
@@ -284,8 +284,22 @@ public class SourceSystemService {
     }
     repository.updateSourceSystem(sourceSystem);
     updateCronJob(sourceSystem, currentSourceSystem);
+    if (trigger) {
+      triggerTranslatorForUpdatedSourceSystem(sourceSystem, currentSourceSystem);
+    }
     publishUpdateEvent(sourceSystem, currentSourceSystem);
     return wrapSingleResponse(sourceSystem, path);
+  }
+
+  private void triggerTranslatorForUpdatedSourceSystem(SourceSystem sourceSystem,
+      SourceSystem currentSourceSystem) throws ProcessingFailedException {
+    try {
+      triggerTranslatorJob(sourceSystem);
+    } catch (IOException | TemplateException | ApiException e) {
+      logException(sourceSystem, e);
+      rollbackToPreviousVersion(currentSourceSystem, true);
+      throw new ProcessingFailedException("Failed to deploy job to cluster", e);
+    }
   }
 
   private void updateCronJob(SourceSystem sourceSystem, SourceSystem currentSource)
