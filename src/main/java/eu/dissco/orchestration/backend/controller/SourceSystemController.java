@@ -56,6 +56,7 @@ public class SourceSystemController {
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> updateSourceSystem(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
+      @RequestParam(name = "trigger", defaultValue = "false") boolean trigger,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws IOException, NotFoundException, ProcessingFailedException {
     var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
@@ -63,7 +64,7 @@ public class SourceSystemController {
     var userId = authentication.getName();
     log.info("Received update request for source system: {} from user: {}", id, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateSourceSystem(id, sourceSystemRequest, userId, path);
+    var result = service.updateSourceSystem(id, sourceSystemRequest, userId, path, trigger);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {

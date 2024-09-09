@@ -81,11 +81,11 @@ class SourceSystemControllerTest {
     var sourceSystem = givenSourceSystemRequestJson();
     givenAuthentication();
     given(service.updateSourceSystem(BARE_HANDLE, givenSourceSystemRequest(), "",
-        "null/source-system")).willReturn(
+        "null/source-system", true)).willReturn(
         givenSourceSystemSingleJsonApiWrapper());
 
     // When
-    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, sourceSystem,
+    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, true, sourceSystem,
         mockRequest);
 
     // Then
@@ -99,7 +99,7 @@ class SourceSystemControllerTest {
     givenAuthentication();
 
     // When
-    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, sourceSystem,
+    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, false, sourceSystem,
         mockRequest);
 
     // Then
