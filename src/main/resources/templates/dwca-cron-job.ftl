@@ -30,8 +30,12 @@ spec:
               value: ${kafkaHost}
             - name: kafka.topic
               value: ${kafkaTopic}
-            - name: webclient.sourceSystemId
+            - name: application.sourceSystemId
               value: ${sourceSystemId}
+          <#if maxItems??>
+            - name: application.maxItems
+              value: ${maxItems}
+          </#if>
             - name: spring.datasource.url
               value: ${database_url}
             - name: spring.datasource.username

@@ -110,7 +110,9 @@ public class SourceSystemService {
         Objects.equals(sourceSystem.getOdsDataMappingID(),
             currentSourceSystem.getOdsDataMappingID()) &&
         Objects.equals(sourceSystem.getLtcCollectionManagementSystem(),
-            currentSourceSystem.getLtcCollectionManagementSystem());
+            currentSourceSystem.getLtcCollectionManagementSystem()) &&
+        Objects.equals(sourceSystem.getOdsMaximumRecords(),
+            currentSourceSystem.getOdsMaximumRecords());
   }
 
   private void updateCronsToImageTag() throws ApiException {
@@ -157,6 +159,7 @@ public class SourceSystemService {
         .withOdsDataMappingID(sourceSystemRequest.getOdsDataMappingID())
         .withOdsTranslatorType(
             OdsTranslatorType.fromValue(sourceSystemRequest.getOdsTranslatorType().value()))
+        .withOdsMaximumRecords(sourceSystemRequest.getOdsMaximumRecords())
         .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem());
   }
 
@@ -428,6 +431,7 @@ public class SourceSystemService {
     var jobName = generateJobName(sourceSystem, isCronJob);
     map.put("image", jobProperties.getImage());
     map.put("sourceSystemId", removeProxy(sourceSystem.getId()));
+    map.put("maxItems", sourceSystem.getOdsMaximumRecords());
     map.put("jobName", jobName);
     map.put("namespace", jobProperties.getNamespace());
     map.put("containerName", jobName);

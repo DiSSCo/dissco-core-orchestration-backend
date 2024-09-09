@@ -335,7 +335,7 @@ class SourceSystemServiceTest {
   @ValueSource(booleans = {true, false})
   void testUpdateSourceSystem(boolean triggerTranslator) throws Exception {
     var sourceSystem = givenSourceSystemRequest();
-    var prevSourceSystem = Optional.of(givenSourceSystem(OdsTranslatorType.DWCA));
+    var prevSourceSystem = Optional.of(givenSourceSystem(OdsTranslatorType.DWCA).withOdsMaximumRecords(25));
     given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
     var expected = givenSourceSystemSingleJsonApiWrapper(2);
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
