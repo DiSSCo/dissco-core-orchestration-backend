@@ -51,5 +51,7 @@ create table machine_annotation_service
     code_license           text,
     batching_permitted     boolean,
     time_to_live           integer default 86400    not null,
-    data                   jsonb                    not null
+    data                   jsonb                    not null,
+    environment            jsonb,
+    secrets                jsonb
 );
