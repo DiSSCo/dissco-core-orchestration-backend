@@ -357,6 +357,8 @@ class SourceSystemServiceTest {
     then(repository).should().updateSourceSystem(givenSourceSystem(2));
     if (!triggerTranslator) {
       then(batchV1Api).shouldHaveNoMoreInteractions();
+    } else {
+      then(batchV1Api).should().createNamespacedJob(eq(NAMESPACE), any(V1Job.class));
     }
     then(kafkaPublisherService).should()
         .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
