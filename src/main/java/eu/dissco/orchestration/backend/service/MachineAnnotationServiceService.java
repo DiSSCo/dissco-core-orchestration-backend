@@ -295,14 +295,14 @@ public class MachineAnnotationServiceService {
           throw new IllegalArgumentException();
         }
       });
-      if (masRequest.getOdsHasSecret() != null) {
-        masRequest.getOdsHasSecret().forEach(secret -> keyNode.add(mapper.createObjectNode()
-            .put(NAME, secret.getName())
-            .set("valueFrom", mapper.createObjectNode()
-                .set("secretKeyRef", mapper.createObjectNode()
-                    .put(NAME, secret.getSecretKeyRef().getName())
-                    .put("key", secret.getSecretKeyRef().getKey())))));
-      }
+    }
+    if (masRequest.getOdsHasSecret() != null) {
+      masRequest.getOdsHasSecret().forEach(secret -> keyNode.add(mapper.createObjectNode()
+          .put(NAME, secret.getName())
+          .set("valueFrom", mapper.createObjectNode()
+              .set("secretKeyRef", mapper.createObjectNode()
+                  .put(NAME, secret.getSecretKeyRef().getName())
+                  .put("key", secret.getSecretKeyRef().getKey())))));
     }
     return keyNode;
   }
