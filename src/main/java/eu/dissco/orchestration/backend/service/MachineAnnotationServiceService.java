@@ -298,11 +298,11 @@ public class MachineAnnotationServiceService {
     }
     if (masRequest.getOdsHasSecret() != null) {
       masRequest.getOdsHasSecret().forEach(secret -> keyNode.add(mapper.createObjectNode()
-          .put(NAME, secret.getName())
+          .put(NAME, secret.getSecretName())
           .set("valueFrom", mapper.createObjectNode()
               .set("secretKeyRef", mapper.createObjectNode()
-                  .put(NAME, secret.getSecretKeyRef().getName())
-                  .put("key", secret.getSecretKeyRef().getKey())))));
+                  .put(NAME, properties.getMasSecretStore())
+                  .put("key", secret.getSecretKeyRef())))));
     }
     return keyNode;
   }

@@ -110,7 +110,6 @@ class MachineAnnotationServiceServiceTest {
   @BeforeEach
   void setup() throws IOException {
     initTime();
-
     initFreeMaker();
     var kedaTemplate = configuration.getTemplate("keda-template.ftl");
     var deploymentTemplate = configuration.getTemplate("mas-template.ftl");

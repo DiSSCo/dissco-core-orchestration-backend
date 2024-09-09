@@ -24,7 +24,6 @@ import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
-import eu.dissco.orchestration.backend.schema.SecretKeyRef;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
@@ -295,12 +294,10 @@ public class TestUtils {
         .withValue(8080));
   }
 
-  public static List<MachineAnnotationServiceSecret> givenMasSecrets(){
+  public static List<MachineAnnotationServiceSecret> givenMasSecrets() {
     return List.of(new MachineAnnotationServiceSecret()
-        .withName("spring.datasource.password")
-        .withSecretKeyRef(new SecretKeyRef()
-            .withName("aws-secrets")
-            .withKey("db-password")));
+        .withSecretName("spring.datasource.password")
+        .withSecretKeyRef("db-password"));
   }
 
   public static MachineAnnotationService givenMas() {
