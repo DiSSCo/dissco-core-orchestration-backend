@@ -1,6 +1,8 @@
 package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
+import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,8 +13,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
-import eu.dissco.orchestration.backend.exception.PidCreationException;
+import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.repository.DataMappingRepository;
@@ -24,7 +25,6 @@ import eu.dissco.orchestration.backend.schema.DataMapping.OdsStatus;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.DefaultMapping;
 import eu.dissco.orchestration.backend.schema.FieldMapping;
-import eu.dissco.orchestration.backend.utils.TombstoneUtils;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -95,7 +95,7 @@ public class DataMappingService {
     String handle = null;
     try {
       handle = handleComponent.postHandle(requestBody);
-    } catch (PidAuthenticationException | PidCreationException e) {
+    } catch (PidException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }
     var dataMapping = buildDataMapping(mappingRequest, 1, userId, handle,
@@ -141,7 +141,7 @@ public class DataMappingService {
     var request = fdoRecordService.buildRollbackCreateRequest(dataMapping.getId());
     try {
       handleComponent.rollbackHandleCreation(request);
-    } catch (PidAuthenticationException | PidCreationException e) {
+    } catch (PidException e) {
       log.error(
           "Unable to rollback handle creation for data mapping. Manually delete the following handle: {}. Cause of error: ",
           dataMapping.getId(), e);
@@ -184,17 +184,58 @@ public class DataMappingService {
     repository.updateDataMapping(currentDataMapping);
   }
 
-  public void deleteDataMapping(String id, String userId) throws NotFoundException {
+  public void tombstoneDataMapping(String id, Agent agent)
+      throws NotFoundException, ProcessingFailedException {
     var result = repository.getActiveDataMapping(id);
     if (result.isPresent()) {
       var dataMapping = result.get();
-      dataMapping.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
-      dataMapping.setOdsTombstoneMetadata(TombstoneUtils.buildTombstoneMetadata(userId,
-          "Data Mapping tombstoned by the user through the orchestration backend"));
-      repository.deleteDataMapping(id, dataMapping.getOdsTombstoneMetadata().getOdsTombstoneDate());
+      tombstoneHandle(dataMapping);
+      var timestamp = Instant.now();
+      var tombstoneDataMapping = buildTombstoneDataMapping(dataMapping, agent, timestamp);
+      repository.tombstoneDataMapping(tombstoneDataMapping, timestamp);
+      try {
+        kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneDataMapping),
+            mapper.valueToTree(tombstoneDataMapping));
+      } catch (JsonProcessingException e){
+        log.error("Unable to publish tombstone event to prov service", e);
+        throw new ProcessingFailedException("Unable to publish tombstone event to provenance service", e);
+      }
     } else {
       throw new NotFoundException("Requested data mapping " + id + " does not exist");
     }
+  }
+
+  private void tombstoneHandle(DataMapping dataMapping) throws ProcessingFailedException {
+    var handle = removeProxy(dataMapping.getId());
+    var request = fdoRecordService.buildTombstoneRequest(ObjectType.DATA_MAPPING, handle);
+    try {
+      handleComponent.tombstoneHandle(request, handle);
+    } catch (PidException e){
+      log.error("Unable to tombstone handle {}", handle, e);
+      throw new ProcessingFailedException("Unable to tombstone handle", e);
+    }
+  }
+
+  private static DataMapping buildTombstoneDataMapping(DataMapping dataMapping, Agent tombstoningAgent,
+      Instant timestamp) {
+    return new DataMapping()
+        .withId(dataMapping.getId())
+        .withType(dataMapping.getType())
+        .withOdsID(dataMapping.getOdsID())
+        .withOdsType(dataMapping.getOdsType())
+        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withSchemaVersion(dataMapping.getSchemaVersion() + 1)
+        .withSchemaName(dataMapping.getSchemaName())
+        .withSchemaDescription(dataMapping.getSchemaDescription())
+        .withSchemaDateCreated(dataMapping.getSchemaDateCreated())
+        .withSchemaDateModified(Date.from(timestamp))
+        .withSchemaCreator(dataMapping.getSchemaCreator())
+        .withOdsDefaultMapping(dataMapping.getOdsDefaultMapping())
+        .withOdsFieldMapping(dataMapping.getOdsFieldMapping())
+        .withOdsMappingDataStandard(dataMapping.getOdsMappingDataStandard())
+        .withOdsTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
+            "Data Mapping tombstoned by user through the orchestration backend", timestamp));
+
   }
 
   protected Optional<DataMapping> getActiveDataMapping(String id) {
@@ -213,7 +254,8 @@ public class DataMappingService {
 
   private JsonApiWrapper wrapSingleResponse(DataMapping dataMapping, String path) {
     return new JsonApiWrapper(
-        new JsonApiData(dataMapping.getId(), ObjectType.DATA_MAPPING, flattenDataMapping(dataMapping)),
+        new JsonApiData(dataMapping.getId(), ObjectType.DATA_MAPPING,
+            flattenDataMapping(dataMapping)),
         new JsonApiLinks(path)
     );
   }

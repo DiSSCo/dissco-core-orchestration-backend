@@ -1,5 +1,7 @@
 package eu.dissco.orchestration.backend.controller;
 
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -45,7 +47,7 @@ public class MachineAnnotationServiceController {
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException, ProcessingFailedException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = authentication.getName();
+    var userId = getAgent(authentication).getId();
     log.info("Received create request for machine annotation service: {} from user: {}",
         machineAnnotationService, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
@@ -60,7 +62,7 @@ public class MachineAnnotationServiceController {
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException, NotFoundException, ProcessingFailedException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = authentication.getName();
+    var userId = getAgent(authentication).getId();
     var id = prefix + '/' + suffix;
     log.info("Received update request for machine annotation service: {} from user: {}", id,
         userId);
@@ -75,14 +77,14 @@ public class MachineAnnotationServiceController {
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteMachineAnnotationService(Authentication authentication,
+  public ResponseEntity<Void> tombstoneMachineAnnotationService(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException, ProcessingFailedException {
     String id = prefix + "/" + suffix;
-    var userId = authentication.getName();
+    var agent = getAgent(authentication);
     log.info("Received delete request for machine annotation service: {} from user: {}", id,
-        userId);
-    service.deleteMachineAnnotationService(id, userId);
+        agent.getId());
+    service.tombstoneMachineAnnotationService(id, agent);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 

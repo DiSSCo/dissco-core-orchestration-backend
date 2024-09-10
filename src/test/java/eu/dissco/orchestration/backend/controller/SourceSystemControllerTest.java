@@ -2,11 +2,13 @@ package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenClaims;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequestJson;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
@@ -16,6 +18,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
@@ -30,8 +33,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @ExtendWith(MockitoExtension.class)
 class SourceSystemControllerTest {
@@ -43,6 +46,7 @@ class SourceSystemControllerTest {
   @Mock
   private ApplicationProperties appProperties;
   private SourceSystemController controller;
+  @Mock
   private Authentication authentication;
 
   @BeforeEach
@@ -80,7 +84,7 @@ class SourceSystemControllerTest {
     // Given
     var sourceSystem = givenSourceSystemRequestJson();
     givenAuthentication();
-    given(service.updateSourceSystem(BARE_HANDLE, givenSourceSystemRequest(), "",
+    given(service.updateSourceSystem(BARE_HANDLE, givenSourceSystemRequest(), OBJECT_CREATOR,
         "null/source-system", true)).willReturn(
         givenSourceSystemSingleJsonApiWrapper());
 
@@ -155,19 +159,21 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testDeleteSourceSystem() throws Exception {
+  void testTombstoneSourceSystem() throws Exception {
     // Given
     givenAuthentication();
 
     // When
-    var result = controller.deleteSourceSystem(authentication, PREFIX, SUFFIX);
+    var result = controller.tombstoneSourceSystem(authentication, PREFIX, SUFFIX);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
 
   private void givenAuthentication() {
-    authentication = new TestingAuthenticationToken(null, null);
+    var principal = mock(Jwt.class);
+    given(authentication.getPrincipal()).willReturn(principal);
+    given(principal.getClaims()).willReturn(givenClaims());
   }
 
 }

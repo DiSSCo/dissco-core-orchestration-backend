@@ -11,11 +11,11 @@ import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsStatus;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.jooq.JSONB;
@@ -156,15 +156,15 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testDeleteDataMapping() throws JsonProcessingException {
+  void testTombstoneDataMapping() throws JsonProcessingException {
     // Given
     var dataMapping = givenDataMapping(HANDLE, 1);
     dataMapping.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
-    dataMapping.setOdsTombstoneMetadata(givenTombstoneMetadata());
+    dataMapping.setOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.DATA_MAPPING));
     postDataMappings(List.of(dataMapping));
 
     // When
-    repository.deleteDataMapping(HANDLE, Date.from(CREATED));
+    repository.tombstoneDataMapping(dataMapping, CREATED);
     var result = getDeleted(BARE_HANDLE);
 
     // Then

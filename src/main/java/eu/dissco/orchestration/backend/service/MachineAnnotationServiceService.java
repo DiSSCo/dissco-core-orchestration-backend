@@ -17,8 +17,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.KubernetesFailedException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
-import eu.dissco.orchestration.backend.exception.PidCreationException;
+import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
@@ -108,7 +107,7 @@ public class MachineAnnotationServiceService {
       createDeployment(mas, masRequest);
       publishCreateEvent(mas);
       return wrapSingleResponse(mas, path);
-    } catch (PidCreationException | PidAuthenticationException e) {
+    } catch (PidException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }
   }
@@ -335,7 +334,7 @@ public class MachineAnnotationServiceService {
     var request = fdoRecordService.buildRollbackCreateRequest(mas.getId());
     try {
       handleComponent.rollbackHandleCreation(request);
-    } catch (PidAuthenticationException | PidCreationException e) {
+    } catch (PidException e) {
       log.error(
           "Unable to rollback handle creation for MAS. Manually delete the following handle: {}. Cause of error: ",
           mas.getId(), e);
@@ -503,20 +502,74 @@ public class MachineAnnotationServiceService {
     }
   }
 
-  public void deleteMachineAnnotationService(String id, String userId)
+  public void tombstoneMachineAnnotationService(String id, Agent agent)
       throws NotFoundException, ProcessingFailedException {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var mas = currentMasOptional.get();
-      mas.setOdsTombstoneMetadata(buildTombstoneMetadata(userId,
-          "Machine Annotation Service tombstoned by user through the orchestration backend."));
-      mas.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
-      repository.deleteMachineAnnotationService(id,
-          mas.getOdsTombstoneMetadata().getOdsTombstoneDate());
+      tombstoneHandle(mas);
+      var timestamp = Instant.now();
+      var tombstoneMas = buildTombstoneMachineAnnotationService(mas, agent, timestamp);
+      repository.tombstoneMachineAnnotationService(tombstoneMas, timestamp);
+      try {
+        kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneMas), mapper.valueToTree(mas));
+      } catch (JsonProcessingException e){
+        log.error("Unable to publish tombstone event to provenance service", e);
+        throw new ProcessingFailedException("Unable to publish tombstone event to provenance service", e);
+      }
       deleteDeployment(currentMasOptional.get());
     } else {
       throw new NotFoundException("Requested machine annotation system: " + id + "does not exist");
     }
+  }
+
+  private void tombstoneHandle(MachineAnnotationService mas) throws ProcessingFailedException {
+    var handle = removeProxy(mas.getId());
+    var request = fdoRecordService.buildTombstoneRequest(ObjectType.MAS, handle);
+    try {
+      handleComponent.tombstoneHandle(request, handle);
+    } catch (PidException e){
+      log.error("Unable to tombstone handle {}", handle, e);
+      throw new ProcessingFailedException("Unable to tombstone handle", e);
+    }
+  }
+
+  private static MachineAnnotationService buildTombstoneMachineAnnotationService(
+      MachineAnnotationService mas,
+      Agent tombstoningAgent, Instant timestamp) {
+    return new MachineAnnotationService()
+        .withId(mas.getId())
+        .withType(mas.getType())
+        .withOdsID(mas.getOdsID())
+        .withOdsType(mas.getOdsType())
+        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withSchemaVersion(mas.getSchemaVersion() + 1)
+        .withSchemaName(mas.getSchemaName())
+        .withSchemaDescription(mas.getSchemaDescription())
+        .withSchemaDateCreated(mas.getSchemaDateCreated())
+        .withSchemaDateModified(Date.from(timestamp))
+        .withSchemaCreator(mas.getSchemaCreator())
+        .withOdsContainerImage(mas.getOdsContainerImage())
+        .withOdsContainerTag(mas.getOdsContainerTag())
+        .withOdsTargetDigitalObjectFilter(mas.getOdsTargetDigitalObjectFilter())
+        .withSchemaCreativeWorkStatus(mas.getSchemaCreativeWorkStatus())
+        .withSchemaCodeRepository(mas.getSchemaCodeRepository())
+        .withSchemaProgrammingLanguage(mas.getSchemaProgrammingLanguage())
+        .withOdsServiceAvailability(mas.getOdsServiceAvailability())
+        .withSchemaMaintainer(mas.getSchemaMaintainer())
+        .withSchemaLicense(mas.getSchemaLicense())
+        .withOdsDependency(mas.getOdsDependency())
+        .withSchemaContactPoint(mas.getSchemaContactPoint())
+        .withOdsSlaDocumentation(mas.getOdsSlaDocumentation())
+        .withOdsTopicName(mas.getOdsTopicName())
+        .withOdsMaxReplicas(mas.getOdsMaxReplicas())
+        .withOdsBatchingPermitted(mas.getOdsBatchingPermitted())
+        .withOdsTimeToLive(mas.getOdsTimeToLive())
+        .withOdsTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
+            "Machine Annotation Service tombstoned by user through the orchestration backend",
+            timestamp))
+        .withOdsHasEnvironment(mas.getOdsHasEnvironment())
+        .withOdsHasSecret(mas.getOdsHasSecret());
   }
 
   private void deleteDeployment(MachineAnnotationService currentMas)

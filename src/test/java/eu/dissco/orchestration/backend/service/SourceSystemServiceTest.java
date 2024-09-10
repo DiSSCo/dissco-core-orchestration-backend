@@ -9,12 +9,15 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SOURCE_SYSTEM_TYPE_DOI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenSourceSystem;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneSourceSystem;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
@@ -36,7 +39,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.PidCreationException;
+import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
@@ -113,6 +116,8 @@ class SourceSystemServiceTest {
 
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
+  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
+
 
   private static V1CronJob getV1CronJob(String image, String name) {
     var container = new V1Container();
@@ -280,7 +285,7 @@ class SourceSystemServiceTest {
     var sourceSystem = givenSourceSystemRequest();
     given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
         Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
-    willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
+    willThrow(PidException.class).given(handleComponent).postHandle(any());
 
     // When / Then
     assertThrowsExactly(ProcessingFailedException.class, () ->
@@ -297,7 +302,7 @@ class SourceSystemServiceTest {
         Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem(OdsTranslatorType.DWCA)));
-    willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
+    willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);
@@ -532,20 +537,27 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testDeleteSourceSystem() {
+  void testTombstoneSourceSystem() throws Exception {
     // Given
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(
         Optional.of(givenSourceSystem()));
     var deleteCron = mock(APIdeleteNamespacedCronJobRequest.class);
     given(batchV1Api.deleteNamespacedCronJob(anyString(), eq(NAMESPACE)))
         .willReturn(deleteCron);
+    mockedStatic.when(Instant::now).thenReturn(UPDATED);
+    mockedClock.when(Clock::systemUTC).thenReturn(updatedClock);
+
+    // When
+    service.tombstoneSourceSystem(BARE_HANDLE, givenAgent());
 
     // Then
-    assertDoesNotThrow(() -> service.deleteSourceSystem(BARE_HANDLE, OBJECT_CREATOR));
+    then(repository).should().tombstoneSourceSystem(givenTombstoneSourceSystem(), UPDATED);
+    then(handleComponent).should().tombstoneHandle(any(), eq(BARE_HANDLE));
+    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any());
   }
 
   @Test
-  void testDeleteSourceSystemCronFailed() throws ApiException {
+  void testTombstoneSourceSystemCronFailed() throws ApiException {
     // Given
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(
         Optional.of(givenSourceSystem()));
@@ -556,17 +568,17 @@ class SourceSystemServiceTest {
 
     // Then
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.deleteSourceSystem(BARE_HANDLE, OBJECT_CREATOR));
+        () -> service.tombstoneSourceSystem(BARE_HANDLE, givenAgent()));
   }
 
   @Test
-  void testDeleteSourceSystemNotFound() {
+  void testTombstoneSourceSystemNotFound() {
     // Given
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrowsExactly(NotFoundException.class,
-        () -> service.deleteSourceSystem(BARE_HANDLE, OBJECT_CREATOR));
+        () -> service.tombstoneSourceSystem(BARE_HANDLE, givenAgent()));
   }
 
   @Test

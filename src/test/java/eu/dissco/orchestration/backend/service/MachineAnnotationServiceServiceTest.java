@@ -9,15 +9,17 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_TYPE_DOI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.TTL;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenMas;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasEnvironment;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSecrets;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneMas;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -35,7 +37,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.PidCreationException;
+import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
@@ -63,7 +65,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -93,7 +94,6 @@ class MachineAnnotationServiceServiceTest {
   private HandleComponent handleComponent;
   @Mock
   private FdoRecordService fdoRecordService;
-
   @Mock
   private MachineAnnotationServiceProperties properties;
   @Mock
@@ -106,6 +106,8 @@ class MachineAnnotationServiceServiceTest {
 
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
+
+  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
 
   @BeforeEach
   void setup() throws IOException {
@@ -222,7 +224,7 @@ class MachineAnnotationServiceServiceTest {
   void testCreateMasHandleFails() throws Exception {
     // Given
     var mas = givenMasRequest();
-    willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
+    willThrow(PidException.class).given(handleComponent).postHandle(any());
 
     // Then
     assertThrowsExactly(ProcessingFailedException.class, () ->
@@ -344,7 +346,7 @@ class MachineAnnotationServiceServiceTest {
     given(properties.getNamespace()).willReturn("namespace");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(MAPPER.valueToTree(givenMas()));
-    willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
+    willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
         .willReturn(createDeploy);
@@ -605,33 +607,18 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
-  void testDeletedMas() {
-    // Given
-    given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
-        Optional.of(givenMas()));
-    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
-    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
-        null)).willReturn(deleteDeploy);
-    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
-    given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", null,
-        "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
-
-    // When / Then
-    assertDoesNotThrow(() -> service.deleteMachineAnnotationService(HANDLE, OBJECT_CREATOR));
-  }
-
-  @Test
   void testDeletedMasNotFound() {
     // Given
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrowsExactly(NotFoundException.class,
-        () -> service.deleteMachineAnnotationService(HANDLE, OBJECT_CREATOR));
+        () -> service.tombstoneMachineAnnotationService(HANDLE, givenAgent()));
   }
 
   @Test
-  void testDeleteMas() throws NotFoundException, ProcessingFailedException {
+  void testTombstoneMas()
+      throws Exception {
     // Given
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
         Optional.of(givenMas()));
@@ -642,22 +629,25 @@ class MachineAnnotationServiceServiceTest {
     var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
     given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", "namespace",
         "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
+    mockedStatic.when(Instant::now).thenReturn(UPDATED);
+    mockedClock.when(Clock::systemUTC).thenReturn(updatedClock);
 
     // When
-    service.deleteMachineAnnotationService(HANDLE, OBJECT_CREATOR);
+    service.tombstoneMachineAnnotationService(HANDLE, givenAgent());
 
     // Then
-    then(repository).should().deleteMachineAnnotationService(HANDLE, Date.from(Instant.now()));
+    then(repository).should().tombstoneMachineAnnotationService(givenTombstoneMas(), Instant.now());
     then(appsV1Api).should()
         .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq("namespace"));
     then(customObjectsApi).should()
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             eq(SUFFIX.toLowerCase() + "-scaled-object"));
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(handleComponent).should().tombstoneHandle(any(), eq(BARE_HANDLE));
+    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any());
   }
 
   @Test
-  void testDeleteDeployFails() throws ApiException {
+  void testDeleteDeployFails() throws ApiException, JsonProcessingException {
     // Given
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
         Optional.of(givenMas()));
@@ -666,21 +656,23 @@ class MachineAnnotationServiceServiceTest {
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
         "namespace")).willReturn(deleteDeploy);
     given(deleteDeploy.execute()).willThrow(new ApiException());
+    mockedStatic.when(Instant::now).thenReturn(UPDATED);
+    mockedClock.when(Clock::systemUTC).thenReturn(updatedClock);
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.deleteMachineAnnotationService(HANDLE, OBJECT_CREATOR));
+        () -> service.tombstoneMachineAnnotationService(HANDLE, givenAgent()));
 
     // Then
-    then(repository).should().deleteMachineAnnotationService(HANDLE, Date.from(Instant.now()));
+    then(repository).should().tombstoneMachineAnnotationService(givenTombstoneMas(), Instant.now());
     then(repository).should()
         .createMachineAnnotationService(any(MachineAnnotationService.class));
     then(customObjectsApi).shouldHaveNoInteractions();
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any());
   }
 
   @Test
-  void testDeleteKedaFails() throws ApiException {
+  void testDeleteKedaFails() throws ApiException, JsonProcessingException {
     // Given
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
         Optional.of(givenMas()));
@@ -698,20 +690,22 @@ class MachineAnnotationServiceServiceTest {
     given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", "namespace",
         "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
     given(deleteCustom.execute()).willThrow(new ApiException());
+    mockedStatic.when(Instant::now).thenReturn(UPDATED);
+    mockedClock.when(Clock::systemUTC).thenReturn(updatedClock);
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.deleteMachineAnnotationService(HANDLE, OBJECT_CREATOR));
+        () -> service.tombstoneMachineAnnotationService(HANDLE, givenAgent()));
 
     // Then
-    then(repository).should().deleteMachineAnnotationService(HANDLE, Date.from(Instant.now()));
+    then(repository).should().tombstoneMachineAnnotationService(givenTombstoneMas(), UPDATED);
     then(repository).should()
         .createMachineAnnotationService(any(MachineAnnotationService.class));
     then(appsV1Api).should().deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq("namespace"));
     then(appsV1Api).should()
         .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any());
   }
 
   private static Stream<Arguments> masKeys() {

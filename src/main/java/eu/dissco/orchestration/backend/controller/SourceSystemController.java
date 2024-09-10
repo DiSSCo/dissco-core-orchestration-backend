@@ -1,5 +1,7 @@
 package eu.dissco.orchestration.backend.controller;
 
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -46,7 +48,7 @@ public class SourceSystemController {
       throws IOException, NotFoundException, ProcessingFailedException {
     var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var userId = authentication.getName();
+    var userId = getAgent(authentication).getId();
     log.info("Received create request for source system: {} from user: {}", sourceSystemRequest,
         userId);
     var result = service.createSourceSystem(sourceSystemRequest, userId, path);
@@ -61,7 +63,7 @@ public class SourceSystemController {
       throws IOException, NotFoundException, ProcessingFailedException {
     var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
     var id = prefix + '/' + suffix;
-    var userId = authentication.getName();
+    var userId = getAgent(authentication).getId();
     log.info("Received update request for source system: {} from user: {}", id, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var result = service.updateSourceSystem(id, sourceSystemRequest, userId, path, trigger);
@@ -74,13 +76,13 @@ public class SourceSystemController {
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteSourceSystem(Authentication authentication,
+  public ResponseEntity<Void> tombstoneSourceSystem(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException, ProcessingFailedException {
     String id = prefix + "/" + suffix;
-    var userId = authentication.getName();
-    log.info("Received delete request for mapping: {} from user: {}", id, userId);
-    service.deleteSourceSystem(id, userId);
+    var agent = getAgent(authentication);
+    log.info("Received delete request for mapping: {} from user: {}", id, agent.getId());
+    service.tombstoneSourceSystem(id, agent);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 

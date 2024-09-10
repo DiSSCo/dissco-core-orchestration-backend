@@ -3,8 +3,10 @@ package eu.dissco.orchestration.backend.controller;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenClaims;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequestJson;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
@@ -12,6 +14,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
@@ -22,13 +25,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @ExtendWith(MockitoExtension.class)
 class MachineAnnotationServiceControllerTest {
-
-  private final Authentication authentication = new TestingAuthenticationToken(null, null);
+  @Mock
+  private Authentication authentication;
   MockHttpServletRequest mockRequest = new MockHttpServletRequest();
   @Mock
   private MachineAnnotationServiceService service;
@@ -45,6 +48,7 @@ class MachineAnnotationServiceControllerTest {
   @Test
   void testCreateMas() throws Exception {
     // Given
+    givenAuthentication();
     var mas = givenMasRequestJson();
 
     // When
@@ -68,9 +72,10 @@ class MachineAnnotationServiceControllerTest {
   @Test
   void testUpdateMas() throws Exception {
     // Given
+    givenAuthentication();
     var mas = givenMasRequestJson();
     var masResponse = givenMasSingleJsonApiWrapper();
-    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), "",
+    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), OBJECT_CREATOR,
         "null/mas")).willReturn(
         masResponse);
 
@@ -85,8 +90,9 @@ class MachineAnnotationServiceControllerTest {
   @Test
   void testUpdateMasNoChange() throws Exception {
     // Given
+    givenAuthentication();
     var mas = givenMasRequestJson();
-    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), "",
+    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), OBJECT_CREATOR,
         "null/mas")).willReturn(
         null);
 
@@ -120,11 +126,20 @@ class MachineAnnotationServiceControllerTest {
 
   @Test
   void testDeleteMas() throws Exception {
+    // Given
+    givenAuthentication();
+
     // When
-    var result = controller.deleteMachineAnnotationService(authentication, PREFIX, SUFFIX);
+    var result = controller.tombstoneMachineAnnotationService(authentication, PREFIX, SUFFIX);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+  }
+
+  private void givenAuthentication() {
+    var principal = mock(Jwt.class);
+    given(authentication.getPrincipal()).willReturn(principal);
+    given(principal.getClaims()).willReturn(givenClaims());
   }
 
 }

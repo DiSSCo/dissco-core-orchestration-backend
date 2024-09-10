@@ -35,6 +35,12 @@ public class ProvenanceService {
     return generateCreateUpdateTombStoneEvent(digitalObject, ProvActivity.Type.ODS_CREATE, null);
   }
 
+  public CreateUpdateTombstoneEvent generateTombstoneEvent(JsonNode tombstoneObject, JsonNode currentObject)
+      throws JsonProcessingException {
+    var patch = createJsonPatch(tombstoneObject, currentObject);
+    return generateCreateUpdateTombStoneEvent(tombstoneObject, ProvActivity.Type.ODS_TOMBSTONE, patch);
+  }
+
   private CreateUpdateTombstoneEvent generateCreateUpdateTombStoneEvent(
       JsonNode digitalObject, ProvActivity.Type activityType, JsonNode jsonPatch)
       throws JsonProcessingException {

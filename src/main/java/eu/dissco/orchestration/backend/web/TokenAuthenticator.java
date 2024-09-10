@@ -2,6 +2,7 @@ package eu.dissco.orchestration.backend.web;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
+import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.properties.TokenProperties;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -26,7 +27,7 @@ public class TokenAuthenticator {
   @Qualifier("tokenClient")
   private final WebClient tokenClient;
 
-  public String getToken() throws PidAuthenticationException {
+  public String getToken() throws PidException {
     var response = tokenClient
         .post()
         .body(BodyInserters.fromFormData(properties.getFromFormData()))
@@ -48,19 +49,19 @@ public class TokenAuthenticator {
       Thread.currentThread().interrupt();
       log.info(
           "Unable to authenticate processing service with Keycloak. Verify client secret is up to-date");
-      throw new PidAuthenticationException(
+      throw new PidException(
           "Unable to authenticate processing service with Keycloak. More information: "
               + e.getMessage());
     }
   }
 
-  private String getToken(JsonNode tokenNode) throws PidAuthenticationException {
+  private String getToken(JsonNode tokenNode) throws PidException {
     if (tokenNode != null && tokenNode.get("access_token") != null) {
       return tokenNode.get("access_token").asText();
     }
     log.warn("Unexpected response from keycloak server. Unable to parse access_token: {}",
         tokenNode);
-    throw new PidAuthenticationException(
+    throw new PidException(
         "Unable to authenticate processing service with Keycloak. An error has occurred parsing keycloak response");
   }
 }

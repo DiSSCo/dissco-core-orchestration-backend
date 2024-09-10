@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class TestUtils {
 
@@ -51,6 +52,7 @@ public class TestUtils {
   public static final String SS_ENDPOINT = "https://api.biodiversitydata.nl/v2/specimen/dwca/getDataSet/tunicata";
   public static final String OBJECT_DESCRIPTION = "Source system for the DWCA of the Tunicate specimen";
   public static final Instant CREATED = Instant.parse("2022-11-01T09:59:24.00Z");
+  public static final Instant UPDATED = Instant.parse("2024-11-01T09:59:24.00Z");
   public static final ObjectMapper MAPPER = new ObjectMapper().findAndRegisterModules();
   public static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
   public static final String SYSTEM_URI = "/source-system";
@@ -149,7 +151,7 @@ public class TestUtils {
         .withSchemaVersion(version)
         .withSchemaDateCreated(Date.from(CREATED))
         .withSchemaDateModified(Date.from(CREATED))
-        .withSchemaCreator(generateCreator())
+        .withSchemaCreator(givenAgent())
         .withSchemaName(OBJECT_NAME)
         .withSchemaUrl(URI.create(SS_ENDPOINT))
         .withSchemaDescription(OBJECT_DESCRIPTION)
@@ -157,10 +159,12 @@ public class TestUtils {
         .withOdsDataMappingID(HANDLE_ALT);
   }
 
-  private static Agent generateCreator() {
-    return new Agent()
-        .withId(OBJECT_CREATOR)
-        .withType(Type.SCHEMA_PERSON);
+  public static SourceSystem givenTombstoneSourceSystem(){
+    return givenSourceSystem()
+        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withSchemaDateModified(Date.from(UPDATED))
+        .withSchemaVersion(2)
+        .withOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.SOURCE_SYSTEM));
   }
 
   public static SourceSystemRequest givenSourceSystemRequest() {
@@ -226,9 +230,18 @@ public class TestUtils {
         .withOdsFieldMapping(List.of(
             new FieldMapping().withAdditionalProperty("ods:physicalSpecimenID",
                 "dwc:catalogNumber")))
-        .withSchemaCreator(new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR))
+        .withSchemaCreator(givenAgent())
         .withOdsMappingDataStandard(DataMapping.OdsMappingDataStandard.DWC);
   }
+
+  public static DataMapping givenTombstoneDataMapping(){
+    return givenDataMapping()
+        .withOdsStatus(DataMapping.OdsStatus.ODS_TOMBSTONE)
+        .withSchemaDateModified(Date.from(UPDATED))
+        .withSchemaVersion(2)
+        .withOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.DATA_MAPPING));
+  }
+
 
   public static DataMappingRequest givenDataMappingRequest() {
     return new DataMappingRequest()
@@ -276,7 +289,7 @@ public class TestUtils {
         .withSchemaCodeRepository("https://github.com/DiSSCo/fancy-mas")
         .withSchemaProgrammingLanguage("Python")
         .withOdsServiceAvailability("99.99%")
-        .withSchemaMaintainer(new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR))
+        .withSchemaMaintainer(givenAgent())
         .withSchemaLicense("https://www.apache.org/licenses/LICENSE-2.0")
         .withOdsDependency(List.of())
         .withSchemaContactPoint(new SchemaContactPoint().withSchemaEmail("dontmail@dissco.eu"))
@@ -323,7 +336,7 @@ public class TestUtils {
         .withOdsStatus(MachineAnnotationService.OdsStatus.ODS_ACTIVE)
         .withSchemaDateCreated(Date.from(CREATED))
         .withSchemaDateModified(Date.from(CREATED))
-        .withSchemaCreator(new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR))
+        .withSchemaCreator(givenAgent())
         .withSchemaName(name)
         .withOdsContainerImage("public.ecr.aws/dissco/fancy-mas")
         .withOdsContainerTag("sha-54289")
@@ -335,7 +348,7 @@ public class TestUtils {
         .withSchemaCodeRepository("https://github.com/DiSSCo/fancy-mas")
         .withSchemaProgrammingLanguage("Python")
         .withOdsServiceAvailability("99.99%")
-        .withSchemaMaintainer(new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR))
+        .withSchemaMaintainer(givenAgent())
         .withSchemaLicense("https://www.apache.org/licenses/LICENSE-2.0")
         .withOdsDependency(List.of())
         .withSchemaContactPoint(new SchemaContactPoint__1().withSchemaEmail("dontmail@dissco.eu"))
@@ -345,6 +358,14 @@ public class TestUtils {
         .withOdsTimeToLive(ttl)
         .withOdsHasEnvironment(givenMasEnvironment())
         .withOdsHasSecret(givenMasSecrets());
+  }
+
+  public static MachineAnnotationService givenTombstoneMas(){
+    return givenMas()
+        .withOdsStatus(MachineAnnotationService.OdsStatus.ODS_TOMBSTONE)
+        .withSchemaVersion(2)
+        .withSchemaDateModified(Date.from(UPDATED))
+        .withOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.MAS));
   }
 
   public static JsonNode givenMasHandleRequest() throws Exception {
@@ -394,11 +415,34 @@ public class TestUtils {
         }""");
   }
 
-  public static TombstoneMetadata givenTombstoneMetadata() {
+  public static TombstoneMetadata givenTombstoneMetadata(ObjectType objectType) {
+    var message = new StringBuilder();
+    if (objectType.equals(ObjectType.MAS)){
+      message.append("Machine Annotation Service ");
+    } else if (objectType.equals(ObjectType.DATA_MAPPING)){
+      message.append("Data Mapping ");
+    } else {
+      message.append("Source System ");
+    }
+    message.append("tombstoned by user through the orchestration backend");
+
     return new TombstoneMetadata()
-        .withType("ods:TomstoneMetadata")
-        .withOdsTombstonedByAgent(new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR))
-        .withOdsTombstoneDate(Date.from(CREATED))
-        .withOdsTombstoneText("Tombstoned");
+        .withType("ods:TombstoneMetadata")
+        .withOdsTombstonedByAgent(givenAgent())
+        .withOdsTombstoneDate(Date.from(UPDATED))
+        .withOdsTombstoneText(message.toString());
   }
+
+  public static Agent givenAgent(){
+    return new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR);
+  }
+
+  // Token
+  public static Map<String, Object> givenClaims() {
+    return Map.of(
+        "orcid", OBJECT_CREATOR
+    );
+  }
+
+
 }
