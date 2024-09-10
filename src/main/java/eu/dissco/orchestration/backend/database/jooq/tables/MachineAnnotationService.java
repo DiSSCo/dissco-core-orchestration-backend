@@ -150,18 +150,6 @@ public class MachineAnnotationService extends TableImpl<MachineAnnotationService
      */
     public final TableField<MachineAnnotationServiceRecord, JSONB> DATA = createField(DSL.name("data"), SQLDataType.JSONB.nullable(false), this, "");
 
-    /**
-     * The column <code>public.machine_annotation_service.environment</code>.
-     * Environmental variables to supply to the MAS, non-sensitive
-     */
-    public final TableField<MachineAnnotationServiceRecord, JSONB> ENVIRONMENT = createField(DSL.name("environment"), SQLDataType.JSONB, this, "Environmental variables to supply to the MAS, non-sensitive");
-
-    /**
-     * The column <code>public.machine_annotation_service.secrets</code>. Remote
-     * secrets to supply to the MAS
-     */
-    public final TableField<MachineAnnotationServiceRecord, JSONB> SECRETS = createField(DSL.name("secrets"), SQLDataType.JSONB, this, "Remote secrets to supply to the MAS");
-
     private MachineAnnotationService(Name alias, Table<MachineAnnotationServiceRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
