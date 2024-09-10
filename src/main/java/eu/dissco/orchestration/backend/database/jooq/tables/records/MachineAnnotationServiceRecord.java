@@ -291,38 +291,6 @@ public class MachineAnnotationServiceRecord extends UpdatableRecordImpl<MachineA
         return (JSONB) get(17);
     }
 
-    /**
-     * Setter for <code>public.machine_annotation_service.environment</code>.
-     * Environmental variables to supply to the MAS, non-sensitive
-     */
-    public void setEnvironment(JSONB value) {
-        set(18, value);
-    }
-
-    /**
-     * Getter for <code>public.machine_annotation_service.environment</code>.
-     * Environmental variables to supply to the MAS, non-sensitive
-     */
-    public JSONB getEnvironment() {
-        return (JSONB) get(18);
-    }
-
-    /**
-     * Setter for <code>public.machine_annotation_service.secrets</code>. Remote
-     * secrets to supply to the MAS
-     */
-    public void setSecrets(JSONB value) {
-        set(19, value);
-    }
-
-    /**
-     * Getter for <code>public.machine_annotation_service.secrets</code>. Remote
-     * secrets to supply to the MAS
-     */
-    public JSONB getSecrets() {
-        return (JSONB) get(19);
-    }
-
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -346,7 +314,7 @@ public class MachineAnnotationServiceRecord extends UpdatableRecordImpl<MachineA
     /**
      * Create a detached, initialised MachineAnnotationServiceRecord
      */
-    public MachineAnnotationServiceRecord(String id, Integer version, String name, Instant dateCreated, Instant dateModified, Instant dateTombstoned, String creator, String containerImage, String containerImageTag, String creativeWorkState, String sourceCodeRepository, String serviceAvailability, String codeMaintainer, String codeLicense, String supportContact, Boolean batchingPermitted, Integer timeToLive, JSONB data, JSONB environment, JSONB secrets) {
+    public MachineAnnotationServiceRecord(String id, Integer version, String name, Instant dateCreated, Instant dateModified, Instant dateTombstoned, String creator, String containerImage, String containerImageTag, String creativeWorkState, String sourceCodeRepository, String serviceAvailability, String codeMaintainer, String codeLicense, String supportContact, Boolean batchingPermitted, Integer timeToLive, JSONB data) {
         super(MachineAnnotationService.MACHINE_ANNOTATION_SERVICE);
 
         setId(id);
@@ -367,8 +335,6 @@ public class MachineAnnotationServiceRecord extends UpdatableRecordImpl<MachineA
         setBatchingPermitted(batchingPermitted);
         setTimeToLive(timeToLive);
         setData(data);
-        setEnvironment(environment);
-        setSecrets(secrets);
         resetChangedOnNotNull();
     }
 }

@@ -47,12 +47,10 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICE.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
         .set(MACHINE_ANNOTATION_SERVICE.TIME_TO_LIVE, mas.getOdsTimeToLive())
         .set(MACHINE_ANNOTATION_SERVICE.DATA, mapToJSONB(mas))
-        .set(MACHINE_ANNOTATION_SERVICE.ENVIRONMENT, mapToJSONB(mas.getOdsHasEnvironment()))
-        .set(MACHINE_ANNOTATION_SERVICE.SECRETS, mapToJSONB(mas.getOdsHasSecret()))
         .execute();
   }
 
-  private JSONB mapToJSONB(Object mas) {
+  private JSONB mapToJSONB(MachineAnnotationService mas) {
     try {
       return JSONB.valueOf(mapper.writeValueAsString(mas));
     } catch (JsonProcessingException e) {
@@ -127,8 +125,6 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICE.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
         .set(MACHINE_ANNOTATION_SERVICE.TIME_TO_LIVE, mas.getOdsTimeToLive())
         .set(MACHINE_ANNOTATION_SERVICE.DATA, mapToJSONB(mas))
-        .set(MACHINE_ANNOTATION_SERVICE.ENVIRONMENT, mapToJSONB(mas.getOdsHasEnvironment()))
-        .set(MACHINE_ANNOTATION_SERVICE.SECRETS, mapToJSONB(mas.getOdsHasSecret()))
         .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(mas.getId())))
         .execute();
   }
