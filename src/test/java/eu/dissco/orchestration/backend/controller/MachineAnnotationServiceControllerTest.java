@@ -5,8 +5,8 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequestJson;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequestWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequestJson;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -70,7 +70,7 @@ class MachineAnnotationServiceControllerTest {
     // Given
     var mas = givenMasRequestJson();
     var masResponse = givenMasSingleJsonApiWrapper();
-    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequestWrapper(), "",
+    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), "",
         "null/mas")).willReturn(
         masResponse);
 
@@ -86,7 +86,7 @@ class MachineAnnotationServiceControllerTest {
   void testUpdateMasNoChange() throws Exception {
     // Given
     var mas = givenMasRequestJson();
-    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequestWrapper(), "",
+    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), "",
         "null/mas")).willReturn(
         null);
 

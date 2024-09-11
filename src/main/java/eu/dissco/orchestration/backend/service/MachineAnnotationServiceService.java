@@ -29,7 +29,6 @@ import eu.dissco.orchestration.backend.schema.Agent.Type;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService.OdsStatus;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequestWrapper;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
@@ -96,14 +95,14 @@ public class MachineAnnotationServiceService {
   }
 
   public JsonApiWrapper createMachineAnnotationService(
-      MachineAnnotationServiceRequestWrapper masRequest,
+      MachineAnnotationServiceRequest masRequest,
       String userId,
       String path) throws ProcessingFailedException {
-    var requestBody = fdoRecordService.buildCreateRequest(masRequest.getMas(), ObjectType.MAS);
+    var requestBody = fdoRecordService.buildCreateRequest(masRequest, ObjectType.MAS);
     try {
       var handle = handleComponent.postHandle(requestBody);
-      setDefaultMas(masRequest.getMas(), handle);
-      var mas = buildMachineAnnotationService(masRequest.getMas(), 1, userId, handle,
+      setDefaultMas(masRequest, handle);
+      var mas = buildMachineAnnotationService(masRequest, 1, userId, handle,
           Instant.now());
       repository.createMachineAnnotationService(mas);
       createDeployment(mas, masRequest);
@@ -112,7 +111,6 @@ public class MachineAnnotationServiceService {
     } catch (PidCreationException | PidAuthenticationException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }
-
   }
 
   private MachineAnnotationService buildMachineAnnotationService(
@@ -146,7 +144,9 @@ public class MachineAnnotationServiceService {
         .withOdsTopicName(mas.getOdsTopicName())
         .withOdsMaxReplicas(mas.getOdsMaxReplicas())
         .withOdsBatchingPermitted(mas.getOdsBatchingPermitted())
-        .withOdsTimeToLive(mas.getOdsTimeToLive());
+        .withOdsTimeToLive(mas.getOdsTimeToLive())
+        .withOdsHasSecret(mas.getOdsHasSecret())
+        .withOdsHasEnvironment(mas.getOdsHasEnvironment());
   }
 
   private OdsTargetDigitalObjectFilter__1 buildTargetFilters(
@@ -168,7 +168,7 @@ public class MachineAnnotationServiceService {
   }
 
   private void createDeployment(MachineAnnotationService mas,
-      MachineAnnotationServiceRequestWrapper masRequest)
+      MachineAnnotationServiceRequest masRequest)
       throws ProcessingFailedException {
     var successfulDeployment = false;
     try {
@@ -199,7 +199,7 @@ public class MachineAnnotationServiceService {
   }
 
   private boolean deployMasToCluster(MachineAnnotationService mas,
-      boolean create, MachineAnnotationServiceRequestWrapper masRequest)
+      boolean create, MachineAnnotationServiceRequest masRequest)
       throws KubernetesFailedException {
     var shortPid = getName(mas.getId());
     try {
@@ -228,7 +228,7 @@ public class MachineAnnotationServiceService {
   }
 
   private V1Deployment getV1Deployment(MachineAnnotationService mas, String shortPid,
-      MachineAnnotationServiceRequestWrapper masRequest)
+      MachineAnnotationServiceRequest masRequest)
       throws IOException, TemplateException {
     var templateProperties = getDeploymentTemplateProperties(mas, shortPid);
     var deploymentString = fillDeploymentTemplate(templateProperties, masRequest);
@@ -272,13 +272,13 @@ public class MachineAnnotationServiceService {
     return map;
   }
 
-  private List<JsonNode> addMasKeys(MachineAnnotationServiceRequestWrapper masRequest) {
+  private List<JsonNode> addMasKeys(MachineAnnotationServiceRequest masRequest) {
     var keyNode = new ArrayList<JsonNode>();
     if (masRequest == null) {
       return List.of(mapper.createObjectNode());
     }
-    if (masRequest.getEnvironment() != null) {
-      masRequest.getEnvironment().forEach(env -> {
+    if (masRequest.getOdsHasEnvironment() != null) {
+      masRequest.getOdsHasEnvironment().forEach(env -> {
         if (env.getValue() instanceof String stringVal) {
           keyNode.add(mapper.createObjectNode()
               .put(NAME, env.getName())
@@ -295,20 +295,20 @@ public class MachineAnnotationServiceService {
           throw new IllegalArgumentException();
         }
       });
-      if (masRequest.getSecrets() != null) {
-        masRequest.getSecrets().forEach(secret -> keyNode.add(mapper.createObjectNode()
-            .put(NAME, secret.getName())
-            .set("valueFrom", mapper.createObjectNode()
-                .set("secretKeyRef", mapper.createObjectNode()
-                    .put(NAME, secret.getSecretKeyRef().getName())
-                    .put("key", secret.getSecretKeyRef().getKey())))));
-      }
+    }
+    if (masRequest.getOdsHasSecret() != null) {
+      masRequest.getOdsHasSecret().forEach(secret -> keyNode.add(mapper.createObjectNode()
+          .put(NAME, secret.getSecretName())
+          .set("valueFrom", mapper.createObjectNode()
+              .set("secretKeyRef", mapper.createObjectNode()
+                  .put(NAME, properties.getMasSecretStore())
+                  .put("key", secret.getSecretKeyRef())))));
     }
     return keyNode;
   }
 
   private String fillDeploymentTemplate(Map<String, Object> templateProperties,
-      MachineAnnotationServiceRequestWrapper masRequest)
+      MachineAnnotationServiceRequest masRequest)
       throws IOException, TemplateException {
     var writer = new StringWriter();
     deploymentTemplate.process(templateProperties, writer);
@@ -366,15 +366,16 @@ public class MachineAnnotationServiceService {
   }
 
   public JsonApiWrapper updateMachineAnnotationService(String id,
-      MachineAnnotationServiceRequestWrapper masRequest, String userId, String path)
+      MachineAnnotationServiceRequest masRequest, String userId, String path)
       throws NotFoundException, ProcessingFailedException {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var currentMas = currentMasOptional.get();
-      setDefaultMas(masRequest.getMas(), id);
-      var machineAnnotationService = buildMachineAnnotationService(masRequest.getMas(),
+      setDefaultMas(masRequest, id);
+      var machineAnnotationService = buildMachineAnnotationService(masRequest,
           currentMas.getSchemaVersion() + 1, userId, id, Instant.now());
       if (isEqual(machineAnnotationService, currentMas)) {
+        log.debug("No changes found for MAS");
         return null;
       } else {
         repository.updateMachineAnnotationService(machineAnnotationService);
@@ -412,7 +413,7 @@ public class MachineAnnotationServiceService {
   }
 
   private void updateDeployment(MachineAnnotationService mas,
-      MachineAnnotationService currentMas, MachineAnnotationServiceRequestWrapper masRequest)
+      MachineAnnotationService currentMas, MachineAnnotationServiceRequest masRequest)
       throws ProcessingFailedException {
     var successfulDeployment = false;
     try {
@@ -463,7 +464,7 @@ public class MachineAnnotationServiceService {
   }
 
   private void publishUpdateEvent(MachineAnnotationService mas,
-      MachineAnnotationService currentMas, MachineAnnotationServiceRequestWrapper masRequest)
+      MachineAnnotationService currentMas, MachineAnnotationServiceRequest masRequest)
       throws ProcessingFailedException {
     try {
       kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(mas),
@@ -477,7 +478,7 @@ public class MachineAnnotationServiceService {
 
   private void rollbackToPreviousVersion(MachineAnnotationService currentMas,
       boolean rollbackDeployment, boolean rollbackKeda,
-      MachineAnnotationServiceRequestWrapper masRequest)
+      MachineAnnotationServiceRequest masRequest)
       throws ProcessingFailedException {
     repository.updateMachineAnnotationService(currentMas);
     if (rollbackDeployment) {

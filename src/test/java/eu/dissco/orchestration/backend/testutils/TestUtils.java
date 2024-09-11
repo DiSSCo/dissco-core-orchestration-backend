@@ -15,17 +15,15 @@ import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest.OdsMappingDataStandard;
 import eu.dissco.orchestration.backend.schema.DefaultMapping;
-import eu.dissco.orchestration.backend.schema.Environment;
 import eu.dissco.orchestration.backend.schema.FieldMapping;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceEnvironment;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequestWrapper;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceSecret;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
-import eu.dissco.orchestration.backend.schema.Secret;
-import eu.dissco.orchestration.backend.schema.SecretKeyRef;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
@@ -261,7 +259,7 @@ public class TestUtils {
   public static JsonApiRequestWrapper givenMasRequestJson() {
     return new JsonApiRequestWrapper(new JsonApiRequest(
         ObjectType.MAS,
-        MAPPER.valueToTree(givenMasRequestWrapper())
+        MAPPER.valueToTree(givenMasRequest())
     ));
   }
 
@@ -285,29 +283,21 @@ public class TestUtils {
         .withOdsTopicName("fancy-topic-name")
         .withOdsMaxReplicas(5)
         .withOdsBatchingPermitted(false)
-        .withOdsTimeToLive(TTL);
-
+        .withOdsTimeToLive(TTL)
+        .withOdsHasSecret(givenMasSecrets())
+        .withOdsHasEnvironment(givenMasEnvironment());
   }
 
-  public static MachineAnnotationServiceRequestWrapper givenMasRequestWrapper() {
-    return new MachineAnnotationServiceRequestWrapper()
-        .withMas(givenMasRequest())
-        .withEnvironment(givenMasEnvironment())
-        .withSecrets(givenMasSecrets());
-  }
-
-  public static List<Environment> givenMasEnvironment() {
-    return List.of(new Environment()
+  public static List<MachineAnnotationServiceEnvironment> givenMasEnvironment() {
+    return List.of(new MachineAnnotationServiceEnvironment()
         .withName("server.port")
         .withValue(8080));
   }
 
-  public static List<Secret> givenMasSecrets(){
-    return List.of(new Secret()
-        .withName("spring.datasource.password")
-        .withSecretKeyRef(new SecretKeyRef()
-            .withName("aws-secrets")
-            .withKey("db-password")));
+  public static List<MachineAnnotationServiceSecret> givenMasSecrets() {
+    return List.of(new MachineAnnotationServiceSecret()
+        .withSecretName("spring.datasource.password")
+        .withSecretKeyRef("db-password"));
   }
 
   public static MachineAnnotationService givenMas() {
@@ -352,7 +342,9 @@ public class TestUtils {
         .withOdsTopicName("fancy-topic-name")
         .withOdsMaxReplicas(5)
         .withOdsBatchingPermitted(false)
-        .withOdsTimeToLive(ttl);
+        .withOdsTimeToLive(ttl)
+        .withOdsHasEnvironment(givenMasEnvironment())
+        .withOdsHasSecret(givenMasSecrets());
   }
 
   public static JsonNode givenMasHandleRequest() throws Exception {

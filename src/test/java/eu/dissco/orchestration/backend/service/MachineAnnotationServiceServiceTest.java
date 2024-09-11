@@ -13,7 +13,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasEnvironment;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequestWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSecrets;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
@@ -42,11 +41,10 @@ import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
-import eu.dissco.orchestration.backend.schema.Environment;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequestWrapper;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceEnvironment;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceSecret;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
-import eu.dissco.orchestration.backend.schema.Secret;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
 import io.kubernetes.client.openapi.ApiException;
@@ -112,7 +110,6 @@ class MachineAnnotationServiceServiceTest {
   @BeforeEach
   void setup() throws IOException {
     initTime();
-
     initFreeMaker();
     var kedaTemplate = configuration.getTemplate("keda-template.ftl");
     var deploymentTemplate = configuration.getTemplate("mas-template.ftl");
@@ -133,13 +130,20 @@ class MachineAnnotationServiceServiceTest {
 
   @ParameterizedTest
   @MethodSource("masKeys")
-  void testCreateMas(List<Environment> masEnv, List<Secret> masSecret) throws Exception {
+  void testCreateMas(List<MachineAnnotationServiceEnvironment> masEnv,
+      List<MachineAnnotationServiceSecret> masSecret) throws Exception {
     // Given
-    var expected = givenMasSingleJsonApiWrapper();
-    var masRequest = new MachineAnnotationServiceRequestWrapper()
-        .withMas(givenMasRequest())
-        .withEnvironment(masEnv)
-        .withSecrets(masSecret);
+    var expectedMas = givenMas()
+        .withOdsHasEnvironment(masEnv)
+        .withOdsHasSecret(masSecret);
+    var expected = new JsonApiWrapper(new JsonApiData(
+        expectedMas.getId(),
+        ObjectType.MAS,
+        flattenMas(expectedMas)
+    ), new JsonApiLinks(MAS_PATH));
+    var masRequest = givenMasRequest()
+        .withOdsHasEnvironment(masEnv)
+        .withOdsHasSecret(masSecret);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
@@ -156,15 +160,15 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
-    then(fdoRecordService).should().buildCreateRequest(masRequest.getMas(), ObjectType.MAS);
-    then(repository).should().createMachineAnnotationService(givenMas());
+    then(fdoRecordService).should().buildCreateRequest(masRequest, ObjectType.MAS);
+    then(repository).should().createMachineAnnotationService(expectedMas);
     then(appsV1Api).should()
         .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
     then(customObjectsApi).should()
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             any(Object.class));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(givenMas()));
+        .publishCreateEvent(MAPPER.valueToTree(expectedMas));
   }
 
   @ParameterizedTest
@@ -182,13 +186,11 @@ class MachineAnnotationServiceServiceTest {
         flattenMas(mas)
     ), new JsonApiLinks(MAS_PATH));
 
-    var masRequest = new MachineAnnotationServiceRequestWrapper()
-        .withMas(
-            givenMasRequest()
-                .withSchemaContactPoint(null)
-                .withOdsTopicName(null)
-                .withOdsMaxReplicas(maxReplicas)
-        );
+    var masRequest =
+        givenMasRequest()
+            .withSchemaContactPoint(null)
+            .withOdsTopicName(null)
+            .withOdsMaxReplicas(maxReplicas);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
@@ -205,7 +207,7 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
-    then(fdoRecordService).should().buildCreateRequest(masRequest.getMas(), ObjectType.MAS);
+    then(fdoRecordService).should().buildCreateRequest(masRequest, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(mas);
     then(appsV1Api).should()
         .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
@@ -219,7 +221,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testCreateMasHandleFails() throws Exception {
     // Given
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
 
     // Then
@@ -230,7 +232,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testCreateMasDeployFails() throws Exception {
     // Given
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
@@ -254,7 +256,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testCreateKedaFails() throws Exception {
     // Given
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
@@ -287,7 +289,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testCreateMasKafkaFails() throws Exception {
     // Given
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
@@ -312,7 +314,7 @@ class MachineAnnotationServiceServiceTest {
         () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
 
     // Then
-    then(fdoRecordService).should().buildCreateRequest(mas.getMas(), ObjectType.MAS);
+    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMas());
     then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
@@ -335,7 +337,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testCreateMasKafkaAndPidFails() throws Exception {
     // Given
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
@@ -361,7 +363,7 @@ class MachineAnnotationServiceServiceTest {
         () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
 
     // Then
-    then(fdoRecordService).should().buildCreateRequest(mas.getMas(), ObjectType.MAS);
+    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
     then(repository).should().createMachineAnnotationService(givenMas());
     then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
@@ -387,7 +389,7 @@ class MachineAnnotationServiceServiceTest {
     // Given
     var expected = givenMasSingleJsonApiWrapper(2);
     var prevMas = buildOptionalPrev();
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
@@ -425,7 +427,7 @@ class MachineAnnotationServiceServiceTest {
   void testUpdateMasDeployFails() throws Exception {
     // Given
     var prevMas = buildOptionalPrev();
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
@@ -464,7 +466,7 @@ class MachineAnnotationServiceServiceTest {
   void testUpdateKedaFails() throws ApiException {
     // Given
     var prevMas = buildOptionalPrev();
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
@@ -492,7 +494,7 @@ class MachineAnnotationServiceServiceTest {
   void testUpdateMasKafkaFails() throws Exception {
     // Given
     var prevMas = buildOptionalPrev();
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
@@ -530,7 +532,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testUpdateMasEqual() throws Exception {
     // Given
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
         Optional.of(givenMas()));
 
@@ -544,7 +546,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testUpdateMasNotFound() {
     // Given
-    var mas = givenMasRequestWrapper();
+    var mas = givenMasRequest();
     given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(Optional.empty());
 
     // When/Then
@@ -716,9 +718,9 @@ class MachineAnnotationServiceServiceTest {
     return Stream.of(
         Arguments.of(null, null),
         Arguments.of(givenMasEnvironment(), givenMasSecrets()),
-        Arguments.of(List.of(new Environment("name", 1)), givenMasSecrets()),
-        Arguments.of(List.of(new Environment("name", true)), givenMasSecrets())
-        );
+        Arguments.of(List.of(new MachineAnnotationServiceEnvironment("name", 1)), givenMasSecrets()),
+        Arguments.of(List.of(new MachineAnnotationServiceEnvironment("name", true)), givenMasSecrets())
+    );
   }
 
   private Optional<MachineAnnotationService> buildOptionalPrev() {
