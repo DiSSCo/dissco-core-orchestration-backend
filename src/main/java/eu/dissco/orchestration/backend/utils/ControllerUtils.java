@@ -1,8 +1,8 @@
 package eu.dissco.orchestration.backend.utils;
 
+import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.Agent.Type;
-import jakarta.ws.rs.ForbiddenException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -30,7 +30,7 @@ public class ControllerUtils {
           .withId((String) claims.get("orcid"));
     } else {
       log.error("Missing ORCID in token");
-      throw new ForbiddenException("Missing ORCID in token");
+      throw new ForbiddenException("No ORCID provided");
     }
   }
 

@@ -8,6 +8,7 @@ import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
@@ -44,7 +45,7 @@ public class DataMappingController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createDataMapping(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, ProcessingFailedException {
+      throws JsonProcessingException, ProcessingFailedException, ForbiddenException {
     var dataMapping = getDataMappingRequestFromRequest(requestBody);
     var userId = getAgent(authentication).getId();
     log.info("Received create request for data mapping: {} from user: {}", dataMapping, userId);
@@ -57,7 +58,7 @@ public class DataMappingController {
   public ResponseEntity<JsonApiWrapper> updateDataMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
+      throws JsonProcessingException, NotFoundException, ProcessingFailedException, ForbiddenException {
     var dataMapping = getDataMappingRequestFromRequest(requestBody);
     var id = prefix + '/' + suffix;
     var userId = getAgent(authentication).getId();
@@ -75,7 +76,7 @@ public class DataMappingController {
   @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> tombstoneDataMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
-      throws NotFoundException, ProcessingFailedException {
+      throws NotFoundException, ProcessingFailedException, ForbiddenException {
     String id = prefix + "/" + suffix;
     var agent = getAgent(authentication);
     log.info("Received delete request for mapping: {} from user: {}", id, agent.getId());
