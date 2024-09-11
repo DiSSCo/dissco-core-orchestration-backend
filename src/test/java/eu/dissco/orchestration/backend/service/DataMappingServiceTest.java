@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -280,6 +281,18 @@ class DataMappingServiceTest {
 
     // Then
     assertThrowsExactly(NotFoundException.class,
+        () -> service.tombstoneDataMapping(BARE_HANDLE, givenAgent()));
+  }
+
+  @Test
+  void testTombstoneDataMappingKafkaFailed() throws Exception {
+    // Given
+    given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(
+        Optional.of(givenDataMapping(HANDLE, 1)));
+    doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishTombstoneEvent(any(), any());
+
+    // Then
+    assertThrowsExactly(ProcessingFailedException.class,
         () -> service.tombstoneDataMapping(BARE_HANDLE, givenAgent()));
   }
 

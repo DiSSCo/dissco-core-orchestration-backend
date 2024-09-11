@@ -1,7 +1,6 @@
 package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
-import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -189,7 +188,7 @@ public class DataMappingService {
     var result = repository.getActiveDataMapping(id);
     if (result.isPresent()) {
       var dataMapping = result.get();
-      tombstoneHandle(dataMapping);
+      tombstoneHandle(id);
       var timestamp = Instant.now();
       var tombstoneDataMapping = buildTombstoneDataMapping(dataMapping, agent, timestamp);
       repository.tombstoneDataMapping(tombstoneDataMapping, timestamp);
@@ -197,7 +196,7 @@ public class DataMappingService {
         kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneDataMapping),
             mapper.valueToTree(tombstoneDataMapping));
       } catch (JsonProcessingException e){
-        log.error("Unable to publish tombstone event to prov service", e);
+        log.error("Unable to publish tombstone event to provenance service", e);
         throw new ProcessingFailedException("Unable to publish tombstone event to provenance service", e);
       }
     } else {
@@ -205,8 +204,7 @@ public class DataMappingService {
     }
   }
 
-  private void tombstoneHandle(DataMapping dataMapping) throws ProcessingFailedException {
-    var handle = removeProxy(dataMapping.getId());
+  private void tombstoneHandle(String handle) throws ProcessingFailedException {
     var request = fdoRecordService.buildTombstoneRequest(ObjectType.DATA_MAPPING, handle);
     try {
       handleComponent.tombstoneHandle(request, handle);

@@ -507,7 +507,8 @@ public class MachineAnnotationServiceService {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var mas = currentMasOptional.get();
-      tombstoneHandle(mas);
+      deleteDeployment(mas);
+      tombstoneHandle(id);
       var timestamp = Instant.now();
       var tombstoneMas = buildTombstoneMachineAnnotationService(mas, agent, timestamp);
       repository.tombstoneMachineAnnotationService(tombstoneMas, timestamp);
@@ -517,14 +518,12 @@ public class MachineAnnotationServiceService {
         log.error("Unable to publish tombstone event to provenance service", e);
         throw new ProcessingFailedException("Unable to publish tombstone event to provenance service", e);
       }
-      deleteDeployment(currentMasOptional.get());
     } else {
       throw new NotFoundException("Requested machine annotation system: " + id + "does not exist");
     }
   }
 
-  private void tombstoneHandle(MachineAnnotationService mas) throws ProcessingFailedException {
-    var handle = removeProxy(mas.getId());
+  private void tombstoneHandle(String handle) throws ProcessingFailedException {
     var request = fdoRecordService.buildTombstoneRequest(ObjectType.MAS, handle);
     try {
       handleComponent.tombstoneHandle(request, handle);
@@ -581,7 +580,6 @@ public class MachineAnnotationServiceService {
       log.error(
           "Deletion of kubernetes deployment failed for record: {}, with code: {} and message: {}",
           currentMas, e.getCode(), e.getResponseBody());
-      repository.createMachineAnnotationService(currentMas);
       throw new ProcessingFailedException("Failed to delete kubernetes resources", e);
     }
     try {
@@ -592,7 +590,6 @@ public class MachineAnnotationServiceService {
       log.error(
           "Deletion of kubernetes keda failed for record: {}, with code: {} and message: {}",
           currentMas, e.getCode(), e.getResponseBody());
-      repository.createMachineAnnotationService(currentMas);
       try {
         deployMasToCluster(currentMas, true, null);
       } catch (KubernetesFailedException ex) {

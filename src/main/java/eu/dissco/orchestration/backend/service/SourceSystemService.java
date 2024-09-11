@@ -377,7 +377,7 @@ public class SourceSystemService {
       } catch (ApiException e) {
         throw new ProcessingFailedException("Failed to delete cronJob for source system: " + id, e);
       }
-      tombstoneHandle(sourceSystem);
+      tombstoneHandle(id);
       var timestamp = Instant.now();
       var tombstoneSourceSystem = buildTombstoneSourceSystem(sourceSystem, agent, timestamp);
       repository.tombstoneSourceSystem(tombstoneSourceSystem, timestamp);
@@ -393,8 +393,7 @@ public class SourceSystemService {
     }
   }
 
-  private void tombstoneHandle(SourceSystem sourceSystem) throws ProcessingFailedException {
-    var handle = removeProxy(sourceSystem.getId());
+  private void tombstoneHandle(String handle) throws ProcessingFailedException {
     var request = fdoRecordService.buildTombstoneRequest(ObjectType.SOURCE_SYSTEM, handle);
     try {
       handleComponent.tombstoneHandle(request, handle);
@@ -426,9 +425,7 @@ public class SourceSystemService {
         .withOdsTombstoneMetadata(
             buildTombstoneMetadata(tombstoningAgent,
                 "Source System tombstoned by user through the orchestration backend", timestamp));
-
   }
-
 
   private JsonApiListWrapper wrapResponse(List<SourceSystem> sourceSystems, int pageNum,
       int pageSize, String path) {

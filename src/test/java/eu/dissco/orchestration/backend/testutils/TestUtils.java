@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.testutils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -65,7 +66,6 @@ public class TestUtils {
   public static final String SOURCE_SYSTEM_TYPE_DOI = "https://hdl.handle.net/21.T11148/417a4f472f60f7974c12";
   public static final String DATA_MAPPING_TYPE_DOI = "https://hdl.handle.net/21.T11148/ce794a6f4df42eb7e77e";
   public static final String MAS_TYPE_DOI = "https://hdl.handle.net/21.T11148/22e71a0015cbcfba8ffa";
-
 
   private TestUtils() {
     throw new IllegalStateException("Utility class");
@@ -413,6 +413,21 @@ public class TestUtils {
           "data":
             [{"id":"20.5000.1025/GW0-POP-XSL"}]
         }""");
+  }
+
+  public static JsonNode givenTombstoneRequestMas() throws JsonProcessingException {
+    return MAPPER.readTree("""
+        {
+          "data": {
+            "id": "20.5000.1025/GW0-POP-XSL",
+            "type": "https://doi.org/21.T11148/22e71a0015cbcfba8ffa",
+            "attributes": {
+              "tombstoneText": "ods:MachineAnnotationService tombstoned by user through the orchestration backend"
+            }
+          }
+        }
+        """);
+
   }
 
   public static TombstoneMetadata givenTombstoneMetadata(ObjectType objectType) {
