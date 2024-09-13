@@ -1,7 +1,6 @@
 package eu.dissco.orchestration.backend.web;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
 import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.properties.TokenProperties;
 import java.nio.charset.StandardCharsets;
@@ -34,12 +33,12 @@ public class TokenAuthenticator {
         .acceptCharset(StandardCharsets.UTF_8)
         .retrieve()
         .onStatus(HttpStatus.UNAUTHORIZED::equals,
-            r -> Mono.error(new PidAuthenticationException("Service is unauthorized.")))
+            r -> Mono.error(new PidException("Service is unauthorized.")))
         .bodyToMono(JsonNode.class)
         .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(2))
             .filter(WebClientUtils::is5xxServerError)
             .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                new PidAuthenticationException(
+                new PidException(
                     "External Service failed to process after max retries")
             ));
     try {

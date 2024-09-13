@@ -1,7 +1,6 @@
 package eu.dissco.orchestration.backend.web;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
 import eu.dissco.orchestration.backend.exception.PidException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -42,7 +41,7 @@ public class HandleComponent {
 
   public void tombstoneHandle(JsonNode request, String id)
       throws PidException {
-    var requestBody = BodyInserters.fromValue(List.of(request));
+    var requestBody = BodyInserters.fromValue(request);
     var response = sendRequest(HttpMethod.PUT, requestBody, id);
     validateResponse(response);
   }
@@ -67,7 +66,7 @@ public class HandleComponent {
         .retrieve()
         .onStatus(HttpStatus.UNAUTHORIZED::equals,
             r -> Mono.error(
-                new PidAuthenticationException("Unable to authenticate with Handle Service.")))
+                new PidException("Unable to authenticate with Handle Service.")))
         .onStatus(HttpStatusCode::is4xxClientError, r -> Mono.error(new PidException(
             "Unable to create PID. Response from Handle API: " + r.statusCode())))
         .bodyToMono(JsonNode.class).retryWhen(
@@ -86,11 +85,6 @@ public class HandleComponent {
       throw new PidException(
           "Interrupted execution: A connection error has occurred in creating a handle.");
     } catch (ExecutionException e) {
-      if (e.getCause().getClass().equals(PidAuthenticationException.class)) {
-        log.error(
-            "Token obtained from Keycloak not accepted by Handle Server. Check Keycloak configuration.");
-        throw new PidException(e.getCause().getMessage());
-      }
       throw new PidException(e.getCause().getMessage());
     }
   }
