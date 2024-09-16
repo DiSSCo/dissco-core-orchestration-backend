@@ -86,13 +86,18 @@ public class ProvenanceService {
   }
 
   private static String getRdfsComment(ProvActivity.Type activityType) {
-    if (ProvActivity.Type.ODS_CREATE.equals(activityType)) {
-      return "Object newly created";
+    switch (activityType) {
+      case ODS_CREATE -> {
+        return "Object newly created";
+      }
+      case ODS_UPDATE -> {
+        return "Object updated";
+      }
+      case ODS_TOMBSTONE -> {
+        return "Object tombstoned";
+      }
     }
-    if (ProvActivity.Type.ODS_UPDATE.equals(activityType)) {
-      return "Object updated";
-    }
-    return "Object tombstoned";
+    return null;
   }
 
   private List<OdsChangeValue> mapJsonPatch(JsonNode jsonPatch) {
