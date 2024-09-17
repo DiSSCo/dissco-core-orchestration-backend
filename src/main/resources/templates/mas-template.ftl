@@ -21,6 +21,8 @@
         }
       },
       "spec": {
+        "serviceAccountName":"mas-secret-manager",
+        "automountServiceAccountToken": true,
         "containers": [
           {
           "name": "${pid}",
