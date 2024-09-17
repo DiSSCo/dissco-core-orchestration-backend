@@ -3,6 +3,7 @@ package eu.dissco.orchestration.backend.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,15 @@ class RestResponseEntityEntityExceptionHandlerTest {
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+  }
+
+  @Test
+  void testForbiddenException() {
+    // When
+    var result = exceptionHandler.forbiddenException(new ForbiddenException(""));
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
   }
 
 }

@@ -16,18 +16,27 @@ public class KafkaPublisherService {
   private final KafkaTemplate<String, String> kafkaTemplate;
   private final ObjectMapper mapper;
   private final ProvenanceService provenanceService;
+  private static final String TOPIC = "createUpdateDeleteTopic";
 
   public void publishCreateEvent(JsonNode object)
       throws JsonProcessingException {
     var event = provenanceService.generateCreateEvent(object);
     log.info("Publishing new create message to queue: {}", event);
-    kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
+    kafkaTemplate.send(TOPIC, mapper.writeValueAsString(event));
   }
 
   public void publishUpdateEvent(JsonNode object, JsonNode currentObject)
       throws JsonProcessingException {
     var event = provenanceService.generateUpdateEvent(object, currentObject);
     log.info("Publishing new update message to queue: {}", event);
-    kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
+    kafkaTemplate.send(TOPIC, mapper.writeValueAsString(event));
   }
+
+  public void publishTombstoneEvent(JsonNode tombstoneObject, JsonNode currentObject)
+      throws JsonProcessingException {
+    var event = provenanceService.generateTombstoneEvent(tombstoneObject, currentObject);
+    log.info("Publishing new tombstone message to queue: {}", event);
+    kafkaTemplate.send(TOPIC, mapper.writeValueAsString(event));
+  }
+
 }

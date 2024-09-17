@@ -53,5 +53,15 @@ class KafkaPublisherServiceTest {
     then(kafkaTemplate).should().send(eq("createUpdateDeleteTopic"), anyString());
   }
 
+  @Test
+  void testPublishTombstoneEvent() throws Exception {
+    // Given
 
+    // When
+    service.publishTombstoneEvent(MAPPER.valueToTree(TestUtils.givenTombstoneMas()),
+        MAPPER.valueToTree(TestUtils.givenMas()));
+
+    // Then
+    then(kafkaTemplate).should().send(eq("createUpdateDeleteTopic"), anyString());
+  }
 }

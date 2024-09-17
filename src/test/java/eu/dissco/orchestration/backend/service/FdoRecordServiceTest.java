@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.service;
 
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequest;
@@ -9,6 +10,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasReques
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenRollbackCreationRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemHandleRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneRequestMas;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -67,7 +69,18 @@ class FdoRecordServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+  }
 
+  @Test
+  void testTombstonePid() throws Exception {
+    // given
+    var expected = givenTombstoneRequestMas();
+
+    // When
+    var result = builder.buildTombstoneRequest(ObjectType.MAS, BARE_HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
   }
 
 }

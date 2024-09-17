@@ -1,18 +1,20 @@
 package eu.dissco.orchestration.backend.repository;
 
 import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOTATION_SERVICE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.TTL;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
@@ -138,16 +140,18 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   void testDeleteMas() {
     // Given
     var mas = givenMas();
-    mas.setOdsTombstoneMetadata(givenTombstoneMetadata());
+    mas.setOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.MAS));
     postMass(List.of(mas));
 
     // When
-    repository.deleteMachineAnnotationService(HANDLE, Date.from(CREATED));
-    var result = repository.getMachineAnnotationService(HANDLE);
+    repository.tombstoneMachineAnnotationService(mas, UPDATED);
+    var result = context.select(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED)
+        .from(MACHINE_ANNOTATION_SERVICE)
+        .where(MACHINE_ANNOTATION_SERVICE.ID.eq(BARE_HANDLE))
+        .fetchOne(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED, Instant.class);
 
     // Then
-    assertThat(result.getOdsTombstoneMetadata().getOdsTombstoneDate()).isEqualTo(
-        Date.from(CREATED));
+    assertThat(result).isEqualTo(UPDATED);
   }
 
   private MachineAnnotationService givenMasWithId(Integer i) {
@@ -173,7 +177,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     // Given
     var expected = givenMas();
     postMass(List.of(expected));
-    repository.deleteMachineAnnotationService(HANDLE, Date.from(Instant.now()));
+    repository.tombstoneMachineAnnotationService(expected, CREATED);
 
     // When
     var result = repository.getActiveMachineAnnotationService(HANDLE);

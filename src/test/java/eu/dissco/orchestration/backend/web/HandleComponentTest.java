@@ -9,8 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
-import eu.dissco.orchestration.backend.exception.PidCreationException;
+import eu.dissco.orchestration.backend.exception.PidException;
 import java.io.IOException;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -88,7 +87,7 @@ class HandleComponentTest {
         .addHeader("Content-Type", "application/json"));
 
     // Then
-    assertThrows(PidAuthenticationException.class, () -> handleComponent.postHandle(requestBody));
+    assertThrows(PidException.class, () -> handleComponent.postHandle(requestBody));
   }
 
   @Test
@@ -100,7 +99,7 @@ class HandleComponentTest {
         .addHeader("Content-Type", "application/json"));
 
     // Then
-    assertThrows(PidCreationException.class, () -> handleComponent.postHandle(requestBody));
+    assertThrows(PidException.class, () -> handleComponent.postHandle(requestBody));
   }
 
   @Test
@@ -136,7 +135,7 @@ class HandleComponentTest {
     Thread.currentThread().interrupt();
 
     // When
-    var response = assertThrows(PidCreationException.class,
+    var response = assertThrows(PidException.class,
         () -> handleComponent.postHandle(requestBody));
 
     // Then
@@ -156,7 +155,7 @@ class HandleComponentTest {
     mockHandleServer.enqueue(new MockResponse().setResponseCode(501));
 
     // Then
-    assertThrows(PidCreationException.class, () -> handleComponent.postHandle(requestBody));
+    assertThrows(PidException.class, () -> handleComponent.postHandle(requestBody));
     assertThat(mockHandleServer.getRequestCount() - requestCount).isEqualTo(4);
   }
 
@@ -179,7 +178,7 @@ class HandleComponentTest {
         .setBody(MAPPER.writeValueAsString(responseBody))
         .addHeader("Content-Type", "application/json"));
     // Then
-    assertThrows(PidCreationException.class, () -> handleComponent.postHandle(requestBody));
+    assertThrows(PidException.class, () -> handleComponent.postHandle(requestBody));
   }
 
   @Test
@@ -192,7 +191,7 @@ class HandleComponentTest {
         .setBody(MAPPER.writeValueAsString(responseBody))
         .addHeader("Content-Type", "application/json"));
     // Then
-    assertThrows(PidCreationException.class, () -> handleComponent.postHandle(requestBody));
+    assertThrows(PidException.class, () -> handleComponent.postHandle(requestBody));
   }
 
   private JsonNode givenHandleApiResponse() throws Exception {

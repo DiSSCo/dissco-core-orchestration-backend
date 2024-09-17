@@ -8,6 +8,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenClaims;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequestJson;
@@ -17,6 +18,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
@@ -32,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @ExtendWith(MockitoExtension.class)
 class DataMappingControllerTest {
@@ -116,7 +119,8 @@ class DataMappingControllerTest {
   @Test
   void testDeleteSourceSystem() throws Exception {
     // When
-    var result = controller.deleteDataMapping(authentication, PREFIX, SUFFIX);
+    givenAuthentication();
+    var result = controller.tombstoneDataMapping(authentication, PREFIX, SUFFIX);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -143,7 +147,8 @@ class DataMappingControllerTest {
   }
 
   private void givenAuthentication() {
-    given(authentication.getName()).willReturn(OBJECT_CREATOR);
+    var principal = mock(Jwt.class);
+    given(authentication.getPrincipal()).willReturn(principal);
+    given(principal.getClaims()).willReturn(givenClaims());
   }
-
 }

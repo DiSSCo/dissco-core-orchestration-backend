@@ -1,6 +1,7 @@
 package eu.dissco.orchestration.backend.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,5 +29,11 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<String> illegalArgumentException(IllegalArgumentException e) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+  }
+
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  @ExceptionHandler(ForbiddenException.class)
+  public ResponseEntity<String> forbiddenException(ForbiddenException e) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
   }
 }

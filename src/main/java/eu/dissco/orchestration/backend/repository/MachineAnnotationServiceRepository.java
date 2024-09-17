@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -76,10 +76,13 @@ public class MachineAnnotationServiceRepository {
     }
   }
 
-  public void deleteMachineAnnotationService(String id, Date deleted) {
+  public void tombstoneMachineAnnotationService(MachineAnnotationService tombstoneMas, Instant timestamp) {
     context.update(MACHINE_ANNOTATION_SERVICE)
-        .set(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED, deleted.toInstant())
-        .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(id)))
+        .set(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED, timestamp)
+        .set(MACHINE_ANNOTATION_SERVICE.DATE_MODIFIED, timestamp)
+        .set(MACHINE_ANNOTATION_SERVICE.VERSION, tombstoneMas.getSchemaVersion())
+        .set(MACHINE_ANNOTATION_SERVICE.DATA, mapToJSONB(tombstoneMas))
+        .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(tombstoneMas.getId())))
         .execute();
   }
 

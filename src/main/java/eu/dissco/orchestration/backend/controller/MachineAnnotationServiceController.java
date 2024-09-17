@@ -1,11 +1,14 @@
 package eu.dissco.orchestration.backend.controller;
 
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
@@ -43,9 +46,9 @@ public class MachineAnnotationServiceController {
   public ResponseEntity<JsonApiWrapper> createMachineAnnotationService(
       Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, ProcessingFailedException {
+      throws JsonProcessingException, ProcessingFailedException, ForbiddenException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = authentication.getName();
+    var userId = getAgent(authentication).getId();
     log.info("Received create request for machine annotation service: {} from user: {}",
         machineAnnotationService, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
@@ -58,9 +61,9 @@ public class MachineAnnotationServiceController {
       Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
+      throws JsonProcessingException, NotFoundException, ProcessingFailedException, ForbiddenException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = authentication.getName();
+    var userId = getAgent(authentication).getId();
     var id = prefix + '/' + suffix;
     log.info("Received update request for machine annotation service: {} from user: {}", id,
         userId);
@@ -75,14 +78,14 @@ public class MachineAnnotationServiceController {
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteMachineAnnotationService(Authentication authentication,
+  public ResponseEntity<Void> tombstoneMachineAnnotationService(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
-      throws NotFoundException, ProcessingFailedException {
+      throws NotFoundException, ProcessingFailedException, ForbiddenException {
     String id = prefix + "/" + suffix;
-    var userId = authentication.getName();
+    var agent = getAgent(authentication);
     log.info("Received delete request for machine annotation service: {} from user: {}", id,
-        userId);
-    service.deleteMachineAnnotationService(id, userId);
+        agent.getId());
+    service.tombstoneMachineAnnotationService(id, agent);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 

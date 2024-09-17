@@ -8,19 +8,23 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenDataMapping;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingSingleJsonApiWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingResponse;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneDataMapping;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,7 +33,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.PidCreationException;
+import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.repository.DataMappingRepository;
@@ -67,6 +71,7 @@ class DataMappingServiceTest {
 
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
+  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
 
   @BeforeEach
   void setup() {
@@ -125,7 +130,7 @@ class DataMappingServiceTest {
   void testCreateMasHandleFails() throws Exception {
     // Given
     var dataMapping = givenDataMappingRequest();
-    willThrow(PidCreationException.class).given(handleComponent).postHandle(any());
+    willThrow(PidException.class).given(handleComponent).postHandle(any());
 
     // Then
     assertThrowsExactly(ProcessingFailedException.class, () ->
@@ -140,7 +145,7 @@ class DataMappingServiceTest {
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)));
-    willThrow(PidCreationException.class).given(handleComponent).rollbackHandleCreation(any());
+    willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -253,23 +258,42 @@ class DataMappingServiceTest {
   }
 
   @Test
-  void testDeleteDataMapping() {
+  void testTombstoneDataMapping() throws Exception {
     // Given
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(
         Optional.of(givenDataMapping(HANDLE, 1)));
+    mockedStatic.when(Instant::now).thenReturn(UPDATED);
+    mockedClock.when(Clock::systemUTC).thenReturn(updatedClock);
+
+    // When
+    service.tombstoneDataMapping(BARE_HANDLE, givenAgent());
 
     // Then
-    assertDoesNotThrow(() -> service.deleteDataMapping(BARE_HANDLE, OBJECT_CREATOR));
+    then(repository).should().tombstoneDataMapping(givenTombstoneDataMapping(), UPDATED);
+    then(handleComponent).should().tombstoneHandle(any(), eq(BARE_HANDLE));
+    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any());
   }
 
   @Test
-  void testDeleteDataMappingNotFound() {
+  void testTombstoneDataMappingNotFound() {
     // Given
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrowsExactly(NotFoundException.class,
-        () -> service.deleteDataMapping(BARE_HANDLE, OBJECT_CREATOR));
+        () -> service.tombstoneDataMapping(BARE_HANDLE, givenAgent()));
+  }
+
+  @Test
+  void testTombstoneDataMappingKafkaFailed() throws Exception {
+    // Given
+    given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(
+        Optional.of(givenDataMapping(HANDLE, 1)));
+    doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishTombstoneEvent(any(), any());
+
+    // Then
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.tombstoneDataMapping(BARE_HANDLE, givenAgent()));
   }
 
   @Test

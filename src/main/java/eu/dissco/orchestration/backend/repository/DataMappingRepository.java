@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.DataMapping;
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -86,10 +86,13 @@ public class DataMappingRepository {
         .fetch(this::mapToDataMapping);
   }
 
-  public void deleteDataMapping(String id, Date deleted) {
+  public void tombstoneDataMapping(DataMapping tombstoneDataMapping, Instant timestamp) {
     context.update(DATA_MAPPING)
-        .set(DATA_MAPPING.DATE_TOMBSTONED, deleted.toInstant())
-        .where(DATA_MAPPING.ID.eq(removeProxy(id)))
+        .set(DATA_MAPPING.DATE_TOMBSTONED, timestamp)
+        .set(DATA_MAPPING.DATE_MODIFIED, timestamp)
+        .set(DATA_MAPPING.VERSION, tombstoneDataMapping.getSchemaVersion())
+        .set(DATA_MAPPING.DATA, mapToJSONB(tombstoneDataMapping))
+        .where(DATA_MAPPING.ID.eq(removeProxy(tombstoneDataMapping.getId())))
         .execute();
   }
 

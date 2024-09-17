@@ -1,11 +1,14 @@
 package eu.dissco.orchestration.backend.controller;
 
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
@@ -42,9 +45,9 @@ public class DataMappingController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createDataMapping(Authentication authentication,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, ProcessingFailedException {
+      throws JsonProcessingException, ProcessingFailedException, ForbiddenException {
     var dataMapping = getDataMappingRequestFromRequest(requestBody);
-    var userId = authentication.getName();
+    var userId = getAgent(authentication).getId();
     log.info("Received create request for data mapping: {} from user: {}", dataMapping, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var result = service.createDataMapping(dataMapping, userId, path);
@@ -55,10 +58,10 @@ public class DataMappingController {
   public ResponseEntity<JsonApiWrapper> updateDataMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException, ProcessingFailedException {
+      throws JsonProcessingException, NotFoundException, ProcessingFailedException, ForbiddenException {
     var dataMapping = getDataMappingRequestFromRequest(requestBody);
     var id = prefix + '/' + suffix;
-    var userId = authentication.getName();
+    var userId = getAgent(authentication).getId();
     log.info("Received update request for data mapping: {} from user: {}", dataMapping, userId);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var result = service.updateDataMapping(id, dataMapping, userId, path);
@@ -71,13 +74,13 @@ public class DataMappingController {
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> deleteDataMapping(Authentication authentication,
+  public ResponseEntity<Void> tombstoneDataMapping(Authentication authentication,
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
-      throws NotFoundException {
+      throws NotFoundException, ProcessingFailedException, ForbiddenException {
     String id = prefix + "/" + suffix;
-    var userId = authentication.getName();
-    log.info("Received delete request for mapping: {} from user: {}", id, userId);
-    service.deleteDataMapping(id, userId);
+    var agent = getAgent(authentication);
+    log.info("Received delete request for mapping: {} from user: {}", id, agent.getId());
+    service.tombstoneDataMapping(id, agent);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 

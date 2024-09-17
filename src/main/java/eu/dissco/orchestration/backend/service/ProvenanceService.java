@@ -35,10 +35,19 @@ public class ProvenanceService {
     return generateCreateUpdateTombStoneEvent(digitalObject, ProvActivity.Type.ODS_CREATE, null);
   }
 
+  public CreateUpdateTombstoneEvent generateTombstoneEvent(JsonNode tombstoneObject,
+      JsonNode currentObject)
+      throws JsonProcessingException {
+    var patch = createJsonPatch(tombstoneObject, currentObject);
+    return generateCreateUpdateTombStoneEvent(tombstoneObject, ProvActivity.Type.ODS_TOMBSTONE,
+        patch);
+  }
+
   private CreateUpdateTombstoneEvent generateCreateUpdateTombStoneEvent(
       JsonNode digitalObject, ProvActivity.Type activityType, JsonNode jsonPatch)
       throws JsonProcessingException {
-    var entityID = digitalObject.get("@id").asText() + "/" + digitalObject.get("schema:version").asText();
+    var entityID =
+        digitalObject.get("@id").asText() + "/" + digitalObject.get("schema:version").asText();
     var activityID = UUID.randomUUID().toString();
     Agent creator = mapper.treeToValue(digitalObject.get("schema:creator"), Agent.class);
     return new CreateUpdateTombstoneEvent()
@@ -61,7 +70,8 @@ public class ProvenanceService {
                 new ProvWasAssociatedWith()
                     .withId(properties.getPid())
                     .withProvHadRole(ProvHadRole.ODS_GENERATOR)))
-            .withProvUsed(entityID))
+            .withProvUsed(entityID)
+            .withRdfsComment(getRdfsComment(activityType)))
         .withProvEntity(new ProvEntity()
             .withId(entityID)
             .withType(digitalObject.get("@type").textValue())
@@ -73,6 +83,21 @@ public class ProvenanceService {
                 .withId(properties.getPid())
                 .withSchemaName(properties.getName())
         ));
+  }
+
+  private static String getRdfsComment(ProvActivity.Type activityType) {
+    switch (activityType) {
+      case ODS_CREATE -> {
+        return "Object newly created";
+      }
+      case ODS_UPDATE -> {
+        return "Object updated";
+      }
+      case ODS_TOMBSTONE -> {
+        return "Object tombstoned";
+      }
+    }
+    return null;
   }
 
   private List<OdsChangeValue> mapJsonPatch(JsonNode jsonPatch) {

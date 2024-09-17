@@ -14,8 +14,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import eu.dissco.orchestration.backend.exception.PidAuthenticationException;
-import eu.dissco.orchestration.backend.exception.PidCreationException;
+import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
@@ -183,7 +182,7 @@ public class SourceSystemService {
     );
     try {
       return handleComponent.postHandle(request);
-    } catch (PidAuthenticationException | PidCreationException e) {
+    } catch (PidException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }
   }
@@ -247,7 +246,7 @@ public class SourceSystemService {
     var request = fdoRecordService.buildRollbackCreateRequest(sourceSystem.getId());
     try {
       handleComponent.rollbackHandleCreation(request);
-    } catch (PidAuthenticationException | PidCreationException e) {
+    } catch (PidException e) {
       log.error(
           "Unable to rollback handle creation for source system. Manually delete the following handle: {}. Cause of error: ",
           sourceSystem.getId(), e);
@@ -283,7 +282,8 @@ public class SourceSystemService {
         currentSourceSystem.getSchemaVersion() + 1, userId, id,
         currentSourceSystem.getSchemaDateCreated());
     if (isEquals(sourceSystem, currentSourceSystem)) {
-      log.info("Update request for source system: {} is identical to current version, no action taken",
+      log.info(
+          "Update request for source system: {} is identical to current version, no action taken",
           id);
       return null;
     }
@@ -366,26 +366,65 @@ public class SourceSystemService {
     );
   }
 
-  public void deleteSourceSystem(String id, String userId)
+  public void tombstoneSourceSystem(String id, Agent agent)
       throws NotFoundException, ProcessingFailedException {
     var result = repository.getActiveSourceSystem(id);
     if (result.isPresent()) {
       var sourceSystem = result.get();
-      sourceSystem.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
-      sourceSystem.setOdsTombstoneMetadata(buildTombstoneMetadata(userId,
-          "Source System tombstoned by user through the orchestration backend."));
       try {
         batchV1Api.deleteNamespacedCronJob(generateJobName(result.get(), true),
             jobProperties.getNamespace()).execute();
       } catch (ApiException e) {
         throw new ProcessingFailedException("Failed to delete cronJob for source system: " + id, e);
       }
-      repository.deleteSourceSystem(id,
-          sourceSystem.getOdsTombstoneMetadata().getOdsTombstoneDate());
+      tombstoneHandle(id);
+      var timestamp = Instant.now();
+      var tombstoneSourceSystem = buildTombstoneSourceSystem(sourceSystem, agent, timestamp);
+      repository.tombstoneSourceSystem(tombstoneSourceSystem, timestamp);
+      try {
+        kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneSourceSystem), mapper.valueToTree(sourceSystem));
+      } catch (JsonProcessingException e) {
+        log.error("Unable to publish tombstone event to provenance service", e);
+        throw new ProcessingFailedException("Unable to publish tombstone event to provenance service", e);
+      }
       log.info("Delete request for source system: {} was successful", id);
     } else {
       throw new NotFoundException("Requested source system: " + id + " does not exist");
     }
+  }
+
+  private void tombstoneHandle(String handle) throws ProcessingFailedException {
+    var request = fdoRecordService.buildTombstoneRequest(ObjectType.SOURCE_SYSTEM, handle);
+    try {
+      handleComponent.tombstoneHandle(request, handle);
+    } catch (PidException e){
+      log.error("Unable to tombstone handle {}", handle, e);
+      throw new ProcessingFailedException("Unable to tombstone handle", e);
+    }
+  }
+
+  private static SourceSystem buildTombstoneSourceSystem(SourceSystem sourceSystem, Agent tombstoningAgent,
+      Instant timestamp) {
+    return new SourceSystem()
+        .withId(sourceSystem.getId())
+        .withType(sourceSystem.getType())
+        .withOdsID(sourceSystem.getOdsID())
+        .withOdsType(sourceSystem.getOdsType())
+        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withSchemaVersion(sourceSystem.getSchemaVersion() + 1)
+        .withSchemaName(sourceSystem.getSchemaName())
+        .withSchemaDescription(sourceSystem.getSchemaDescription())
+        .withSchemaDateCreated(sourceSystem.getSchemaDateCreated())
+        .withSchemaDateModified(Date.from(timestamp))
+        .withSchemaCreator(sourceSystem.getSchemaCreator())
+        .withSchemaUrl(sourceSystem.getSchemaUrl())
+        .withLtcCollectionManagementSystem(sourceSystem.getLtcCollectionManagementSystem())
+        .withOdsTranslatorType(sourceSystem.getOdsTranslatorType())
+        .withOdsMaximumRecords(sourceSystem.getOdsMaximumRecords())
+        .withOdsDataMappingID(sourceSystem.getOdsDataMappingID())
+        .withOdsTombstoneMetadata(
+            buildTombstoneMetadata(tombstoningAgent,
+                "Source System tombstoned by user through the orchestration backend", timestamp));
   }
 
   private JsonApiListWrapper wrapResponse(List<SourceSystem> sourceSystems, int pageNum,

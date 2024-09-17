@@ -36,6 +36,15 @@ public class FdoRecordService {
     return request;
   }
 
+  public JsonNode buildTombstoneRequest(ObjectType type, String handle) {
+    return mapper.createObjectNode()
+        .set("data", mapper.createObjectNode()
+            .put("type", getFdoType(type))
+            .put("id", handle)
+            .set("attributes", mapper.createObjectNode()
+                .put("tombstoneText", type.getFullName() + " tombstoned by user through the orchestration backend")));
+  }
+
   public JsonNode buildRollbackCreateRequest(String handle) {
     var dataNode = List.of(mapper.createObjectNode().put("id", removeProxy(handle)));
     ArrayNode dataArrayNode = mapper.valueToTree(dataNode);

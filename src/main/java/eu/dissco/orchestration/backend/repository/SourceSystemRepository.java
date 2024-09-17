@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -79,10 +79,13 @@ public class SourceSystemRepository {
         .fetchOptional(this::mapToSourceSystem);
   }
 
-  public void deleteSourceSystem(String id, Date deleted) {
+  public void tombstoneSourceSystem(SourceSystem tombstoneSourceSystem, Instant timestamp) {
     context.update(SOURCE_SYSTEM)
-        .set(SOURCE_SYSTEM.DATE_TOMBSTONED, deleted.toInstant())
-        .where(SOURCE_SYSTEM.ID.eq(removeProxy(id)))
+        .set(SOURCE_SYSTEM.DATE_TOMBSTONED, timestamp)
+        .set(SOURCE_SYSTEM.DATE_MODIFIED, timestamp)
+        .set(SOURCE_SYSTEM.VERSION, tombstoneSourceSystem.getSchemaVersion())
+        .set(SOURCE_SYSTEM.DATA, mapToJSONB(tombstoneSourceSystem))
+        .where(SOURCE_SYSTEM.ID.eq(removeProxy(tombstoneSourceSystem.getId())))
         .execute();
   }
 
