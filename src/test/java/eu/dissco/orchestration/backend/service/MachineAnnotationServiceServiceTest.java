@@ -55,7 +55,6 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.AppsV1Api.APIcreateNamespacedDeploymentRequest;
 import io.kubernetes.client.openapi.apis.AppsV1Api.APIdeleteNamespacedDeploymentRequest;
-import io.kubernetes.client.openapi.apis.AppsV1Api.APIreadNamespacedDeploymentRequest;
 import io.kubernetes.client.openapi.apis.AppsV1Api.APIreplaceNamespacedDeploymentRequest;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi.APIcreateNamespacedCustomObjectRequest;
@@ -660,11 +659,14 @@ class MachineAnnotationServiceServiceTest {
     var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
     given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", "namespace",
         "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishTombstoneEvent(any(), any());
-    given(fdoRecordService.buildTombstoneRequest(ObjectType.MAS, BARE_HANDLE)).willReturn(givenTombstoneRequestMas());
+    doThrow(JsonProcessingException.class).when(kafkaPublisherService)
+        .publishTombstoneEvent(any(), any());
+    given(fdoRecordService.buildTombstoneRequest(ObjectType.MAS, BARE_HANDLE)).willReturn(
+        givenTombstoneRequestMas());
 
     // When
-    assertThrowsExactly(ProcessingFailedException.class, () -> service.tombstoneMachineAnnotationService(BARE_HANDLE, givenAgent()));
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.tombstoneMachineAnnotationService(BARE_HANDLE, givenAgent()));
 
     // Then
     then(repository).should().tombstoneMachineAnnotationService(any(), any());
@@ -701,15 +703,13 @@ class MachineAnnotationServiceServiceTest {
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(
         Optional.of(givenMas()));
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
         .willReturn(createDeploy);
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
         "namespace")).willReturn(deleteDeploy);
-    var deleteRead = mock(APIreadNamespacedDeploymentRequest.class);
-    given(appsV1Api.readNamespacedDeployment(any(), anyString())).willReturn(deleteRead);
-    given(deleteRead.execute()).willReturn(mock(V1Deployment.class));
     var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
     given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", "namespace",
         "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
@@ -735,8 +735,10 @@ class MachineAnnotationServiceServiceTest {
     return Stream.of(
         Arguments.of(null, null),
         Arguments.of(givenMasEnvironment(), givenMasSecrets()),
-        Arguments.of(List.of(new MachineAnnotationServiceEnvironment("name", 1)), givenMasSecrets()),
-        Arguments.of(List.of(new MachineAnnotationServiceEnvironment("name", true)), givenMasSecrets())
+        Arguments.of(List.of(new MachineAnnotationServiceEnvironment("name", 1)),
+            givenMasSecrets()),
+        Arguments.of(List.of(new MachineAnnotationServiceEnvironment("name", true)),
+            givenMasSecrets())
     );
   }
 
