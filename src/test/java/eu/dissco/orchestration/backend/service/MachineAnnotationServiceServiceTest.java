@@ -150,6 +150,7 @@ class MachineAnnotationServiceServiceTest {
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
@@ -197,6 +198,7 @@ class MachineAnnotationServiceServiceTest {
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
@@ -240,6 +242,7 @@ class MachineAnnotationServiceServiceTest {
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
         .willReturn(createDeploy);
@@ -264,6 +267,7 @@ class MachineAnnotationServiceServiceTest {
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
         .willReturn(createDeploy);
@@ -297,6 +301,7 @@ class MachineAnnotationServiceServiceTest {
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(MAPPER.valueToTree(givenMas()));
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
@@ -345,6 +350,7 @@ class MachineAnnotationServiceServiceTest {
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishCreateEvent(MAPPER.valueToTree(givenMas()));
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
@@ -397,6 +403,7 @@ class MachineAnnotationServiceServiceTest {
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq("namespace"), any(V1Deployment.class))).willReturn(replaceDeploy);
@@ -435,6 +442,7 @@ class MachineAnnotationServiceServiceTest {
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq("namespace"), any(V1Deployment.class))).willReturn(replaceDeploy);
@@ -474,6 +482,7 @@ class MachineAnnotationServiceServiceTest {
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq("namespace"), any(V1Deployment.class))).willReturn(replaceDeploy);
@@ -502,6 +511,7 @@ class MachineAnnotationServiceServiceTest {
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()));
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
@@ -705,6 +715,7 @@ class MachineAnnotationServiceServiceTest {
     given(properties.getNamespace()).willReturn("namespace");
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
+    given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
         .willReturn(createDeploy);
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);

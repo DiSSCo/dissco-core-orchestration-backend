@@ -261,14 +261,12 @@ public class MachineAnnotationServiceService {
     map.put("id", removeProxy(mas.getId()));
     map.put("kafkaHost", properties.getKafkaHost());
     map.put("topicName", mas.getOdsTopicName());
+    map.put("runningEndpoint", properties.getRunningEndpoint());
     return map;
   }
 
   private List<JsonNode> addMasKeys(MachineAnnotationService mas) {
     var keyNode = new ArrayList<JsonNode>();
-    if (mas == null) {
-      return List.of(mapper.createObjectNode());
-    }
     if (mas.getOdsHasEnvironment() != null) {
       mas.getOdsHasEnvironment().forEach(env -> {
         if (env.getValue() instanceof String stringVal) {

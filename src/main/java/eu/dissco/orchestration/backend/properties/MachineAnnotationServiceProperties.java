@@ -19,4 +19,7 @@ public class MachineAnnotationServiceProperties {
   @NotBlank
   private String masSecretStore = "mas-secrets";
 
+  @NotBlank
+  String runningEndpoint;
+
 }
