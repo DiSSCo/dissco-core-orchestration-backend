@@ -374,7 +374,7 @@ public class MachineAnnotationServiceService {
         return wrapSingleResponse(machineAnnotationService, path);
       }
     } else {
-      throw new NotFoundException("Requested machine annotation system: " + id + "does not exist");
+      throw new NotFoundException("Requested machine annotation service: " + id + "does not exist");
     }
   }
 
@@ -511,7 +511,7 @@ public class MachineAnnotationServiceService {
             "Unable to publish tombstone event to provenance service", e);
       }
     } else {
-      throw new NotFoundException("Requested machine annotation system: " + id + "does not exist");
+      throw new NotFoundException("Requested machine annotation service: " + id + "does not exist");
     }
   }
 
