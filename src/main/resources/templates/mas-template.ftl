@@ -56,6 +56,10 @@
             {
             "name": "KAFKA_CONSUMER_GROUP",
             "value": "group"
+            },
+            {
+            "name": "RUNNING_ENDPOINT",
+            "value": "${runningEndpoint}"
             }
           ],
           "securityContext": {
