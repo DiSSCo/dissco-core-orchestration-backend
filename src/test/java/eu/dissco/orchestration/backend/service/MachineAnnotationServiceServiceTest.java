@@ -45,10 +45,10 @@ import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
+import eu.dissco.orchestration.backend.schema.EnvironmentalVariable;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceEnvironment;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceSecret;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
+import eu.dissco.orchestration.backend.schema.SecretVariable;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
 import io.kubernetes.client.openapi.ApiException;
@@ -133,20 +133,20 @@ class MachineAnnotationServiceServiceTest {
 
   @ParameterizedTest
   @MethodSource("masKeys")
-  void testCreateMas(List<MachineAnnotationServiceEnvironment> masEnv,
-      List<MachineAnnotationServiceSecret> masSecret) throws Exception {
+  void testCreateMas(List<EnvironmentalVariable> masEnv,
+      List<SecretVariable> masSecret) throws Exception {
     // Given
     var expectedMas = givenMas()
-        .withOdsHasEnvironment(masEnv)
-        .withOdsHasSecret(masSecret);
+        .withOdsHasEnvironmentalVariable(masEnv)
+        .withOdsHasSecretVariable(masSecret);
     var expected = new JsonApiWrapper(new JsonApiData(
         expectedMas.getId(),
         ObjectType.MAS,
         flattenMas(expectedMas)
     ), new JsonApiLinks(MAS_PATH));
     var masRequest = givenMasRequest()
-        .withOdsHasEnvironment(masEnv)
-        .withOdsHasSecret(masSecret);
+        .withOdsHasEnvironmentalVariable(masEnv)
+        .withOdsHasSecretVariable(masSecret);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
@@ -746,9 +746,9 @@ class MachineAnnotationServiceServiceTest {
     return Stream.of(
         Arguments.of(null, null),
         Arguments.of(givenMasEnvironment(), givenMasSecrets()),
-        Arguments.of(List.of(new MachineAnnotationServiceEnvironment("name", 1)),
+        Arguments.of(List.of(new EnvironmentalVariable("name", 1)),
             givenMasSecrets()),
-        Arguments.of(List.of(new MachineAnnotationServiceEnvironment("name", true)),
+        Arguments.of(List.of(new EnvironmentalVariable("name", true)),
             givenMasSecrets())
     );
   }
