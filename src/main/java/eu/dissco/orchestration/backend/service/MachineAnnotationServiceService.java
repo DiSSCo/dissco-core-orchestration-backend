@@ -144,8 +144,8 @@ public class MachineAnnotationServiceService {
         .withOdsMaxReplicas(mas.getOdsMaxReplicas())
         .withOdsBatchingPermitted(mas.getOdsBatchingPermitted())
         .withOdsTimeToLive(mas.getOdsTimeToLive())
-        .withOdsHasSecret(mas.getOdsHasSecret())
-        .withOdsHasEnvironment(mas.getOdsHasEnvironment());
+        .withOdsHasSecretVariable(mas.getOdsHasSecretVariable())
+        .withOdsHasEnvironmentalVariable(mas.getOdsHasEnvironmentalVariable());
   }
 
   private OdsTargetDigitalObjectFilter__1 buildTargetFilters(
@@ -267,32 +267,32 @@ public class MachineAnnotationServiceService {
 
   private List<JsonNode> addMasKeys(MachineAnnotationService mas) {
     var keyNode = new ArrayList<JsonNode>();
-    if (mas.getOdsHasEnvironment() != null) {
-      mas.getOdsHasEnvironment().forEach(env -> {
-        if (env.getValue() instanceof String stringVal) {
+    if (mas.getOdsHasEnvironmentalVariable() != null) {
+      mas.getOdsHasEnvironmentalVariable().forEach(env -> {
+        if (env.getSchemaValue() instanceof String stringVal) {
           keyNode.add(mapper.createObjectNode()
-              .put(NAME, env.getName())
+              .put(NAME, env.getSchemaName())
               .put(VALUE, stringVal));
-        } else if (env.getValue() instanceof Integer intVal) {
+        } else if (env.getSchemaValue() instanceof Integer intVal) {
           keyNode.add(mapper.createObjectNode()
-              .put(NAME, env.getName())
+              .put(NAME, env.getSchemaName())
               .put(VALUE, intVal));
-        } else if (env.getValue() instanceof Boolean boolValue) {
+        } else if (env.getSchemaValue() instanceof Boolean boolValue) {
           keyNode.add(mapper.createObjectNode()
-              .put(NAME, env.getName())
+              .put(NAME, env.getSchemaName())
               .put(VALUE, boolValue));
         } else {
           throw new IllegalArgumentException();
         }
       });
     }
-    if (mas.getOdsHasSecret() != null) {
-      mas.getOdsHasSecret().forEach(secret -> keyNode.add(mapper.createObjectNode()
-          .put(NAME, secret.getSecretName())
+    if (mas.getOdsHasSecretVariable() != null) {
+      mas.getOdsHasSecretVariable().forEach(secret -> keyNode.add(mapper.createObjectNode()
+          .put(NAME, secret.getSchemaName())
           .set("valueFrom", mapper.createObjectNode()
               .set("secretKeyRef", mapper.createObjectNode()
                   .put(NAME, properties.getMasSecretStore())
-                  .put("key", secret.getSecretKeyRef())))));
+                  .put("key", secret.getOdsSecretKeyRef())))));
     }
     return keyNode;
   }
@@ -374,7 +374,7 @@ public class MachineAnnotationServiceService {
         return wrapSingleResponse(machineAnnotationService, path);
       }
     } else {
-      throw new NotFoundException("Requested machine annotation system: " + id + "does not exist");
+      throw new NotFoundException("Requested machine annotation service: " + id + "does not exist");
     }
   }
 
@@ -511,7 +511,7 @@ public class MachineAnnotationServiceService {
             "Unable to publish tombstone event to provenance service", e);
       }
     } else {
-      throw new NotFoundException("Requested machine annotation system: " + id + "does not exist");
+      throw new NotFoundException("Requested machine annotation service: " + id + "does not exist");
     }
   }
 
@@ -559,8 +559,8 @@ public class MachineAnnotationServiceService {
         .withOdsTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
             "Machine Annotation Service tombstoned by user through the orchestration backend",
             timestamp))
-        .withOdsHasEnvironment(mas.getOdsHasEnvironment())
-        .withOdsHasSecret(mas.getOdsHasSecret());
+        .withOdsHasEnvironmentalVariable(mas.getOdsHasEnvironmentalVariable())
+        .withOdsHasSecretVariable(mas.getOdsHasSecretVariable());
   }
 
   private void deleteDeployment(MachineAnnotationService currentMas)

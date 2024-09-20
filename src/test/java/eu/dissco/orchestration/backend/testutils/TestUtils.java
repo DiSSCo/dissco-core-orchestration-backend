@@ -16,15 +16,15 @@ import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest.OdsMappingDataStandard;
 import eu.dissco.orchestration.backend.schema.DefaultMapping;
+import eu.dissco.orchestration.backend.schema.EnvironmentalVariable;
 import eu.dissco.orchestration.backend.schema.FieldMapping;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceEnvironment;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceSecret;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
 import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
+import eu.dissco.orchestration.backend.schema.SecretVariable;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
@@ -297,20 +297,20 @@ public class TestUtils {
         .withOdsMaxReplicas(5)
         .withOdsBatchingPermitted(false)
         .withOdsTimeToLive(TTL)
-        .withOdsHasSecret(givenMasSecrets())
-        .withOdsHasEnvironment(givenMasEnvironment());
+        .withOdsHasSecretVariable(givenMasSecrets())
+        .withOdsHasEnvironmentalVariable(givenMasEnvironment());
   }
 
-  public static List<MachineAnnotationServiceEnvironment> givenMasEnvironment() {
-    return List.of(new MachineAnnotationServiceEnvironment()
-        .withName("server.port")
-        .withValue(8080));
+  public static List<EnvironmentalVariable> givenMasEnvironment() {
+    return List.of(new EnvironmentalVariable()
+        .withSchemaName("server.port")
+        .withSchemaValue(8080));
   }
 
-  public static List<MachineAnnotationServiceSecret> givenMasSecrets() {
-    return List.of(new MachineAnnotationServiceSecret()
-        .withSecretName("spring.datasource.password")
-        .withSecretKeyRef("db-password"));
+  public static List<SecretVariable> givenMasSecrets() {
+    return List.of(new SecretVariable()
+        .withSchemaName("spring.datasource.password")
+        .withOdsSecretKeyRef("db-password"));
   }
 
   public static MachineAnnotationService givenMas() {
@@ -356,8 +356,8 @@ public class TestUtils {
         .withOdsMaxReplicas(5)
         .withOdsBatchingPermitted(false)
         .withOdsTimeToLive(ttl)
-        .withOdsHasEnvironment(givenMasEnvironment())
-        .withOdsHasSecret(givenMasSecrets());
+        .withOdsHasEnvironmentalVariable(givenMasEnvironment())
+        .withOdsHasSecretVariable(givenMasSecrets());
   }
 
   public static MachineAnnotationService givenTombstoneMas(){
@@ -427,7 +427,6 @@ public class TestUtils {
           }
         }
         """);
-
   }
 
   public static TombstoneMetadata givenTombstoneMetadata(ObjectType objectType) {
