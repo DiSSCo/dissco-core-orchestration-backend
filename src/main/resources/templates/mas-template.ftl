@@ -69,13 +69,12 @@
           "volumeMounts": [
             {
               "mountPath": "/temp",
-              "name": "temp-volume"
+              "name": "temp-volume",
+              "readOnly": false
             },
             {
-              "name":"db-secrets",
-              "mountPath": "/mnt/secrets-store/mas-secrets"
-            },
-            {
+              "name":"mas-secrets",
+              "mountPath": "/mnt/secrets-store/mas-secrets",
               "readOnly": true
             }
           ]}
