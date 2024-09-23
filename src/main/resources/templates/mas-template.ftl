@@ -65,8 +65,37 @@
           "securityContext": {
             "allowPrivilegeEscalation": false,
             "runAsNonRoot": true
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/temp",
+              "name": "temp-volume"
+            },
+            {
+              "name":"db-secrets",
+              "mountPath": "/mnt/secrets-store/mas-secrets"
+            },
+            {
+              "readOnly": true
+            }
+          ]}
+        ],
+        "volumes": [
+          {
+            "name": "temp-volume",
+            "emptyDir": {}
+          },
+          {
+            "name": "mas-secrets",
+            "csi": {
+              "driver": "secrets-store.csi.k8s.io",
+              "readOnly": true,
+              "volumeAttributes": {
+               "secretProviderClass": "mas-secrets"
+              }
+            }
           }
-        }]
+        ]
       }
     }
   }
