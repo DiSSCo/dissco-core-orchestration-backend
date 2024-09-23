@@ -72,10 +72,8 @@
               "name": "temp-volume"
             },
             {
-              "name":"db-secrets",
-              "mountPath": "/mnt/secrets-store/mas-secrets"
-            },
-            {
+              "name":"mas-secrets",
+              "mountPath": "/mnt/secrets-store/mas-secrets",
               "readOnly": true
             }
           ]}
