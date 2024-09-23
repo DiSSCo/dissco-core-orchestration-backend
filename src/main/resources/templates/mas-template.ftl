@@ -69,8 +69,7 @@
           "volumeMounts": [
             {
               "mountPath": "/temp",
-              "name": "temp-volume",
-              "readOnly": false
+              "name": "temp-volume"
             },
             {
               "name":"mas-secrets",
