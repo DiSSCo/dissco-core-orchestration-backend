@@ -48,11 +48,11 @@ public class MachineAnnotationServiceController {
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException, ProcessingFailedException, ForbiddenException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = getAgent(authentication).getId();
+    var user = getAgent(authentication);
     log.info("Received create request for machine annotation service: {} from user: {}",
-        machineAnnotationService, userId);
+        machineAnnotationService, user.getId());
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.createMachineAnnotationService(machineAnnotationService, userId, path);
+    var result = service.createMachineAnnotationService(machineAnnotationService, user, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
@@ -63,12 +63,12 @@ public class MachineAnnotationServiceController {
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException, NotFoundException, ProcessingFailedException, ForbiddenException {
     var machineAnnotationService = getMachineAnnotation(requestBody);
-    var userId = getAgent(authentication).getId();
+    var user = getAgent(authentication);
     var id = prefix + '/' + suffix;
     log.info("Received update request for machine annotation service: {} from user: {}", id,
-        userId);
+        user.getId());
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateMachineAnnotationService(id, machineAnnotationService, userId, path);
+    var result = service.updateMachineAnnotationService(id, machineAnnotationService, user, path);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {

@@ -6,6 +6,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenClaims;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRequestJson;
@@ -13,11 +14,16 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingle
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequestJson;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +36,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 @ExtendWith(MockitoExtension.class)
 class MachineAnnotationServiceControllerTest {
+
   @Mock
   private Authentication authentication;
   MockHttpServletRequest mockRequest = new MockHttpServletRequest();
@@ -75,7 +82,7 @@ class MachineAnnotationServiceControllerTest {
     givenAuthentication();
     var mas = givenMasRequestJson();
     var masResponse = givenMasSingleJsonApiWrapper();
-    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), OBJECT_CREATOR,
+    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), givenAgent(),
         "null/mas")).willReturn(
         masResponse);
 
@@ -88,11 +95,32 @@ class MachineAnnotationServiceControllerTest {
   }
 
   @Test
+  void testUpdateMasTokenHasName() throws Exception {
+    // Given
+    var principal = mock(Jwt.class);
+    given(authentication.getPrincipal()).willReturn(principal);
+    given(principal.getClaims()).willReturn(Map.of(
+        "orcid", OBJECT_CREATOR,
+        "given_name", "Carl"
+    ));
+    var expectedAgent = givenAgent()
+        .withSchemaName("Carl");
+
+    // When
+    controller.updateMachineAnnotationService(authentication, PREFIX, SUFFIX,
+        givenMasRequestJson(), mockRequest);
+
+    // Then
+    then(service).should()
+        .updateMachineAnnotationService(anyString(), any(), eq(expectedAgent), anyString());
+  }
+
+  @Test
   void testUpdateMasNoChange() throws Exception {
     // Given
     givenAuthentication();
     var mas = givenMasRequestJson();
-    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), OBJECT_CREATOR,
+    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), givenAgent(),
         "null/mas")).willReturn(
         null);
 

@@ -49,10 +49,10 @@ public class SourceSystemController {
       throws IOException, NotFoundException, ProcessingFailedException, ForbiddenException {
     var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var userId = getAgent(authentication).getId();
+    var user = getAgent(authentication);
     log.info("Received create request for source system: {} from user: {}", sourceSystemRequest,
-        userId);
-    var result = service.createSourceSystem(sourceSystemRequest, userId, path);
+        user.getId());
+    var result = service.createSourceSystem(sourceSystemRequest, user, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
@@ -64,10 +64,10 @@ public class SourceSystemController {
       throws IOException, NotFoundException, ProcessingFailedException, ForbiddenException {
     var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
     var id = prefix + '/' + suffix;
-    var userId = getAgent(authentication).getId();
-    log.info("Received update request for source system: {} from user: {}", id, userId);
+    var user = getAgent(authentication);
+    log.info("Received update request for source system: {} from user: {}", id, user.getId());
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateSourceSystem(id, sourceSystemRequest, userId, path, trigger);
+    var result = service.updateSourceSystem(id, sourceSystemRequest, user, path, trigger);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {

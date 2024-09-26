@@ -95,7 +95,7 @@ class DataMappingServiceTest {
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
 
     // When
-    var result = service.createDataMapping(dataMapping, OBJECT_CREATOR, MAPPING_PATH);
+    var result = service.createDataMapping(dataMapping, givenAgent(), MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -116,7 +116,7 @@ class DataMappingServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createDataMapping(dataMapping, OBJECT_CREATOR, MAPPING_PATH));
+        () -> service.createDataMapping(dataMapping, givenAgent(), MAPPING_PATH));
 
     // Then
     then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
@@ -134,7 +134,7 @@ class DataMappingServiceTest {
 
     // Then
     assertThrowsExactly(ProcessingFailedException.class, () ->
-        service.createDataMapping(dataMapping, OBJECT_CREATOR, MAPPING_PATH));
+        service.createDataMapping(dataMapping, givenAgent(), MAPPING_PATH));
   }
 
   @Test
@@ -149,7 +149,7 @@ class DataMappingServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createDataMapping(dataMapping, OBJECT_CREATOR, MAPPING_PATH));
+        () -> service.createDataMapping(dataMapping, givenAgent(), MAPPING_PATH));
 
     // Then
     then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
@@ -170,7 +170,7 @@ class DataMappingServiceTest {
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(Optional.of(prevDataMapping));
 
     // When
-    var result = service.updateDataMapping(BARE_HANDLE, dataMapping, OBJECT_CREATOR, MAPPING_PATH);
+    var result = service.updateDataMapping(BARE_HANDLE, dataMapping, givenAgent(), MAPPING_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -193,7 +193,7 @@ class DataMappingServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateDataMapping(BARE_HANDLE, dataMapping, OBJECT_CREATOR, MAPPING_PATH));
+        () -> service.updateDataMapping(BARE_HANDLE, dataMapping, givenAgent(), MAPPING_PATH));
 
     // Then
     then(repository).should().updateDataMapping(givenDataMapping(HANDLE, 2));
@@ -209,7 +209,7 @@ class DataMappingServiceTest {
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(prevMapping);
 
     // When
-    var result = service.updateDataMapping(BARE_HANDLE, dataMapping, OBJECT_CREATOR, MAPPING_PATH);
+    var result = service.updateDataMapping(BARE_HANDLE, dataMapping, givenAgent(), MAPPING_PATH);
 
     // Then
     assertThat(result).isNull();
@@ -222,7 +222,7 @@ class DataMappingServiceTest {
 
     // Then
     assertThrows(NotFoundException.class,
-        () -> service.updateDataMapping(BARE_HANDLE, givenDataMappingRequest(), OBJECT_CREATOR,
+        () -> service.updateDataMapping(BARE_HANDLE, givenDataMappingRequest(), givenAgent(),
             OBJECT_CREATOR));
   }
 

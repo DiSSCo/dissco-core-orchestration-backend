@@ -24,7 +24,6 @@ import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
 import eu.dissco.orchestration.backend.schema.Agent;
-import eu.dissco.orchestration.backend.schema.Agent.Type;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService.OdsStatus;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
@@ -95,13 +94,12 @@ public class MachineAnnotationServiceService {
 
   public JsonApiWrapper createMachineAnnotationService(
       MachineAnnotationServiceRequest masRequest,
-      String userId,
-      String path) throws ProcessingFailedException {
+      Agent user, String path) throws ProcessingFailedException {
     var requestBody = fdoRecordService.buildCreateRequest(masRequest, ObjectType.MAS);
     try {
       var handle = handleComponent.postHandle(requestBody);
       setDefaultMas(masRequest, handle);
-      var mas = buildMachineAnnotationService(masRequest, 1, userId, handle,
+      var mas = buildMachineAnnotationService(masRequest, 1, user, handle,
           Instant.now());
       repository.createMachineAnnotationService(mas);
       createDeployment(mas);
@@ -113,7 +111,7 @@ public class MachineAnnotationServiceService {
   }
 
   private MachineAnnotationService buildMachineAnnotationService(
-      MachineAnnotationServiceRequest mas, int version, String userId, String handle,
+      MachineAnnotationServiceRequest mas, int version, Agent user, String handle,
       Instant created) {
     var id = HANDLE_PROXY + handle;
     return new MachineAnnotationService()
@@ -127,7 +125,7 @@ public class MachineAnnotationServiceService {
         .withSchemaDescription(mas.getSchemaDescription())
         .withSchemaDateCreated(Date.from(created))
         .withSchemaDateModified(Date.from(Instant.now()))
-        .withSchemaCreator(new Agent().withId(userId).withType(Type.SCHEMA_PERSON))
+        .withSchemaCreator(user)
         .withOdsContainerTag(mas.getOdsContainerTag())
         .withOdsContainerImage(mas.getOdsContainerImage())
         .withOdsTargetDigitalObjectFilter(buildTargetFilters(mas.getOdsTargetDigitalObjectFilter()))
@@ -356,14 +354,14 @@ public class MachineAnnotationServiceService {
   }
 
   public JsonApiWrapper updateMachineAnnotationService(String id,
-      MachineAnnotationServiceRequest masRequest, String userId, String path)
+      MachineAnnotationServiceRequest masRequest, Agent user, String path)
       throws NotFoundException, ProcessingFailedException {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var currentMas = currentMasOptional.get();
       setDefaultMas(masRequest, id);
       var machineAnnotationService = buildMachineAnnotationService(masRequest,
-          currentMas.getSchemaVersion() + 1, userId, id, Instant.now());
+          currentMas.getSchemaVersion() + 1, user, id, Instant.now());
       if (isEqual(machineAnnotationService, currentMas)) {
         log.debug("No changes found for MAS");
         return null;

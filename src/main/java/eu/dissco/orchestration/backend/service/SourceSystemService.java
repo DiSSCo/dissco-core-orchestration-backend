@@ -20,7 +20,6 @@ import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import eu.dissco.orchestration.backend.schema.Agent;
-import eu.dissco.orchestration.backend.schema.Agent.Type;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
@@ -137,7 +136,7 @@ public class SourceSystemService {
   }
 
   private SourceSystem buildSourceSystem(
-      SourceSystemRequest sourceSystemRequest, int version, String userId, String handle,
+      SourceSystemRequest sourceSystemRequest, int version, Agent user, String handle,
       Date created) {
     var id = HANDLE_PROXY + handle;
     return new SourceSystem()
@@ -151,9 +150,7 @@ public class SourceSystemService {
         .withSchemaDescription(sourceSystemRequest.getSchemaDescription())
         .withSchemaDateCreated(created)
         .withSchemaDateModified(Date.from(Instant.now()))
-        .withSchemaCreator(new Agent()
-            .withType(Type.SCHEMA_PERSON)
-            .withId(userId))
+        .withSchemaCreator(user)
         .withSchemaUrl(sourceSystemRequest.getSchemaUrl())
         .withOdsDataMappingID(sourceSystemRequest.getOdsDataMappingID())
         .withOdsTranslatorType(
@@ -162,12 +159,12 @@ public class SourceSystemService {
         .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem());
   }
 
-  public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, String userId,
+  public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent user,
       String path)
       throws NotFoundException, ProcessingFailedException {
     validateMappingExists(sourceSystemRequest.getOdsDataMappingID());
     String handle = createHandle(sourceSystemRequest);
-    var sourceSystem = buildSourceSystem(sourceSystemRequest, 1, userId, handle,
+    var sourceSystem = buildSourceSystem(sourceSystemRequest, 1, user, handle,
         Date.from(Instant.now()));
     repository.createSourceSystem(sourceSystem);
     createCronJob(sourceSystem);
@@ -270,7 +267,7 @@ public class SourceSystemService {
   }
 
   public JsonApiWrapper updateSourceSystem(String id, SourceSystemRequest sourceSystemRequest,
-      String userId, String path, boolean trigger)
+      Agent user, String path, boolean trigger)
       throws NotFoundException, ProcessingFailedException {
     var currentSourceSystemOptional = repository.getActiveSourceSystem(id);
     if (currentSourceSystemOptional.isEmpty()) {
@@ -279,7 +276,7 @@ public class SourceSystemService {
     }
     var currentSourceSystem = currentSourceSystemOptional.get();
     var sourceSystem = buildSourceSystem(sourceSystemRequest,
-        currentSourceSystem.getSchemaVersion() + 1, userId, id,
+        currentSourceSystem.getSchemaVersion() + 1, user, id,
         currentSourceSystem.getSchemaDateCreated());
     if (isEquals(sourceSystem, currentSourceSystem)) {
       log.info(
