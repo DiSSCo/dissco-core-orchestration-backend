@@ -17,8 +17,4 @@ public class FdoProperties {
   @NotBlank
   private String masType = "https://doi.org/21.T11148/22e71a0015cbcfba8ffa";
 
-  @NotBlank
-  private String issuedForAgent = "https://ror.org/0566bfb96";
-
-
 }
