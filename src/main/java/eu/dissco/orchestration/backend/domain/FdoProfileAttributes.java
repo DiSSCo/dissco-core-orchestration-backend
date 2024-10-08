@@ -10,7 +10,7 @@ public enum FdoProfileAttributes {
   SOURCE_DATA_STANDARD("sourceDataStandard"),
   // Source System
   SOURCE_SYSTEM_NAME("sourceSystemName"),
-  MAS_NAME("masName");
+  MAS_NAME("machineAnnotationServiceName");
 
   private final String attribute;
 
