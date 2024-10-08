@@ -17,7 +17,6 @@ import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.repository.DataMappingRepository;
 import eu.dissco.orchestration.backend.schema.Agent;
-import eu.dissco.orchestration.backend.schema.Agent.Type;
 import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsMappingDataStandard;
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsStatus;
@@ -87,7 +86,7 @@ public class DataMappingService {
     return mappedList;
   }
 
-  public JsonApiWrapper createDataMapping(DataMappingRequest mappingRequest, String userId,
+  public JsonApiWrapper createDataMapping(DataMappingRequest mappingRequest, Agent user,
       String path)
       throws ProcessingFailedException {
     var requestBody = fdoRecordService.buildCreateRequest(mappingRequest, ObjectType.DATA_MAPPING);
@@ -97,7 +96,7 @@ public class DataMappingService {
     } catch (PidException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }
-    var dataMapping = buildDataMapping(mappingRequest, 1, userId, handle,
+    var dataMapping = buildDataMapping(mappingRequest, 1, user, handle,
         Date.from(Instant.now()));
     repository.createDataMapping(dataMapping);
     publishCreateEvent(dataMapping);
@@ -105,7 +104,7 @@ public class DataMappingService {
   }
 
   private DataMapping buildDataMapping(DataMappingRequest dataMappingRequest, int version,
-      String userId, String handle, Date created) {
+      Agent user, String handle, Date created) {
     var id = HANDLE_PROXY + handle;
     return new DataMapping()
         .withId(id)
@@ -118,7 +117,7 @@ public class DataMappingService {
         .withSchemaDescription(dataMappingRequest.getSchemaDescription())
         .withSchemaDateCreated(created)
         .withSchemaDateModified(Date.from(Instant.now()))
-        .withSchemaCreator(new Agent().withId(userId).withType(Type.SCHEMA_PERSON))
+        .withSchemaCreator(user)
         .withOdsDefaultMapping(buildDefaultMapping(dataMappingRequest))
         .withOdsFieldMapping(buildFieldMapping(dataMappingRequest))
         .withOdsMappingDataStandard(OdsMappingDataStandard.fromValue(
@@ -149,7 +148,7 @@ public class DataMappingService {
   }
 
   public JsonApiWrapper updateDataMapping(String id, DataMappingRequest dataMappingRequest,
-      String userId, String path) throws NotFoundException, ProcessingFailedException {
+      Agent user, String path) throws NotFoundException, ProcessingFailedException {
     var currentDataMappingOptional = repository.getActiveDataMapping(id);
     if (currentDataMappingOptional.isEmpty()) {
       throw new NotFoundException("Requested data mapping does not exist");
@@ -157,7 +156,7 @@ public class DataMappingService {
     var currentDataMapping = currentDataMappingOptional.get();
     var dataMapping = buildDataMapping(dataMappingRequest,
         currentDataMapping.getSchemaVersion() + 1,
-        userId, id, currentDataMapping.getSchemaDateCreated());
+        user, id, currentDataMapping.getSchemaDateCreated());
     if (isEqual(dataMapping, currentDataMapping)) {
       return null;
     } else {

@@ -2,12 +2,12 @@ package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_URI;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenClaims;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequestJson;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
@@ -84,7 +84,7 @@ class SourceSystemControllerTest {
     // Given
     var sourceSystem = givenSourceSystemRequestJson();
     givenAuthentication();
-    given(service.updateSourceSystem(BARE_HANDLE, givenSourceSystemRequest(), OBJECT_CREATOR,
+    given(service.updateSourceSystem(BARE_HANDLE, givenSourceSystemRequest(), givenAgent(),
         "null/source-system", true)).willReturn(
         givenSourceSystemSingleJsonApiWrapper());
 

@@ -5,9 +5,9 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_URI;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenClaims;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequest;
@@ -83,7 +83,7 @@ class DataMappingControllerTest {
     // Given
     givenAuthentication();
     var requestBody = givenDataMappingRequestJson();
-    given(service.updateDataMapping(BARE_HANDLE, givenDataMappingRequest(), OBJECT_CREATOR,
+    given(service.updateDataMapping(BARE_HANDLE, givenDataMappingRequest(), givenAgent(),
         "null/data-mapping")).willReturn(
         givenDataMappingSingleJsonApiWrapper());
 

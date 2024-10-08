@@ -5,7 +5,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SOURCE_SYSTEM_TYPE_DOI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
@@ -176,7 +175,7 @@ class SourceSystemServiceTest {
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
 
     // When
-    var result = service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH);
+    var result = service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -193,7 +192,7 @@ class SourceSystemServiceTest {
         Optional.empty());
 
     assertThrowsExactly(NotFoundException.class,
-        () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH));
   }
 
   @Test
@@ -211,7 +210,7 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH));
 
     // Then
     then(repository).should().createSourceSystem(givenSourceSystem());
@@ -240,7 +239,7 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH));
 
     // Then
     then(repository).should().createSourceSystem(givenSourceSystem());
@@ -270,7 +269,7 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH));
 
     // Then
     then(repository).should().createSourceSystem(givenSourceSystem());
@@ -289,7 +288,7 @@ class SourceSystemServiceTest {
 
     // When / Then
     assertThrowsExactly(ProcessingFailedException.class, () ->
-        service.createSourceSystem(sourceSystem, OBJECT_CREATOR, MAPPING_PATH));
+        service.createSourceSystem(sourceSystem, givenAgent(), MAPPING_PATH));
   }
 
   @Test
@@ -314,7 +313,7 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createSourceSystem(sourceSystem, OBJECT_CREATOR, SYSTEM_PATH));
+        () -> service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH));
 
     // Then
     then(repository).should().createSourceSystem(givenSourceSystem(OdsTranslatorType.DWCA));
@@ -354,7 +353,7 @@ class SourceSystemServiceTest {
     }
 
     // When
-    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
         triggerTranslator);
 
     // Then
@@ -383,7 +382,7 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
             false));
 
     // Then
@@ -406,7 +405,7 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
             false));
 
     // Then
@@ -430,7 +429,7 @@ class SourceSystemServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
             true));
 
     // Then
@@ -448,7 +447,7 @@ class SourceSystemServiceTest {
 
     // Then
     assertThrowsExactly(NotFoundException.class,
-        () -> service.updateSourceSystem(HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH, true));
+        () -> service.updateSourceSystem(HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH, true));
   }
 
   @Test
@@ -459,7 +458,7 @@ class SourceSystemServiceTest {
         Optional.of(givenSourceSystem()));
 
     // When
-    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, OBJECT_CREATOR, SYSTEM_PATH,
+    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
         false);
 
     // Then

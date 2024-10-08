@@ -47,10 +47,10 @@ public class DataMappingController {
       @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
       throws JsonProcessingException, ProcessingFailedException, ForbiddenException {
     var dataMapping = getDataMappingRequestFromRequest(requestBody);
-    var userId = getAgent(authentication).getId();
-    log.info("Received create request for data mapping: {} from user: {}", dataMapping, userId);
+    var user = getAgent(authentication);
+    log.info("Received create request for data mapping: {} from user: {}", dataMapping, user.getId());
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.createDataMapping(dataMapping, userId, path);
+    var result = service.createDataMapping(dataMapping, user, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
@@ -61,10 +61,10 @@ public class DataMappingController {
       throws JsonProcessingException, NotFoundException, ProcessingFailedException, ForbiddenException {
     var dataMapping = getDataMappingRequestFromRequest(requestBody);
     var id = prefix + '/' + suffix;
-    var userId = getAgent(authentication).getId();
-    log.info("Received update request for data mapping: {} from user: {}", dataMapping, userId);
+    var user = getAgent(authentication);
+    log.info("Received update request for data mapping: {} from user: {}", dataMapping, user.getId());
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateDataMapping(id, dataMapping, userId, path);
+    var result = service.updateDataMapping(id, dataMapping, user, path);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {

@@ -6,7 +6,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_PATH;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_TYPE_DOI;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.TTL;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
@@ -160,7 +159,7 @@ class MachineAnnotationServiceServiceTest {
         anyString(), any(Object.class))).willReturn(createCustom);
 
     // When
-    var result = service.createMachineAnnotationService(masRequest, OBJECT_CREATOR, MAS_PATH);
+    var result = service.createMachineAnnotationService(masRequest, givenAgent(), MAS_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -208,7 +207,7 @@ class MachineAnnotationServiceServiceTest {
         anyString(), any(Object.class))).willReturn(createCustom);
 
     // When
-    var result = service.createMachineAnnotationService(masRequest, OBJECT_CREATOR, MAS_PATH);
+    var result = service.createMachineAnnotationService(masRequest, givenAgent(), MAS_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -231,7 +230,7 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     assertThrowsExactly(ProcessingFailedException.class, () ->
-        service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+        service.createMachineAnnotationService(mas, givenAgent(), MAS_PATH));
   }
 
   @Test
@@ -250,7 +249,7 @@ class MachineAnnotationServiceServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+        () -> service.createMachineAnnotationService(mas, givenAgent(), MAS_PATH));
 
     // Then
     then(repository).should().createMachineAnnotationService(givenMas());
@@ -281,7 +280,7 @@ class MachineAnnotationServiceServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+        () -> service.createMachineAnnotationService(mas, givenAgent(), MAS_PATH));
 
     // Then
     then(repository).should().createMachineAnnotationService(givenMas());
@@ -319,7 +318,7 @@ class MachineAnnotationServiceServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+        () -> service.createMachineAnnotationService(mas, givenAgent(), MAS_PATH));
 
     // Then
     then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
@@ -369,7 +368,7 @@ class MachineAnnotationServiceServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createMachineAnnotationService(mas, OBJECT_CREATOR, MAS_PATH));
+        () -> service.createMachineAnnotationService(mas, givenAgent(), MAS_PATH));
 
     // Then
     then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
@@ -415,7 +414,7 @@ class MachineAnnotationServiceServiceTest {
         anyString(), any(Object.class))).willReturn(createCustom);
 
     // When
-    var result = service.updateMachineAnnotationService(BARE_HANDLE, mas, OBJECT_CREATOR, MAS_PATH);
+    var result = service.updateMachineAnnotationService(BARE_HANDLE, mas, givenAgent(), MAS_PATH);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -456,7 +455,7 @@ class MachineAnnotationServiceServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateMachineAnnotationService(BARE_HANDLE, mas, OBJECT_CREATOR, MAS_PATH));
+        () -> service.updateMachineAnnotationService(BARE_HANDLE, mas, givenAgent(), MAS_PATH));
 
     // Then
     then(repository).should().updateMachineAnnotationService(givenMas(2));
@@ -490,7 +489,7 @@ class MachineAnnotationServiceServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateMachineAnnotationService(BARE_HANDLE, mas, OBJECT_CREATOR, MAS_PATH));
+        () -> service.updateMachineAnnotationService(BARE_HANDLE, mas, givenAgent(), MAS_PATH));
 
     // Then
     then(repository).should().updateMachineAnnotationService(givenMas(2));
@@ -526,7 +525,7 @@ class MachineAnnotationServiceServiceTest {
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.updateMachineAnnotationService(BARE_HANDLE, mas, OBJECT_CREATOR, MAS_PATH));
+        () -> service.updateMachineAnnotationService(BARE_HANDLE, mas, givenAgent(), MAS_PATH));
 
     // Then
     then(repository).should().updateMachineAnnotationService(givenMas(2));
@@ -550,7 +549,7 @@ class MachineAnnotationServiceServiceTest {
         Optional.of(givenMas()));
 
     // When
-    var result = service.updateMachineAnnotationService(HANDLE, mas, OBJECT_CREATOR, MAS_PATH);
+    var result = service.updateMachineAnnotationService(HANDLE, mas, givenAgent(), MAS_PATH);
 
     // Then
     assertThat(result).isNull();
@@ -564,7 +563,7 @@ class MachineAnnotationServiceServiceTest {
 
     // When/Then
     assertThrowsExactly(NotFoundException.class,
-        () -> service.updateMachineAnnotationService(HANDLE, mas, OBJECT_CREATOR, MAS_PATH));
+        () -> service.updateMachineAnnotationService(HANDLE, mas, givenAgent(), MAS_PATH));
   }
 
   @Test

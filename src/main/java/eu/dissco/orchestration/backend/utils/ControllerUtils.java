@@ -24,9 +24,10 @@ public class ControllerUtils {
         }
         fullName.append(claims.get("family_name"));
       }
+      var nameString = fullName.toString().isEmpty() ? null : fullName.toString();
       return new Agent()
           .withType(Type.SCHEMA_PERSON)
-          .withSchemaName(fullName.toString())
+          .withSchemaName(nameString)
           .withId((String) claims.get("orcid"));
     } else {
       log.error("Missing ORCID in token");
