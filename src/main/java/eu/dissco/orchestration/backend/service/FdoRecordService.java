@@ -1,6 +1,5 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.MAS_NAME;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_DATA_STANDARD;
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_SYSTEM_NAME;
@@ -9,7 +8,6 @@ import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
@@ -67,17 +65,17 @@ public class FdoRecordService {
   }
 
   private JsonNode buildMappingAttributes(DataMappingRequest mapping) {
-    return buildGeneralAttributes()
+    return mapper.createObjectNode()
         .put(SOURCE_DATA_STANDARD.getAttribute(), mapping.getOdsMappingDataStandard().toString());
   }
 
   private JsonNode buildMasAttributes(MachineAnnotationServiceRequest mas) {
-    return buildGeneralAttributes()
+    return mapper.createObjectNode()
         .put(MAS_NAME.getAttribute(), mas.getSchemaName());
   }
 
   private JsonNode buildSourceSystemAttributes(SourceSystemRequest sourceSystemRequest) {
-    return buildGeneralAttributes()
+    return mapper.createObjectNode()
         .put(SOURCE_SYSTEM_NAME.getAttribute(), sourceSystemRequest.getSchemaName());
   }
 
@@ -95,10 +93,4 @@ public class FdoRecordService {
       default -> throw new IllegalStateException();
     }
   }
-
-  private ObjectNode buildGeneralAttributes() {
-    return mapper.createObjectNode()
-        .put(ISSUED_FOR_AGENT.getAttribute(), fdoProperties.getIssuedForAgent());
-  }
-
 }
