@@ -7,10 +7,8 @@ package eu.dissco.orchestration.backend.database.jooq.tables;
 import eu.dissco.orchestration.backend.database.jooq.Keys;
 import eu.dissco.orchestration.backend.database.jooq.Public;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.DataMappingRecord;
-
 import java.time.Instant;
 import java.util.Collection;
-
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.JSONB;
@@ -67,19 +65,19 @@ public class DataMapping extends TableImpl<DataMappingRecord> {
     public final TableField<DataMappingRecord, String> NAME = createField(DSL.name("name"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
-     * The column <code>public.data_mapping.date_created</code>.
+     * The column <code>public.data_mapping.created</code>.
      */
-    public final TableField<DataMappingRecord, Instant> DATE_CREATED = createField(DSL.name("date_created"), SQLDataType.INSTANT.nullable(false), this, "");
+    public final TableField<DataMappingRecord, Instant> CREATED = createField(DSL.name("created"), SQLDataType.INSTANT.nullable(false), this, "");
 
     /**
-     * The column <code>public.data_mapping.date_modified</code>.
+     * The column <code>public.data_mapping.modified</code>.
      */
-    public final TableField<DataMappingRecord, Instant> DATE_MODIFIED = createField(DSL.name("date_modified"), SQLDataType.INSTANT.nullable(false), this, "");
+    public final TableField<DataMappingRecord, Instant> MODIFIED = createField(DSL.name("modified"), SQLDataType.INSTANT.nullable(false), this, "");
 
     /**
-     * The column <code>public.data_mapping.date_tombstoned</code>.
+     * The column <code>public.data_mapping.tombstoned</code>.
      */
-    public final TableField<DataMappingRecord, Instant> DATE_TOMBSTONED = createField(DSL.name("date_tombstoned"), SQLDataType.INSTANT, this, "");
+    public final TableField<DataMappingRecord, Instant> TOMBSTONED = createField(DSL.name("tombstoned"), SQLDataType.INSTANT, this, "");
 
     /**
      * The column <code>public.data_mapping.creator</code>.

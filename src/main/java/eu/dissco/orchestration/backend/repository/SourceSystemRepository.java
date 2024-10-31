@@ -32,8 +32,8 @@ public class SourceSystemRepository {
         .set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
         .set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
         .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
-        .set(SOURCE_SYSTEM.DATE_CREATED, sourceSystem.getSchemaDateCreated().toInstant())
-        .set(SOURCE_SYSTEM.DATE_MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
+        .set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
+        .set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
         .set(SOURCE_SYSTEM.MAPPING_ID, removeProxy(sourceSystem.getOdsDataMappingID()))
         .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
             sourceSystem.getOdsTranslatorType().value()))
@@ -55,8 +55,8 @@ public class SourceSystemRepository {
         .set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
         .set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
         .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
-        .set(SOURCE_SYSTEM.DATE_CREATED, sourceSystem.getSchemaDateCreated().toInstant())
-        .set(SOURCE_SYSTEM.DATE_MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
+        .set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
+        .set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
         .set(SOURCE_SYSTEM.MAPPING_ID, removeProxy(sourceSystem.getOdsDataMappingID()))
         .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
             sourceSystem.getOdsTranslatorType().value()))
@@ -75,14 +75,14 @@ public class SourceSystemRepository {
     return context.select(SOURCE_SYSTEM.DATA)
         .from(SOURCE_SYSTEM)
         .where(SOURCE_SYSTEM.ID.eq(removeProxy(id)))
-        .and(SOURCE_SYSTEM.DATE_TOMBSTONED.isNull())
+        .and(SOURCE_SYSTEM.TOMBSTONED.isNull())
         .fetchOptional(this::mapToSourceSystem);
   }
 
   public void tombstoneSourceSystem(SourceSystem tombstoneSourceSystem, Instant timestamp) {
     context.update(SOURCE_SYSTEM)
-        .set(SOURCE_SYSTEM.DATE_TOMBSTONED, timestamp)
-        .set(SOURCE_SYSTEM.DATE_MODIFIED, timestamp)
+        .set(SOURCE_SYSTEM.TOMBSTONED, timestamp)
+        .set(SOURCE_SYSTEM.MODIFIED, timestamp)
         .set(SOURCE_SYSTEM.VERSION, tombstoneSourceSystem.getSchemaVersion())
         .set(SOURCE_SYSTEM.DATA, mapToJSONB(tombstoneSourceSystem))
         .where(SOURCE_SYSTEM.ID.eq(removeProxy(tombstoneSourceSystem.getId())))
@@ -93,7 +93,7 @@ public class SourceSystemRepository {
     int offset = getOffset(pageNum, pageSize);
     return context.select(SOURCE_SYSTEM.DATA)
         .from(SOURCE_SYSTEM)
-        .where(SOURCE_SYSTEM.DATE_TOMBSTONED.isNull())
+        .where(SOURCE_SYSTEM.TOMBSTONED.isNull())
         .limit(pageSize + 1)
         .offset(offset)
         .fetch(this::mapToSourceSystem);
