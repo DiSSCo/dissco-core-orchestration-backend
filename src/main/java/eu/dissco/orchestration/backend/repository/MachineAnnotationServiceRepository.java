@@ -31,8 +31,8 @@ public class MachineAnnotationServiceRepository {
         .set(MACHINE_ANNOTATION_SERVICE.ID, removeProxy(mas.getId()))
         .set(MACHINE_ANNOTATION_SERVICE.VERSION, mas.getSchemaVersion())
         .set(MACHINE_ANNOTATION_SERVICE.NAME, mas.getSchemaName())
-        .set(MACHINE_ANNOTATION_SERVICE.DATE_CREATED, mas.getSchemaDateCreated().toInstant())
-        .set(MACHINE_ANNOTATION_SERVICE.DATE_MODIFIED, mas.getSchemaDateModified().toInstant())
+        .set(MACHINE_ANNOTATION_SERVICE.CREATED, mas.getSchemaDateCreated().toInstant())
+        .set(MACHINE_ANNOTATION_SERVICE.MODIFIED, mas.getSchemaDateModified().toInstant())
         .set(MACHINE_ANNOTATION_SERVICE.CREATOR, mas.getSchemaCreator().getId())
         .set(MACHINE_ANNOTATION_SERVICE.CONTAINER_IMAGE, mas.getOdsContainerImage())
         .set(MACHINE_ANNOTATION_SERVICE.CONTAINER_IMAGE_TAG, mas.getOdsContainerTag())
@@ -62,7 +62,7 @@ public class MachineAnnotationServiceRepository {
     return context.select(MACHINE_ANNOTATION_SERVICE.DATA)
         .from(MACHINE_ANNOTATION_SERVICE)
         .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(id)))
-        .and(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED.isNull())
+        .and(MACHINE_ANNOTATION_SERVICE.TOMBSTONED.isNull())
         .fetchOptional(this::mapToMas);
   }
 
@@ -78,8 +78,8 @@ public class MachineAnnotationServiceRepository {
 
   public void tombstoneMachineAnnotationService(MachineAnnotationService tombstoneMas, Instant timestamp) {
     context.update(MACHINE_ANNOTATION_SERVICE)
-        .set(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED, timestamp)
-        .set(MACHINE_ANNOTATION_SERVICE.DATE_MODIFIED, timestamp)
+        .set(MACHINE_ANNOTATION_SERVICE.TOMBSTONED, timestamp)
+        .set(MACHINE_ANNOTATION_SERVICE.MODIFIED, timestamp)
         .set(MACHINE_ANNOTATION_SERVICE.VERSION, tombstoneMas.getSchemaVersion())
         .set(MACHINE_ANNOTATION_SERVICE.DATA, mapToJSONB(tombstoneMas))
         .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(tombstoneMas.getId())))
@@ -98,7 +98,7 @@ public class MachineAnnotationServiceRepository {
     int offset = getOffset(pageNum, pageSize);
     return context.select(MACHINE_ANNOTATION_SERVICE.DATA)
         .from(MACHINE_ANNOTATION_SERVICE)
-        .where(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED.isNull())
+        .where(MACHINE_ANNOTATION_SERVICE.TOMBSTONED.isNull())
         .limit(pageSize + 1)
         .offset(offset)
         .fetch(this::mapToMas);
@@ -109,8 +109,8 @@ public class MachineAnnotationServiceRepository {
     context.update(MACHINE_ANNOTATION_SERVICE)
         .set(MACHINE_ANNOTATION_SERVICE.VERSION, mas.getSchemaVersion())
         .set(MACHINE_ANNOTATION_SERVICE.NAME, mas.getSchemaName())
-        .set(MACHINE_ANNOTATION_SERVICE.DATE_CREATED, mas.getSchemaDateCreated().toInstant())
-        .set(MACHINE_ANNOTATION_SERVICE.DATE_MODIFIED, mas.getSchemaDateModified().toInstant())
+        .set(MACHINE_ANNOTATION_SERVICE.CREATED, mas.getSchemaDateCreated().toInstant())
+        .set(MACHINE_ANNOTATION_SERVICE.MODIFIED, mas.getSchemaDateModified().toInstant())
         .set(MACHINE_ANNOTATION_SERVICE.CREATOR, mas.getSchemaCreator().getId())
         .set(MACHINE_ANNOTATION_SERVICE.CONTAINER_IMAGE, mas.getOdsContainerImage())
         .set(MACHINE_ANNOTATION_SERVICE.CONTAINER_IMAGE_TAG, mas.getOdsContainerTag())

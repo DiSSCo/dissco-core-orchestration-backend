@@ -29,8 +29,8 @@ public class DataMappingRepository {
         .set(DATA_MAPPING.ID, removeProxy(dataMapping.getId()))
         .set(DATA_MAPPING.VERSION, dataMapping.getSchemaVersion())
         .set(DATA_MAPPING.NAME, dataMapping.getSchemaName())
-        .set(DATA_MAPPING.DATE_CREATED, dataMapping.getSchemaDateCreated().toInstant())
-        .set(DATA_MAPPING.DATE_MODIFIED, dataMapping.getSchemaDateModified().toInstant())
+        .set(DATA_MAPPING.CREATED, dataMapping.getSchemaDateCreated().toInstant())
+        .set(DATA_MAPPING.MODIFIED, dataMapping.getSchemaDateModified().toInstant())
         .set(DATA_MAPPING.CREATOR, dataMapping.getSchemaCreator().getId())
         .set(DATA_MAPPING.MAPPING_DATA_STANDARD, dataMapping.getOdsMappingDataStandard().value())
         .set(DATA_MAPPING.DATA, mapToJSONB(dataMapping))
@@ -49,8 +49,8 @@ public class DataMappingRepository {
     context.update(DATA_MAPPING)
         .set(DATA_MAPPING.VERSION, dataMapping.getSchemaVersion())
         .set(DATA_MAPPING.NAME, dataMapping.getSchemaName())
-        .set(DATA_MAPPING.DATE_CREATED, dataMapping.getSchemaDateCreated().toInstant())
-        .set(DATA_MAPPING.DATE_MODIFIED, dataMapping.getSchemaDateModified().toInstant())
+        .set(DATA_MAPPING.CREATED, dataMapping.getSchemaDateCreated().toInstant())
+        .set(DATA_MAPPING.MODIFIED, dataMapping.getSchemaDateModified().toInstant())
         .set(DATA_MAPPING.CREATOR, dataMapping.getSchemaCreator().getId())
         .set(DATA_MAPPING.MAPPING_DATA_STANDARD, dataMapping.getOdsMappingDataStandard().value())
         .set(DATA_MAPPING.DATA, mapToJSONB(dataMapping))
@@ -72,7 +72,7 @@ public class DataMappingRepository {
         .distinctOn(DATA_MAPPING.ID)
         .from(DATA_MAPPING)
         .where(DATA_MAPPING.ID.eq(removeProxy(id)))
-        .and(DATA_MAPPING.DATE_TOMBSTONED.isNull())
+        .and(DATA_MAPPING.TOMBSTONED.isNull())
         .fetchOptional(this::mapToDataMapping);
   }
 
@@ -80,7 +80,7 @@ public class DataMappingRepository {
     int offset = getOffset(pageNum, pageSize);
     return context.select(DATA_MAPPING.DATA)
         .from(DATA_MAPPING)
-        .where(DATA_MAPPING.DATE_TOMBSTONED.isNull())
+        .where(DATA_MAPPING.TOMBSTONED.isNull())
         .offset(offset)
         .limit(pageSize + 1)
         .fetch(this::mapToDataMapping);
@@ -88,8 +88,8 @@ public class DataMappingRepository {
 
   public void tombstoneDataMapping(DataMapping tombstoneDataMapping, Instant timestamp) {
     context.update(DATA_MAPPING)
-        .set(DATA_MAPPING.DATE_TOMBSTONED, timestamp)
-        .set(DATA_MAPPING.DATE_MODIFIED, timestamp)
+        .set(DATA_MAPPING.TOMBSTONED, timestamp)
+        .set(DATA_MAPPING.MODIFIED, timestamp)
         .set(DATA_MAPPING.VERSION, tombstoneDataMapping.getSchemaVersion())
         .set(DATA_MAPPING.DATA, mapToJSONB(tombstoneDataMapping))
         .where(DATA_MAPPING.ID.eq(removeProxy(tombstoneDataMapping.getId())))

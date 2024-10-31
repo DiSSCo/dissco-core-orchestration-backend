@@ -5,9 +5,7 @@ package eu.dissco.orchestration.backend.database.jooq.tables.records;
 
 
 import eu.dissco.orchestration.backend.database.jooq.tables.DataMapping;
-
 import java.time.Instant;
-
 import org.jooq.JSONB;
 import org.jooq.Record2;
 import org.jooq.impl.UpdatableRecordImpl;
@@ -64,44 +62,44 @@ public class DataMappingRecord extends UpdatableRecordImpl<DataMappingRecord> {
     }
 
     /**
-     * Setter for <code>public.data_mapping.date_created</code>.
+     * Setter for <code>public.data_mapping.created</code>.
      */
-    public void setDateCreated(Instant value) {
+    public void setCreated(Instant value) {
         set(3, value);
     }
 
     /**
-     * Getter for <code>public.data_mapping.date_created</code>.
+     * Getter for <code>public.data_mapping.created</code>.
      */
-    public Instant getDateCreated() {
+    public Instant getCreated() {
         return (Instant) get(3);
     }
 
     /**
-     * Setter for <code>public.data_mapping.date_modified</code>.
+     * Setter for <code>public.data_mapping.modified</code>.
      */
-    public void setDateModified(Instant value) {
+    public void setModified(Instant value) {
         set(4, value);
     }
 
     /**
-     * Getter for <code>public.data_mapping.date_modified</code>.
+     * Getter for <code>public.data_mapping.modified</code>.
      */
-    public Instant getDateModified() {
+    public Instant getModified() {
         return (Instant) get(4);
     }
 
     /**
-     * Setter for <code>public.data_mapping.date_tombstoned</code>.
+     * Setter for <code>public.data_mapping.tombstoned</code>.
      */
-    public void setDateTombstoned(Instant value) {
+    public void setTombstoned(Instant value) {
         set(5, value);
     }
 
     /**
-     * Getter for <code>public.data_mapping.date_tombstoned</code>.
+     * Getter for <code>public.data_mapping.tombstoned</code>.
      */
-    public Instant getDateTombstoned() {
+    public Instant getTombstoned() {
         return (Instant) get(5);
     }
 
@@ -170,15 +168,15 @@ public class DataMappingRecord extends UpdatableRecordImpl<DataMappingRecord> {
     /**
      * Create a detached, initialised DataMappingRecord
      */
-    public DataMappingRecord(String id, Integer version, String name, Instant dateCreated, Instant dateModified, Instant dateTombstoned, String creator, String mappingDataStandard, JSONB data) {
+    public DataMappingRecord(String id, Integer version, String name, Instant created, Instant modified, Instant tombstoned, String creator, String mappingDataStandard, JSONB data) {
         super(DataMapping.DATA_MAPPING);
 
         setId(id);
         setVersion(version);
         setName(name);
-        setDateCreated(dateCreated);
-        setDateModified(dateModified);
-        setDateTombstoned(dateTombstoned);
+        setCreated(created);
+        setModified(modified);
+        setTombstoned(tombstoned);
         setCreator(creator);
         setMappingDataStandard(mappingDataStandard);
         setData(data);

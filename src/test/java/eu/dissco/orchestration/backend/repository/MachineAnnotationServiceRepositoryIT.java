@@ -145,10 +145,10 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
 
     // When
     repository.tombstoneMachineAnnotationService(mas, UPDATED);
-    var result = context.select(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED)
+    var result = context.select(MACHINE_ANNOTATION_SERVICE.TOMBSTONED)
         .from(MACHINE_ANNOTATION_SERVICE)
         .where(MACHINE_ANNOTATION_SERVICE.ID.eq(BARE_HANDLE))
-        .fetchOne(MACHINE_ANNOTATION_SERVICE.DATE_TOMBSTONED, Instant.class);
+        .fetchOne(MACHINE_ANNOTATION_SERVICE.TOMBSTONED, Instant.class);
 
     // Then
     assertThat(result).isEqualTo(UPDATED);

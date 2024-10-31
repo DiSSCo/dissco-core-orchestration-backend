@@ -7,10 +7,8 @@ package eu.dissco.orchestration.backend.database.jooq.tables;
 import eu.dissco.orchestration.backend.database.jooq.Keys;
 import eu.dissco.orchestration.backend.database.jooq.Public;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.MachineAnnotationServiceRecord;
-
 import java.time.Instant;
 import java.util.Collection;
-
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.JSONB;
@@ -67,20 +65,19 @@ public class MachineAnnotationService extends TableImpl<MachineAnnotationService
     public final TableField<MachineAnnotationServiceRecord, String> NAME = createField(DSL.name("name"), SQLDataType.VARCHAR.nullable(false), this, "");
 
     /**
-     * The column <code>public.machine_annotation_service.date_created</code>.
+     * The column <code>public.machine_annotation_service.created</code>.
      */
-    public final TableField<MachineAnnotationServiceRecord, Instant> DATE_CREATED = createField(DSL.name("date_created"), SQLDataType.INSTANT.nullable(false), this, "");
+    public final TableField<MachineAnnotationServiceRecord, Instant> CREATED = createField(DSL.name("created"), SQLDataType.INSTANT.nullable(false), this, "");
 
     /**
-     * The column <code>public.machine_annotation_service.date_modified</code>.
+     * The column <code>public.machine_annotation_service.modified</code>.
      */
-    public final TableField<MachineAnnotationServiceRecord, Instant> DATE_MODIFIED = createField(DSL.name("date_modified"), SQLDataType.INSTANT.nullable(false), this, "");
+    public final TableField<MachineAnnotationServiceRecord, Instant> MODIFIED = createField(DSL.name("modified"), SQLDataType.INSTANT.nullable(false), this, "");
 
     /**
-     * The column
-     * <code>public.machine_annotation_service.date_tombstoned</code>.
+     * The column <code>public.machine_annotation_service.tombstoned</code>.
      */
-    public final TableField<MachineAnnotationServiceRecord, Instant> DATE_TOMBSTONED = createField(DSL.name("date_tombstoned"), SQLDataType.INSTANT, this, "");
+    public final TableField<MachineAnnotationServiceRecord, Instant> TOMBSTONED = createField(DSL.name("tombstoned"), SQLDataType.INSTANT, this, "");
 
     /**
      * The column <code>public.machine_annotation_service.creator</code>.

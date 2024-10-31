@@ -153,7 +153,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     var sourceSystem = givenSourceSystem();
     postSourceSystem(List.of(sourceSystem));
     context.update(SOURCE_SYSTEM)
-        .set(SOURCE_SYSTEM.DATE_TOMBSTONED, CREATED)
+        .set(SOURCE_SYSTEM.TOMBSTONED, CREATED)
         .where(SOURCE_SYSTEM.ID.eq(BARE_HANDLE))
         .execute();
 
@@ -212,8 +212,8 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
           .set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
           .set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
           .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
-          .set(SOURCE_SYSTEM.DATE_CREATED, sourceSystem.getSchemaDateCreated().toInstant())
-          .set(SOURCE_SYSTEM.DATE_MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
+          .set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
+          .set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
           .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystem.getOdsDataMappingID())
           .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
               sourceSystem.getOdsTranslatorType().value()))

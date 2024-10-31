@@ -112,7 +112,7 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
     var dataMapping = givenDataMapping(HANDLE, 1);
     postDataMappings(List.of(dataMapping));
     context.update(DATA_MAPPING)
-        .set(DATA_MAPPING.DATE_TOMBSTONED, CREATED)
+        .set(DATA_MAPPING.TOMBSTONED, CREATED)
         .where(DATA_MAPPING.ID.eq(BARE_HANDLE))
         .execute();
 
@@ -199,8 +199,8 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
           .set(DATA_MAPPING.ID, removeProxy(dataMapping.getId()))
           .set(DATA_MAPPING.VERSION, dataMapping.getSchemaVersion())
           .set(DATA_MAPPING.NAME, dataMapping.getSchemaName())
-          .set(DATA_MAPPING.DATE_CREATED, dataMapping.getSchemaDateCreated().toInstant())
-          .set(DATA_MAPPING.DATE_MODIFIED, dataMapping.getSchemaDateModified().toInstant())
+          .set(DATA_MAPPING.CREATED, dataMapping.getSchemaDateCreated().toInstant())
+          .set(DATA_MAPPING.MODIFIED, dataMapping.getSchemaDateModified().toInstant())
           .set(DATA_MAPPING.CREATOR, dataMapping.getSchemaCreator().getId())
           .set(DATA_MAPPING.MAPPING_DATA_STANDARD, dataMapping.getOdsMappingDataStandard().value())
           .set(DATA_MAPPING.DATA, JSONB.valueOf(MAPPER.writeValueAsString(dataMapping))));
