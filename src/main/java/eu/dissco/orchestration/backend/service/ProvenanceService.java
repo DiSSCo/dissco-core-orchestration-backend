@@ -53,8 +53,8 @@ public class ProvenanceService {
     return new CreateUpdateTombstoneEvent()
         .withId(entityID)
         .withType("ods:CreateUpdateTombstoneEvent")
-        .withOdsID(entityID)
-        .withOdsType(properties.getCreateUpdateTombstoneEventType())
+        .withDctermsIdentifier(entityID)
+        .withOdsFdoType(properties.getCreateUpdateTombstoneEventType())
         .withProvActivity(new ProvActivity()
             .withId(activityID)
             .withType(activityType)
@@ -63,13 +63,13 @@ public class ProvenanceService {
             .withProvWasAssociatedWith(List.of(
                 new ProvWasAssociatedWith()
                     .withId(creator.getId())
-                    .withProvHadRole(ProvHadRole.ODS_REQUESTOR),
+                    .withProvHadRole(ProvHadRole.REQUESTOR),
                 new ProvWasAssociatedWith()
                     .withId(creator.getId())
-                    .withProvHadRole(ProvHadRole.ODS_APPROVER),
+                    .withProvHadRole(ProvHadRole.APPROVER),
                 new ProvWasAssociatedWith()
                     .withId(properties.getPid())
-                    .withProvHadRole(ProvHadRole.ODS_GENERATOR)))
+                    .withProvHadRole(ProvHadRole.GENERATOR)))
             .withProvUsed(entityID)
             .withRdfsComment(getRdfsComment(activityType)))
         .withProvEntity(new ProvEntity()
@@ -77,9 +77,9 @@ public class ProvenanceService {
             .withType(digitalObject.get("@type").textValue())
             .withProvValue(mapEntityToProvValue(digitalObject))
             .withProvWasGeneratedBy(activityID))
-        .withOdsHasProvAgent(List.of(creator,
+        .withOdsHasAgents(List.of(creator,
             new Agent()
-                .withType(Type.AS_APPLICATION)
+                .withType(Type.PROV_SOFTWARE_AGENT)
                 .withId(properties.getPid())
                 .withSchemaName(properties.getName())
         ));

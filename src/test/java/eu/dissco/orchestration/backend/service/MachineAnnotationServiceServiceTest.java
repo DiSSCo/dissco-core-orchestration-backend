@@ -86,6 +86,7 @@ class MachineAnnotationServiceServiceTest {
 
   private final Configuration configuration = new Configuration(Configuration.VERSION_2_3_32);
   private final KubernetesProperties kubernetesProperties = new KubernetesProperties();
+  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
   @Mock
   private MachineAnnotationServiceRepository repository;
   @Mock
@@ -103,11 +104,19 @@ class MachineAnnotationServiceServiceTest {
   @Mock
   private FdoProperties fdoProperties;
   private MachineAnnotationServiceService service;
-
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
 
-  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
+  private static Stream<Arguments> masKeys() {
+    return Stream.of(
+        Arguments.of(null, null),
+        Arguments.of(givenMasEnvironment(), givenMasSecrets()),
+        Arguments.of(List.of(new EnvironmentalVariable("name", 1)),
+            givenMasSecrets()),
+        Arguments.of(List.of(new EnvironmentalVariable("name", true)),
+            givenMasSecrets())
+    );
+  }
 
   @BeforeEach
   void setup() throws IOException {
@@ -136,16 +145,16 @@ class MachineAnnotationServiceServiceTest {
       List<SecretVariable> masSecret) throws Exception {
     // Given
     var expectedMas = givenMas()
-        .withOdsHasEnvironmentalVariable(masEnv)
-        .withOdsHasSecretVariable(masSecret);
+        .withOdsHasEnvironmentalVariables(masEnv)
+        .withOdsHasSecretVariables(masSecret);
     var expected = new JsonApiWrapper(new JsonApiData(
         expectedMas.getId(),
         ObjectType.MAS,
         flattenMas(expectedMas)
     ), new JsonApiLinks(MAS_PATH));
     var masRequest = givenMasRequest()
-        .withOdsHasEnvironmentalVariable(masEnv)
-        .withOdsHasSecretVariable(masSecret);
+        .withOdsHasEnvironmentalVariables(masEnv)
+        .withOdsHasSecretVariables(masSecret);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
@@ -390,7 +399,6 @@ class MachineAnnotationServiceServiceTest {
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             eq(SUFFIX.toLowerCase() + "-scaled-object"));
   }
-
 
   @Test
   void testUpdateMas() throws Exception {
@@ -739,17 +747,6 @@ class MachineAnnotationServiceServiceTest {
     then(appsV1Api).should()
         .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
     then(kafkaPublisherService).shouldHaveNoInteractions();
-  }
-
-  private static Stream<Arguments> masKeys() {
-    return Stream.of(
-        Arguments.of(null, null),
-        Arguments.of(givenMasEnvironment(), givenMasSecrets()),
-        Arguments.of(List.of(new EnvironmentalVariable("name", 1)),
-            givenMasSecrets()),
-        Arguments.of(List.of(new EnvironmentalVariable("name", true)),
-            givenMasSecrets())
-    );
   }
 
   private Optional<MachineAnnotationService> buildOptionalPrev() {

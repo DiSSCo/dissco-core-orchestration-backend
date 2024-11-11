@@ -123,8 +123,8 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   void testTombstoneSourceSystem() throws JsonProcessingException {
     // Given
     var sourceSystem = givenSourceSystem();
-    sourceSystem.withOdsStatus(OdsStatus.ODS_TOMBSTONE);
-    sourceSystem.withOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.SOURCE_SYSTEM));
+    sourceSystem.withOdsStatus(OdsStatus.TOMBSTONE);
+    sourceSystem.withOdsHasTombstoneMetadata(givenTombstoneMetadata(ObjectType.SOURCE_SYSTEM));
     postSourceSystem(List.of(sourceSystem));
 
     // When

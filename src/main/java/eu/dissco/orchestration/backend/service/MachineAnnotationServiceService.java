@@ -27,8 +27,8 @@ import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService.OdsStatus;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
-import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
-import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
+import eu.dissco.orchestration.backend.schema.OdsHasTargetDigitalObjectFilter;
+import eu.dissco.orchestration.backend.schema.OdsHasTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
 import eu.dissco.orchestration.backend.web.HandleComponent;
@@ -92,6 +92,43 @@ public class MachineAnnotationServiceService {
         .withSchemaTelephone(schemaContactPoint.getSchemaTelephone());
   }
 
+  private static MachineAnnotationService buildTombstoneMachineAnnotationService(
+      MachineAnnotationService mas,
+      Agent tombstoningAgent, Instant timestamp) {
+    return new MachineAnnotationService()
+        .withId(mas.getId())
+        .withType(mas.getType())
+        .withSchemaIdentifier(mas.getSchemaIdentifier())
+        .withOdsFdoType(mas.getOdsFdoType())
+        .withOdsStatus(OdsStatus.TOMBSTONE)
+        .withSchemaVersion(mas.getSchemaVersion() + 1)
+        .withSchemaName(mas.getSchemaName())
+        .withSchemaDescription(mas.getSchemaDescription())
+        .withSchemaDateCreated(mas.getSchemaDateCreated())
+        .withSchemaDateModified(Date.from(timestamp))
+        .withSchemaCreator(mas.getSchemaCreator())
+        .withOdsContainerImage(mas.getOdsContainerImage())
+        .withOdsContainerTag(mas.getOdsContainerTag())
+        .withOdsHasTargetDigitalObjectFilter(mas.getOdsHasTargetDigitalObjectFilter())
+        .withSchemaCreativeWorkStatus(mas.getSchemaCreativeWorkStatus())
+        .withSchemaCodeRepository(mas.getSchemaCodeRepository())
+        .withSchemaProgrammingLanguage(mas.getSchemaProgrammingLanguage())
+        .withOdsServiceAvailability(mas.getOdsServiceAvailability())
+        .withSchemaMaintainer(mas.getSchemaMaintainer())
+        .withSchemaLicense(mas.getSchemaLicense())
+        .withSchemaContactPoint(mas.getSchemaContactPoint())
+        .withOdsSlaDocumentation(mas.getOdsSlaDocumentation())
+        .withOdsTopicName(mas.getOdsTopicName())
+        .withOdsMaxReplicas(mas.getOdsMaxReplicas())
+        .withOdsBatchingPermitted(mas.getOdsBatchingPermitted())
+        .withOdsTimeToLive(mas.getOdsTimeToLive())
+        .withOdsHasTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
+            "Machine Annotation Service tombstoned by user through the orchestration backend",
+            timestamp))
+        .withOdsHasEnvironmentalVariables(mas.getOdsHasEnvironmentalVariables())
+        .withOdsHasSecretVariables(mas.getOdsHasSecretVariables());
+  }
+
   public JsonApiWrapper createMachineAnnotationService(
       MachineAnnotationServiceRequest masRequest,
       Agent user, String path) throws ProcessingFailedException {
@@ -116,10 +153,10 @@ public class MachineAnnotationServiceService {
     var id = HANDLE_PROXY + handle;
     return new MachineAnnotationService()
         .withId(id)
-        .withOdsID(id)
+        .withSchemaIdentifier(id)
         .withType(ObjectType.MAS.getFullName())
-        .withOdsType(fdoProperties.getMasType())
-        .withOdsStatus(OdsStatus.ODS_ACTIVE)
+        .withOdsFdoType(fdoProperties.getMasType())
+        .withOdsStatus(OdsStatus.ACTIVE)
         .withSchemaVersion(version)
         .withSchemaName(mas.getSchemaName())
         .withSchemaDescription(mas.getSchemaDescription())
@@ -128,27 +165,27 @@ public class MachineAnnotationServiceService {
         .withSchemaCreator(user)
         .withOdsContainerTag(mas.getOdsContainerTag())
         .withOdsContainerImage(mas.getOdsContainerImage())
-        .withOdsTargetDigitalObjectFilter(buildTargetFilters(mas.getOdsTargetDigitalObjectFilter()))
+        .withOdsHasTargetDigitalObjectFilter(
+            buildTargetFilters(mas.getOdsHasTargetDigitalObjectFilter()))
         .withSchemaCreativeWorkStatus(mas.getSchemaCreativeWorkStatus())
         .withSchemaCodeRepository(mas.getSchemaCodeRepository())
         .withSchemaProgrammingLanguage(mas.getSchemaProgrammingLanguage())
         .withOdsServiceAvailability(mas.getOdsServiceAvailability())
         .withSchemaMaintainer(mas.getSchemaMaintainer())
         .withSchemaLicense(mas.getSchemaLicense())
-        .withOdsDependency(mas.getOdsDependency())
         .withSchemaContactPoint(buildContactPoint(mas.getSchemaContactPoint()))
         .withOdsSlaDocumentation(mas.getOdsSlaDocumentation())
         .withOdsTopicName(mas.getOdsTopicName())
         .withOdsMaxReplicas(mas.getOdsMaxReplicas())
         .withOdsBatchingPermitted(mas.getOdsBatchingPermitted())
         .withOdsTimeToLive(mas.getOdsTimeToLive())
-        .withOdsHasSecretVariable(mas.getOdsHasSecretVariable())
-        .withOdsHasEnvironmentalVariable(mas.getOdsHasEnvironmentalVariable());
+        .withOdsHasSecretVariables(mas.getOdsHasSecretVariables())
+        .withOdsHasEnvironmentalVariables(mas.getOdsHasEnvironmentalVariables());
   }
 
-  private OdsTargetDigitalObjectFilter__1 buildTargetFilters(
-      OdsTargetDigitalObjectFilter odsTargetDigitalObjectFilter) {
-    var filter = new OdsTargetDigitalObjectFilter__1();
+  private OdsHasTargetDigitalObjectFilter__1 buildTargetFilters(
+      OdsHasTargetDigitalObjectFilter odsTargetDigitalObjectFilter) {
+    var filter = new OdsHasTargetDigitalObjectFilter__1();
     for (var prop : odsTargetDigitalObjectFilter.getAdditionalProperties().entrySet()) {
       filter.setAdditionalProperty(prop.getKey(), prop.getValue());
     }
@@ -265,8 +302,8 @@ public class MachineAnnotationServiceService {
 
   private List<JsonNode> addMasKeys(MachineAnnotationService mas) {
     var keyNode = new ArrayList<JsonNode>();
-    if (mas.getOdsHasEnvironmentalVariable() != null) {
-      mas.getOdsHasEnvironmentalVariable().forEach(env -> {
+    if (mas.getOdsHasEnvironmentalVariables() != null) {
+      mas.getOdsHasEnvironmentalVariables().forEach(env -> {
         if (env.getSchemaValue() instanceof String stringVal) {
           keyNode.add(mapper.createObjectNode()
               .put(NAME, env.getSchemaName())
@@ -284,8 +321,8 @@ public class MachineAnnotationServiceService {
         }
       });
     }
-    if (mas.getOdsHasSecretVariable() != null) {
-      mas.getOdsHasSecretVariable().forEach(secret -> keyNode.add(mapper.createObjectNode()
+    if (mas.getOdsHasSecretVariables() != null) {
+      mas.getOdsHasSecretVariables().forEach(secret -> keyNode.add(mapper.createObjectNode()
           .put(NAME, secret.getSchemaName())
           .set("valueFrom", mapper.createObjectNode()
               .set("secretKeyRef", mapper.createObjectNode()
@@ -381,8 +418,8 @@ public class MachineAnnotationServiceService {
         Objects.equals(mas.getSchemaDescription(), currentMas.getSchemaDescription()) &&
         Objects.equals(mas.getOdsContainerTag(), currentMas.getOdsContainerTag()) &&
         Objects.equals(mas.getOdsContainerImage(), currentMas.getOdsContainerImage()) &&
-        Objects.equals(mas.getOdsTargetDigitalObjectFilter(),
-            currentMas.getOdsTargetDigitalObjectFilter()) &&
+        Objects.equals(mas.getOdsHasTargetDigitalObjectFilter(),
+            currentMas.getOdsHasTargetDigitalObjectFilter()) &&
         Objects.equals(mas.getSchemaCreativeWorkStatus(),
             currentMas.getSchemaCreativeWorkStatus()) &&
         Objects.equals(mas.getSchemaCodeRepository(), currentMas.getSchemaCodeRepository())
@@ -391,7 +428,6 @@ public class MachineAnnotationServiceService {
         Objects.equals(mas.getOdsServiceAvailability(), currentMas.getOdsServiceAvailability()) &&
         Objects.equals(mas.getSchemaMaintainer(), currentMas.getSchemaMaintainer()) &&
         Objects.equals(mas.getSchemaLicense(), currentMas.getSchemaLicense()) &&
-        Objects.equals(mas.getOdsDependency(), currentMas.getOdsDependency()) &&
         Objects.equals(mas.getSchemaContactPoint(), currentMas.getSchemaContactPoint()) &&
         Objects.equals(mas.getOdsSlaDocumentation(), currentMas.getOdsSlaDocumentation()) &&
         Objects.equals(mas.getOdsTopicName(), currentMas.getOdsTopicName()) &&
@@ -521,44 +557,6 @@ public class MachineAnnotationServiceService {
       log.error("Unable to tombstone handle {}", handle, e);
       throw new ProcessingFailedException("Unable to tombstone handle", e);
     }
-  }
-
-  private static MachineAnnotationService buildTombstoneMachineAnnotationService(
-      MachineAnnotationService mas,
-      Agent tombstoningAgent, Instant timestamp) {
-    return new MachineAnnotationService()
-        .withId(mas.getId())
-        .withType(mas.getType())
-        .withOdsID(mas.getOdsID())
-        .withOdsType(mas.getOdsType())
-        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
-        .withSchemaVersion(mas.getSchemaVersion() + 1)
-        .withSchemaName(mas.getSchemaName())
-        .withSchemaDescription(mas.getSchemaDescription())
-        .withSchemaDateCreated(mas.getSchemaDateCreated())
-        .withSchemaDateModified(Date.from(timestamp))
-        .withSchemaCreator(mas.getSchemaCreator())
-        .withOdsContainerImage(mas.getOdsContainerImage())
-        .withOdsContainerTag(mas.getOdsContainerTag())
-        .withOdsTargetDigitalObjectFilter(mas.getOdsTargetDigitalObjectFilter())
-        .withSchemaCreativeWorkStatus(mas.getSchemaCreativeWorkStatus())
-        .withSchemaCodeRepository(mas.getSchemaCodeRepository())
-        .withSchemaProgrammingLanguage(mas.getSchemaProgrammingLanguage())
-        .withOdsServiceAvailability(mas.getOdsServiceAvailability())
-        .withSchemaMaintainer(mas.getSchemaMaintainer())
-        .withSchemaLicense(mas.getSchemaLicense())
-        .withOdsDependency(mas.getOdsDependency())
-        .withSchemaContactPoint(mas.getSchemaContactPoint())
-        .withOdsSlaDocumentation(mas.getOdsSlaDocumentation())
-        .withOdsTopicName(mas.getOdsTopicName())
-        .withOdsMaxReplicas(mas.getOdsMaxReplicas())
-        .withOdsBatchingPermitted(mas.getOdsBatchingPermitted())
-        .withOdsTimeToLive(mas.getOdsTimeToLive())
-        .withOdsTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
-            "Machine Annotation Service tombstoned by user through the orchestration backend",
-            timestamp))
-        .withOdsHasEnvironmentalVariable(mas.getOdsHasEnvironmentalVariable())
-        .withOdsHasSecretVariable(mas.getOdsHasSecretVariable());
   }
 
   private void deleteDeployment(MachineAnnotationService currentMas)

@@ -141,11 +141,11 @@ public class SourceSystemService {
     var id = HANDLE_PROXY + handle;
     return new SourceSystem()
         .withId(id)
-        .withOdsID(id)
+        .withSchemaIdentifier(id)
         .withType(ObjectType.SOURCE_SYSTEM.getFullName())
-        .withOdsType(fdoProperties.getSourceSystemType())
+        .withOdsFdoType(fdoProperties.getSourceSystemType())
         .withSchemaVersion(version)
-        .withOdsStatus(OdsStatus.ODS_ACTIVE)
+        .withOdsStatus(OdsStatus.ACTIVE)
         .withSchemaName(sourceSystemRequest.getSchemaName())
         .withSchemaDescription(sourceSystemRequest.getSchemaDescription())
         .withSchemaDateCreated(created)
@@ -405,9 +405,9 @@ public class SourceSystemService {
     return new SourceSystem()
         .withId(sourceSystem.getId())
         .withType(sourceSystem.getType())
-        .withOdsID(sourceSystem.getOdsID())
-        .withOdsType(sourceSystem.getOdsType())
-        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withSchemaIdentifier(sourceSystem.getSchemaIdentifier())
+        .withOdsFdoType(sourceSystem.getOdsFdoType())
+        .withOdsStatus(OdsStatus.TOMBSTONE)
         .withSchemaVersion(sourceSystem.getSchemaVersion() + 1)
         .withSchemaName(sourceSystem.getSchemaName())
         .withSchemaDescription(sourceSystem.getSchemaDescription())
@@ -419,7 +419,7 @@ public class SourceSystemService {
         .withOdsTranslatorType(sourceSystem.getOdsTranslatorType())
         .withOdsMaximumRecords(sourceSystem.getOdsMaximumRecords())
         .withOdsDataMappingID(sourceSystem.getOdsDataMappingID())
-        .withOdsTombstoneMetadata(
+        .withOdsHasTombstoneMetadata(
             buildTombstoneMetadata(tombstoningAgent,
                 "Source System tombstoned by user through the orchestration backend", timestamp));
   }

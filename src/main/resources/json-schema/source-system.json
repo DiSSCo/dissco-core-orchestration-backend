@@ -1,7 +1,7 @@
 {
-  "$id": "https://schemas.dissco.tech/schemas/fdo-type/source-system/0.3.0/source-system.json",
+  "$id": "https://schemas.dissco.tech/schemas/fdo-type/source-system/0.4.0/source-system.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "Source System Version 0.3.0",
+  "$comment": "Source System Version 0.4.0",
   "title": "SourceSystem",
   "type": "object",
   "properties": {
@@ -18,15 +18,15 @@
       "description": "The type of the object, in this case ods:SourceSystem",
       "const": "ods:SourceSystem"
     },
-    "ods:ID": {
+    "schema:identifier": {
       "type": "string",
-      "description": "Handle of the Source System",
+      "description": "The unique identifier (handle) of the Source System object",
       "pattern": "^https:\/\/hdl\\.handle\\.net\/[\\w.]+\/(.){3}-(.){3}-(.){3}",
       "examples": [
         "https://hdl.handle.net/20.5000.1025/XXX-XXX-XXX"
       ]
     },
-    "ods:type": {
+    "ods:fdoType": {
       "type": "string",
       "description": "The DOI to the FDO type of the object",
       "pattern": "^https:\/\/doi\\.org/[\\w\\.]+/[\\w\\.]+",
@@ -35,28 +35,35 @@
       ]
     },
     "ods:status": {
+      "type": "string",
       "enum": [
-        "ods:Draft",
-        "ods:Active",
-        "ods:Tombstone"
+        "Draft",
+        "Active",
+        "Tombstone"
       ],
-      "description": "The status of the Digital Object"
+      "description": "The status of the Digital Object. A digital object can be in Draft, when it is not published yet. Active when it is published and the object is active and Tombstone which means the object has been archived."
     },
     "schema:version": {
       "type": "integer",
       "minimum": 1,
-      "description": "Version of the Source System, https://schema.org/version"
+      "description": "The version of the object, each change generates a new version. The version starts at 1 and each change will increment the version number with 1",
+      "examples": [
+        1,
+        2,
+        3
+      ]
     },
     "schema:name": {
       "type": "string",
-      "description": "Name of the Source System as provided by the user, https://schema.org/name",
+      "description": "Name of the Source System as provided by the user",
       "examples": [
-        "Herbarium of University of Coimbra (COI)"
+        "Herbarium of University of Coimbra (COI)",
+        "Naturalis Biodiversity Center (NL) - Vermes"
       ]
     },
     "schema:description": {
       "type": "string",
-      "description": "Description of the Source System as provided by the user, https://schema.org/description",
+      "description": "Description of the Source System as provided by the user",
       "examples": [
         "The herbarium collection of the University of Coimbra is one of the oldest in Portugal, with specimens dating back to the 18th century."
       ]
@@ -71,7 +78,7 @@
     },
     "schema:dateModified": {
       "type": "string",
-      "description": "Timestamp of last modification. Internally generated, https://schema.org/dateModified",
+      "description": "Timestamp of last modification. Internally generated, follows the ISO Date Time Format yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
       "format": "date-time",
       "examples": [
         "2021-06-06T13:22:00.445Z"
@@ -80,7 +87,7 @@
     "schema:creator": {
       "type": "object",
       "description": "Contains an ods:Agent object",
-      "$ref": "https://schemas.dissco.tech/schemas/fdo-type/shared-model/0.3.0/agent.json"
+      "$ref": "https://schemas.dissco.tech/schemas/fdo-type/shared-model/0.4.0/agent.json"
     },
     "schema:url": {
       "type": "string",
@@ -92,12 +99,13 @@
     },
     "ltc:collectionManagementSystem": {
       "type": "string",
-      "description": "The collection management system that the source system is using, https://rs.tdwg.org/ltc/terms/collectionManagementSystem",
+      "description": "The collection management system that the source system is using",
       "examples": [
         "Specify 7"
       ]
     },
     "ods:translatorType": {
+      "type": "string",
       "description": "The serialisation of the data the endpoint provides indicating what type of Translator is required",
       "enum": [
         "dwca",
@@ -117,16 +125,16 @@
         "https://hdl.handle.net/20.5000.1025/XXX-XXX-XXX"
       ]
     },
-    "ods:TombstoneMetadata": {
+    "ods:hasTombstoneMetadata": {
       "type": "object",
       "description": "Object containing the tombstone metadata of the object. Only present when ods:status is ods:Tombstone",
-      "$ref": "https://schemas.dissco.tech/schemas/fdo-type/shared-model/0.3.0/tombstone-metadata.json"
+      "$ref": "https://schemas.dissco.tech/schemas/fdo-type/shared-model/0.4.0/tombstone-metadata.json"
     }
   },
   "required": [
     "@type",
-    "ods:ID",
-    "ods:type",
+    "schema:identifier",
+    "ods:fdoType",
     "schema:version",
     "schema:dateCreated",
     "schema:dateModified",

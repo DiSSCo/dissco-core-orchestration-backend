@@ -22,7 +22,7 @@ import eu.dissco.orchestration.backend.schema.DataMapping.OdsMappingDataStandard
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsStatus;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.DefaultMapping;
-import eu.dissco.orchestration.backend.schema.FieldMapping;
+import eu.dissco.orchestration.backend.schema.TermMapping;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,9 +51,10 @@ public class DataMappingService {
     return Objects.equals(dataMapping.getSchemaName(), currentDataMapping.getSchemaName()) &&
         Objects.equals(dataMapping.getSchemaDescription(),
             currentDataMapping.getSchemaDescription()) &&
-        Objects.equals(dataMapping.getOdsDefaultMapping(),
-            currentDataMapping.getOdsDefaultMapping()) &&
-        Objects.equals(dataMapping.getOdsFieldMapping(), currentDataMapping.getOdsFieldMapping()) &&
+        Objects.equals(dataMapping.getOdsHasDefaultMapping(),
+            currentDataMapping.getOdsHasDefaultMapping()) &&
+        Objects.equals(dataMapping.getOdsHasTermMapping(),
+            currentDataMapping.getOdsHasTermMapping()) &&
         Objects.equals(dataMapping.getOdsMappingDataStandard(),
             currentDataMapping.getOdsMappingDataStandard());
   }
@@ -61,7 +62,7 @@ public class DataMappingService {
   private static List<DefaultMapping> buildDefaultMapping(
       DataMappingRequest dataMappingRequest) {
     var mappedList = new ArrayList<DefaultMapping>();
-    for (var odsDefaultMapping : dataMappingRequest.getOdsDefaultMapping()) {
+    for (var odsDefaultMapping : dataMappingRequest.getOdsHasDefaultMapping()) {
       var mappedOdsDefaultMapping = new DefaultMapping();
       for (var property : odsDefaultMapping.getAdditionalProperties()
           .entrySet()) {
@@ -72,11 +73,11 @@ public class DataMappingService {
     return mappedList;
   }
 
-  private static List<FieldMapping> buildFieldMapping(
+  private static List<TermMapping> buildFieldMapping(
       DataMappingRequest dataMappingRequest) {
-    var mappedList = new ArrayList<FieldMapping>();
-    for (var odsDefaultMapping : dataMappingRequest.getOdsFieldMapping()) {
-      var mappedOdsFieldMapping = new FieldMapping();
+    var mappedList = new ArrayList<TermMapping>();
+    for (var odsDefaultMapping : dataMappingRequest.getOdsHasTermMapping()) {
+      var mappedOdsFieldMapping = new TermMapping();
       for (var property : odsDefaultMapping.getAdditionalProperties()
           .entrySet()) {
         mappedOdsFieldMapping.setAdditionalProperty(property.getKey(), property.getValue());
@@ -84,6 +85,29 @@ public class DataMappingService {
       mappedList.add(mappedOdsFieldMapping);
     }
     return mappedList;
+  }
+
+  private static DataMapping buildTombstoneDataMapping(DataMapping dataMapping,
+      Agent tombstoningAgent,
+      Instant timestamp) {
+    return new DataMapping()
+        .withId(dataMapping.getId())
+        .withType(dataMapping.getType())
+        .withSchemaIdentifier(dataMapping.getSchemaIdentifier())
+        .withOdsFdoType(dataMapping.getOdsFdoType())
+        .withOdsStatus(OdsStatus.TOMBSTONE)
+        .withSchemaVersion(dataMapping.getSchemaVersion() + 1)
+        .withSchemaName(dataMapping.getSchemaName())
+        .withSchemaDescription(dataMapping.getSchemaDescription())
+        .withSchemaDateCreated(dataMapping.getSchemaDateCreated())
+        .withSchemaDateModified(Date.from(timestamp))
+        .withSchemaCreator(dataMapping.getSchemaCreator())
+        .withOdsHasDefaultMapping(dataMapping.getOdsHasDefaultMapping())
+        .withOdsHasTermMapping(dataMapping.getOdsHasTermMapping())
+        .withOdsMappingDataStandard(dataMapping.getOdsMappingDataStandard())
+        .withOdsHasTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
+            "Data Mapping tombstoned by user through the orchestration backend", timestamp));
+
   }
 
   public JsonApiWrapper createDataMapping(DataMappingRequest mappingRequest, Agent user,
@@ -108,18 +132,18 @@ public class DataMappingService {
     var id = HANDLE_PROXY + handle;
     return new DataMapping()
         .withId(id)
-        .withOdsID(id)
+        .withSchemaIdentifier(id)
         .withType(ObjectType.DATA_MAPPING.getFullName())
-        .withOdsType(fdoProperties.getDataMappingType())
+        .withOdsFdoType(fdoProperties.getDataMappingType())
         .withSchemaVersion(version)
-        .withOdsStatus(OdsStatus.ODS_ACTIVE)
+        .withOdsStatus(OdsStatus.ACTIVE)
         .withSchemaName(dataMappingRequest.getSchemaName())
         .withSchemaDescription(dataMappingRequest.getSchemaDescription())
         .withSchemaDateCreated(created)
         .withSchemaDateModified(Date.from(Instant.now()))
         .withSchemaCreator(user)
-        .withOdsDefaultMapping(buildDefaultMapping(dataMappingRequest))
-        .withOdsFieldMapping(buildFieldMapping(dataMappingRequest))
+        .withOdsHasDefaultMapping(buildDefaultMapping(dataMappingRequest))
+        .withOdsHasTermMapping(buildFieldMapping(dataMappingRequest))
         .withOdsMappingDataStandard(OdsMappingDataStandard.fromValue(
             dataMappingRequest.getOdsMappingDataStandard().value()));
   }
@@ -194,9 +218,10 @@ public class DataMappingService {
       try {
         kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneDataMapping),
             mapper.valueToTree(tombstoneDataMapping));
-      } catch (JsonProcessingException e){
+      } catch (JsonProcessingException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
-        throw new ProcessingFailedException("Unable to publish tombstone event to provenance service", e);
+        throw new ProcessingFailedException(
+            "Unable to publish tombstone event to provenance service", e);
       }
     } else {
       throw new NotFoundException("Requested data mapping " + id + " does not exist");
@@ -207,32 +232,10 @@ public class DataMappingService {
     var request = fdoRecordService.buildTombstoneRequest(ObjectType.DATA_MAPPING, handle);
     try {
       handleComponent.tombstoneHandle(request, handle);
-    } catch (PidException e){
+    } catch (PidException e) {
       log.error("Unable to tombstone handle {}", handle, e);
       throw new ProcessingFailedException("Unable to tombstone handle", e);
     }
-  }
-
-  private static DataMapping buildTombstoneDataMapping(DataMapping dataMapping, Agent tombstoningAgent,
-      Instant timestamp) {
-    return new DataMapping()
-        .withId(dataMapping.getId())
-        .withType(dataMapping.getType())
-        .withOdsID(dataMapping.getOdsID())
-        .withOdsType(dataMapping.getOdsType())
-        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
-        .withSchemaVersion(dataMapping.getSchemaVersion() + 1)
-        .withSchemaName(dataMapping.getSchemaName())
-        .withSchemaDescription(dataMapping.getSchemaDescription())
-        .withSchemaDateCreated(dataMapping.getSchemaDateCreated())
-        .withSchemaDateModified(Date.from(timestamp))
-        .withSchemaCreator(dataMapping.getSchemaCreator())
-        .withOdsDefaultMapping(dataMapping.getOdsDefaultMapping())
-        .withOdsFieldMapping(dataMapping.getOdsFieldMapping())
-        .withOdsMappingDataStandard(dataMapping.getOdsMappingDataStandard())
-        .withOdsTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
-            "Data Mapping tombstoned by user through the orchestration backend", timestamp));
-
   }
 
   protected Optional<DataMapping> getActiveDataMapping(String id) {
