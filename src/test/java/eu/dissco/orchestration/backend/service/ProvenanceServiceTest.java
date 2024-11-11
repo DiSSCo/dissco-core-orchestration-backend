@@ -20,7 +20,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstone
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
@@ -84,7 +83,7 @@ class ProvenanceServiceTest {
   }
 
   @Test
-  void testGenerateCreateEvent() throws JsonProcessingException {
+  void testGenerateCreateEvent() {
     // Given
     given(properties.getName()).willReturn(APP_NAME);
     given(properties.getPid()).willReturn(APP_HANDLE);
@@ -103,7 +102,7 @@ class ProvenanceServiceTest {
   }
 
   @Test
-  void testGenerateUpdateEvent() throws JsonProcessingException {
+  void testGenerateUpdateEvent() {
     // Given
     given(properties.getName()).willReturn(APP_NAME);
     given(properties.getPid()).willReturn(APP_HANDLE);
@@ -123,7 +122,7 @@ class ProvenanceServiceTest {
   }
 
   @Test
-  void testGenerateTombstoneEventMas() throws Exception {
+  void testGenerateTombstoneEventMas() {
     // Given
     given(properties.getName()).willReturn(APP_NAME);
     given(properties.getPid()).willReturn(APP_HANDLE);
@@ -143,7 +142,7 @@ class ProvenanceServiceTest {
   }
 
   @Test
-  void testGenerateTombstoneEventSourceSystem() throws Exception {
+  void testGenerateTombstoneEventSourceSystem() {
     // Given
     given(properties.getName()).willReturn(APP_NAME);
     given(properties.getPid()).willReturn(APP_HANDLE);
@@ -163,7 +162,7 @@ class ProvenanceServiceTest {
   }
 
   @Test
-  void testGenerateTombstoneEventDataMapping() throws Exception {
+  void testGenerateTombstoneEventDataMapping() {
     // Given
     given(properties.getName()).willReturn(APP_NAME);
     given(properties.getPid()).willReturn(APP_HANDLE);
