@@ -3,6 +3,7 @@ package eu.dissco.orchestration.backend.testutils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.orchestration.backend.domain.AgentRoleType;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -30,6 +31,7 @@ import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest.OdsTranslatorType;
 import eu.dissco.orchestration.backend.schema.TermMapping;
 import eu.dissco.orchestration.backend.schema.TombstoneMetadata;
+import eu.dissco.orchestration.backend.utils.AgentUtils;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -415,10 +417,10 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "id": "20.5000.1025/GW0-POP-XSL",
             "type": "https://doi.org/21.T11148/22e71a0015cbcfba8ffa",
+            "id": "20.5000.1025/GW0-POP-XSL",
             "attributes": {
-              "tombstoneText": "ods:MachineAnnotationService tombstoned by user through the orchestration backend"
+              "tombstoneText": "ods:MachineAnnotationService tombstoned by agent through the orchestration backend"
             }
           }
         }
@@ -434,7 +436,7 @@ public class TestUtils {
     } else {
       message.append("Source System ");
     }
-    message.append("tombstoned by user through the orchestration backend");
+    message.append("tombstoned by agent through the orchestration backend");
 
     return new TombstoneMetadata()
         .withType("ods:TombstoneMetadata")
@@ -444,7 +446,8 @@ public class TestUtils {
   }
 
   public static Agent givenAgent() {
-    return new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR);
+    return AgentUtils.createMachineAgent(null, OBJECT_CREATOR, AgentRoleType.CREATOR,
+        "orcid", Type.SCHEMA_PERSON);
   }
 
   // Token

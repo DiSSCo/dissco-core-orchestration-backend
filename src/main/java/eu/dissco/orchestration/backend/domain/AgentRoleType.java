@@ -12,7 +12,8 @@ public enum AgentRoleType {
   GEOREFERENCER("georeferencer"),
   RIGHTS_OWNER("rights-owner"),
   PROCESSING_SERVICE("processing-service"),
-  SOURCE_SYSTEM("source-system");
+  SOURCE_SYSTEM("source-system"),
+  TOMBSTONER("tombstoner");
 
   private final String name;
 

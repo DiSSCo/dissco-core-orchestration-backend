@@ -1,5 +1,7 @@
 package eu.dissco.orchestration.backend.controller;
 
+import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
+import static eu.dissco.orchestration.backend.domain.AgentRoleType.TOMBSTONER;
 import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,10 +51,10 @@ public class SourceSystemController {
       throws IOException, NotFoundException, ProcessingFailedException, ForbiddenException {
     var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var user = getAgent(authentication);
-    log.info("Received create request for source system: {} from user: {}", sourceSystemRequest,
-        user.getId());
-    var result = service.createSourceSystem(sourceSystemRequest, user, path);
+    var agent = getAgent(authentication, CREATOR);
+    log.info("Received create request for source system: {} from agent: {}", sourceSystemRequest,
+        agent.getId());
+    var result = service.createSourceSystem(sourceSystemRequest, agent, path);
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
@@ -64,10 +66,10 @@ public class SourceSystemController {
       throws IOException, NotFoundException, ProcessingFailedException, ForbiddenException {
     var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
     var id = prefix + '/' + suffix;
-    var user = getAgent(authentication);
-    log.info("Received update request for source system: {} from user: {}", id, user.getId());
+    var agent = getAgent(authentication, CREATOR);
+    log.info("Received update request for source system: {} from agent: {}", id, agent.getId());
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
-    var result = service.updateSourceSystem(id, sourceSystemRequest, user, path, trigger);
+    var result = service.updateSourceSystem(id, sourceSystemRequest, agent, path, trigger);
     if (result == null) {
       return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     } else {
@@ -81,8 +83,8 @@ public class SourceSystemController {
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
       throws NotFoundException, ProcessingFailedException, ForbiddenException {
     String id = prefix + "/" + suffix;
-    var agent = getAgent(authentication);
-    log.info("Received delete request for mapping: {} from user: {}", id, agent.getId());
+    var agent = getAgent(authentication, TOMBSTONER);
+    log.info("Received delete request for mapping: {} from agent: {}", id, agent.getId());
     service.tombstoneSourceSystem(id, agent);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }

@@ -12,7 +12,8 @@ public class TombstoneUtils {
     // This is a utility class
   }
 
-  public static TombstoneMetadata buildTombstoneMetadata(Agent agent, String text, Instant timestamp) {
+  public static TombstoneMetadata buildTombstoneMetadata(Agent agent, String text,
+      Instant timestamp) {
     return new TombstoneMetadata()
         .withType("ods:TombstoneMetadata")
         .withOdsHasAgents(List.of(agent))

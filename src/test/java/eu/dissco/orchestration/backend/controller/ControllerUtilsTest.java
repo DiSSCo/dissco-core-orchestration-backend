@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.controller;
 
+import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.Agent.Type;
+import eu.dissco.orchestration.backend.utils.AgentUtils;
 import eu.dissco.orchestration.backend.utils.ControllerUtils;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +31,30 @@ class ControllerUtilsTest {
   @Mock
   private Authentication authentication;
 
+  private static Stream<Arguments> claimsAndNames() {
+    return Stream.of(
+        Arguments.of(
+            new HashMap<String, Object>(Map.of(
+                "orcid", OBJECT_CREATOR,
+                "family_name", "Attenborough",
+                "given_name", "David")),
+            AgentUtils.createMachineAgent("David Attenborough", OBJECT_CREATOR, CREATOR, "orcid",
+                Type.SCHEMA_PERSON)
+        ),
+        Arguments.of(new HashMap<String, Object>(Map.of(
+                "orcid", OBJECT_CREATOR,
+                "given_name", "David")),
+            AgentUtils.createMachineAgent("David", OBJECT_CREATOR, CREATOR, "orcid",
+                Type.SCHEMA_PERSON)
+        ),
+        Arguments.of(new HashMap<String, Object>(Map.of(
+                "orcid", OBJECT_CREATOR,
+                "family_name", "Attenborough")),
+            AgentUtils.createMachineAgent("Attenborough", OBJECT_CREATOR, CREATOR, "orcid",
+                Type.SCHEMA_PERSON)
+        ));
+  }
+
   @ParameterizedTest
   @MethodSource("claimsAndNames")
   void testGetAgentFullName(Map<String, Object> claims, Agent expected)
@@ -37,7 +63,7 @@ class ControllerUtilsTest {
     givenAuthentication(claims);
 
     // When
-    var agent = ControllerUtils.getAgent(authentication);
+    var agent = ControllerUtils.getAgent(authentication, CREATOR);
 
     // Then
     assertThat(agent).isEqualTo(expected);
@@ -52,40 +78,8 @@ class ControllerUtilsTest {
     givenAuthentication(claims);
 
     // When / Then
-    assertThrows(ForbiddenException.class, () -> ControllerUtils.getAgent(authentication));
+    assertThrows(ForbiddenException.class, () -> ControllerUtils.getAgent(authentication, CREATOR));
   }
-
-
-  private static Stream<Arguments> claimsAndNames() {
-    return Stream.of(
-        Arguments.of(
-            new HashMap<String, Object>(Map.of(
-                "orcid", OBJECT_CREATOR,
-                "family_name", "Attenborough",
-                "given_name", "David")),
-            new Agent()
-                .withId(OBJECT_CREATOR)
-                .withSchemaName("David Attenborough")
-                .withType(Type.SCHEMA_PERSON)
-        ),
-        Arguments.of(new HashMap<String, Object>(Map.of(
-                "orcid", OBJECT_CREATOR,
-                "given_name", "David")),
-            new Agent()
-                .withId(OBJECT_CREATOR)
-                .withSchemaName("David")
-                .withType(Type.SCHEMA_PERSON)
-        ),
-        Arguments.of(new HashMap<String, Object>(Map.of(
-                "orcid", OBJECT_CREATOR,
-                "family_name", "Attenborough")),
-            new Agent()
-                .withId(OBJECT_CREATOR)
-                .withSchemaName("Attenborough")
-                .withType(Type.SCHEMA_PERSON)
-        ));
-  }
-
 
   private void givenAuthentication(Map<String, Object> claims) {
     var principal = mock(Jwt.class);

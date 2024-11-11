@@ -180,7 +180,7 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             any(Object.class));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(expectedMas));
+        .publishCreateEvent(MAPPER.valueToTree(expectedMas), givenAgent());
   }
 
   @ParameterizedTest
@@ -228,7 +228,7 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             any(Object.class));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(mas));
+        .publishCreateEvent(MAPPER.valueToTree(mas), givenAgent());
   }
 
   @Test
@@ -311,7 +311,7 @@ class MachineAnnotationServiceServiceTest {
     given(properties.getNamespace()).willReturn("namespace");
     given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenMas()));
+        .publishCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent());
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
         .willReturn(createDeploy);
@@ -360,7 +360,7 @@ class MachineAnnotationServiceServiceTest {
     given(properties.getNamespace()).willReturn("namespace");
     given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenMas()));
+        .publishCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent());
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
@@ -437,7 +437,8 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             any(Object.class));
     then(kafkaPublisherService).should()
-        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()));
+        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()),
+            givenAgent());
   }
 
   @Test
@@ -520,7 +521,8 @@ class MachineAnnotationServiceServiceTest {
     given(properties.getNamespace()).willReturn("namespace");
     given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()));
+        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()),
+            givenAgent());
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq("namespace"), any(V1Deployment.class))).willReturn(replaceDeploy);
@@ -661,7 +663,7 @@ class MachineAnnotationServiceServiceTest {
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             eq(SUFFIX.toLowerCase() + "-scaled-object"));
     then(handleComponent).should().tombstoneHandle(any(), eq(BARE_HANDLE));
-    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any());
+    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any(), eq(givenAgent()));
   }
 
   @Test
@@ -677,7 +679,7 @@ class MachineAnnotationServiceServiceTest {
     given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", "namespace",
         "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
     doThrow(JsonProcessingException.class).when(kafkaPublisherService)
-        .publishTombstoneEvent(any(), any());
+        .publishTombstoneEvent(any(), any(), eq(givenAgent()));
     given(fdoRecordService.buildTombstoneRequest(ObjectType.MAS, BARE_HANDLE)).willReturn(
         givenTombstoneRequestMas());
 

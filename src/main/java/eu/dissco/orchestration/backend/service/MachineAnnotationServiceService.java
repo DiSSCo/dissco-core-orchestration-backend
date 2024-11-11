@@ -123,7 +123,7 @@ public class MachineAnnotationServiceService {
         .withOdsBatchingPermitted(mas.getOdsBatchingPermitted())
         .withOdsTimeToLive(mas.getOdsTimeToLive())
         .withOdsHasTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
-            "Machine Annotation Service tombstoned by user through the orchestration backend",
+            "Machine Annotation Service tombstoned by agent through the orchestration backend",
             timestamp))
         .withOdsHasEnvironmentalVariables(mas.getOdsHasEnvironmentalVariables())
         .withOdsHasSecretVariables(mas.getOdsHasSecretVariables());
@@ -131,16 +131,16 @@ public class MachineAnnotationServiceService {
 
   public JsonApiWrapper createMachineAnnotationService(
       MachineAnnotationServiceRequest masRequest,
-      Agent user, String path) throws ProcessingFailedException {
+      Agent agent, String path) throws ProcessingFailedException {
     var requestBody = fdoRecordService.buildCreateRequest(masRequest, ObjectType.MAS);
     try {
       var handle = handleComponent.postHandle(requestBody);
       setDefaultMas(masRequest, handle);
-      var mas = buildMachineAnnotationService(masRequest, 1, user, handle,
+      var mas = buildMachineAnnotationService(masRequest, 1, agent, handle,
           Instant.now());
       repository.createMachineAnnotationService(mas);
       createDeployment(mas);
-      publishCreateEvent(mas);
+      publishCreateEvent(mas, agent);
       return wrapSingleResponse(mas, path);
     } catch (PidException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
@@ -148,7 +148,7 @@ public class MachineAnnotationServiceService {
   }
 
   private MachineAnnotationService buildMachineAnnotationService(
-      MachineAnnotationServiceRequest mas, int version, Agent user, String handle,
+      MachineAnnotationServiceRequest mas, int version, Agent agent, String handle,
       Instant created) {
     var id = HANDLE_PROXY + handle;
     return new MachineAnnotationService()
@@ -162,7 +162,7 @@ public class MachineAnnotationServiceService {
         .withSchemaDescription(mas.getSchemaDescription())
         .withSchemaDateCreated(Date.from(created))
         .withSchemaDateModified(Date.from(Instant.now()))
-        .withSchemaCreator(user)
+        .withSchemaCreator(agent)
         .withOdsContainerTag(mas.getOdsContainerTag())
         .withOdsContainerImage(mas.getOdsContainerImage())
         .withOdsHasTargetDigitalObjectFilter(
@@ -344,10 +344,10 @@ public class MachineAnnotationServiceService {
     return mapper.writeValueAsString(templateAsNode);
   }
 
-  private void publishCreateEvent(MachineAnnotationService mas)
+  private void publishCreateEvent(MachineAnnotationService mas, Agent agent)
       throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(mas));
+      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(mas), agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);
       rollbackMasCreation(mas, true, true);
@@ -391,21 +391,21 @@ public class MachineAnnotationServiceService {
   }
 
   public JsonApiWrapper updateMachineAnnotationService(String id,
-      MachineAnnotationServiceRequest masRequest, Agent user, String path)
+      MachineAnnotationServiceRequest masRequest, Agent agent, String path)
       throws NotFoundException, ProcessingFailedException {
     var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var currentMas = currentMasOptional.get();
       setDefaultMas(masRequest, id);
       var machineAnnotationService = buildMachineAnnotationService(masRequest,
-          currentMas.getSchemaVersion() + 1, user, id, Instant.now());
+          currentMas.getSchemaVersion() + 1, agent, id, Instant.now());
       if (isEqual(machineAnnotationService, currentMas)) {
         log.debug("No changes found for MAS");
         return null;
       } else {
         repository.updateMachineAnnotationService(machineAnnotationService);
         updateDeployment(machineAnnotationService, currentMas);
-        publishUpdateEvent(machineAnnotationService, currentMas);
+        publishUpdateEvent(machineAnnotationService, currentMas, agent);
         return wrapSingleResponse(machineAnnotationService, path);
       }
     } else {
@@ -488,11 +488,11 @@ public class MachineAnnotationServiceService {
   }
 
   private void publishUpdateEvent(MachineAnnotationService mas,
-      MachineAnnotationService currentMas)
+      MachineAnnotationService currentMas, Agent agent)
       throws ProcessingFailedException {
     try {
       kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(mas),
-          mapper.valueToTree(currentMas));
+          mapper.valueToTree(currentMas), agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);
       rollbackToPreviousVersion(currentMas, true, true);
@@ -538,7 +538,7 @@ public class MachineAnnotationServiceService {
       repository.tombstoneMachineAnnotationService(tombstoneMas, timestamp);
       try {
         kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneMas),
-            mapper.valueToTree(mas));
+            mapper.valueToTree(mas), agent);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
         throw new ProcessingFailedException(

@@ -40,7 +40,8 @@ public class FdoRecordService {
             .put("type", getFdoType(type))
             .put("id", handle)
             .set("attributes", mapper.createObjectNode()
-                .put("tombstoneText", type.getFullName() + " tombstoned by user through the orchestration backend")));
+                .put("tombstoneText", type.getFullName()
+                    + " tombstoned by agent through the orchestration backend")));
   }
 
   public JsonNode buildRollbackCreateRequest(String handle) {

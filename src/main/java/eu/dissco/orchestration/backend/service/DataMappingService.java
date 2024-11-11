@@ -106,11 +106,11 @@ public class DataMappingService {
         .withOdsHasTermMapping(dataMapping.getOdsHasTermMapping())
         .withOdsMappingDataStandard(dataMapping.getOdsMappingDataStandard())
         .withOdsHasTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
-            "Data Mapping tombstoned by user through the orchestration backend", timestamp));
+            "Data Mapping tombstoned by agent through the orchestration backend", timestamp));
 
   }
 
-  public JsonApiWrapper createDataMapping(DataMappingRequest mappingRequest, Agent user,
+  public JsonApiWrapper createDataMapping(DataMappingRequest mappingRequest, Agent agent,
       String path)
       throws ProcessingFailedException {
     var requestBody = fdoRecordService.buildCreateRequest(mappingRequest, ObjectType.DATA_MAPPING);
@@ -120,15 +120,15 @@ public class DataMappingService {
     } catch (PidException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }
-    var dataMapping = buildDataMapping(mappingRequest, 1, user, handle,
+    var dataMapping = buildDataMapping(mappingRequest, 1, agent, handle,
         Date.from(Instant.now()));
     repository.createDataMapping(dataMapping);
-    publishCreateEvent(dataMapping);
+    publishCreateEvent(dataMapping, agent);
     return wrapSingleResponse(dataMapping, path);
   }
 
   private DataMapping buildDataMapping(DataMappingRequest dataMappingRequest, int version,
-      Agent user, String handle, Date created) {
+      Agent agent, String handle, Date created) {
     var id = HANDLE_PROXY + handle;
     return new DataMapping()
         .withId(id)
@@ -141,17 +141,17 @@ public class DataMappingService {
         .withSchemaDescription(dataMappingRequest.getSchemaDescription())
         .withSchemaDateCreated(created)
         .withSchemaDateModified(Date.from(Instant.now()))
-        .withSchemaCreator(user)
+        .withSchemaCreator(agent)
         .withOdsHasDefaultMapping(buildDefaultMapping(dataMappingRequest))
         .withOdsHasTermMapping(buildFieldMapping(dataMappingRequest))
         .withOdsMappingDataStandard(OdsMappingDataStandard.fromValue(
             dataMappingRequest.getOdsMappingDataStandard().value()));
   }
 
-  private void publishCreateEvent(DataMapping dataMapping)
+  private void publishCreateEvent(DataMapping dataMapping, Agent agent)
       throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(dataMapping));
+      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(dataMapping), agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);
       rollbackMappingCreation(dataMapping);
@@ -172,7 +172,7 @@ public class DataMappingService {
   }
 
   public JsonApiWrapper updateDataMapping(String id, DataMappingRequest dataMappingRequest,
-      Agent user, String path) throws NotFoundException, ProcessingFailedException {
+      Agent agent, String path) throws NotFoundException, ProcessingFailedException {
     var currentDataMappingOptional = repository.getActiveDataMapping(id);
     if (currentDataMappingOptional.isEmpty()) {
       throw new NotFoundException("Requested data mapping does not exist");
@@ -180,21 +180,21 @@ public class DataMappingService {
     var currentDataMapping = currentDataMappingOptional.get();
     var dataMapping = buildDataMapping(dataMappingRequest,
         currentDataMapping.getSchemaVersion() + 1,
-        user, id, currentDataMapping.getSchemaDateCreated());
+        agent, id, currentDataMapping.getSchemaDateCreated());
     if (isEqual(dataMapping, currentDataMapping)) {
       return null;
     } else {
       repository.updateDataMapping(dataMapping);
-      publishUpdateEvent(dataMapping, currentDataMappingOptional.get());
+      publishUpdateEvent(dataMapping, currentDataMappingOptional.get(), agent);
       return wrapSingleResponse(dataMapping, path);
     }
   }
 
   private void publishUpdateEvent(DataMapping dataMapping,
-      DataMapping currentDataMapping) throws ProcessingFailedException {
+      DataMapping currentDataMapping, Agent agent) throws ProcessingFailedException {
     try {
       kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(dataMapping),
-          mapper.valueToTree(currentDataMapping));
+          mapper.valueToTree(currentDataMapping), agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);
       rollbackToPreviousVersion(currentDataMapping);
@@ -217,7 +217,7 @@ public class DataMappingService {
       repository.tombstoneDataMapping(tombstoneDataMapping, timestamp);
       try {
         kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneDataMapping),
-            mapper.valueToTree(tombstoneDataMapping));
+            mapper.valueToTree(tombstoneDataMapping), agent);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
         throw new ProcessingFailedException(

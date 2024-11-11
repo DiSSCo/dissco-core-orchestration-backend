@@ -68,11 +68,6 @@ public class SourceSystemService {
   private final Random random;
   private final FdoProperties fdoProperties;
 
-  @PostConstruct
-  public void setup() throws ApiException {
-    updateCronsToImageTag();
-  }
-
   private static String getSuffix(String sourceSystemId) {
     return sourceSystemId.substring(sourceSystemId.lastIndexOf('/') + 1).toLowerCase();
   }
@@ -113,6 +108,36 @@ public class SourceSystemService {
             currentSourceSystem.getOdsMaximumRecords());
   }
 
+  private static SourceSystem buildTombstoneSourceSystem(SourceSystem sourceSystem,
+      Agent tombstoningAgent,
+      Instant timestamp) {
+    return new SourceSystem()
+        .withId(sourceSystem.getId())
+        .withType(sourceSystem.getType())
+        .withSchemaIdentifier(sourceSystem.getSchemaIdentifier())
+        .withOdsFdoType(sourceSystem.getOdsFdoType())
+        .withOdsStatus(OdsStatus.TOMBSTONE)
+        .withSchemaVersion(sourceSystem.getSchemaVersion() + 1)
+        .withSchemaName(sourceSystem.getSchemaName())
+        .withSchemaDescription(sourceSystem.getSchemaDescription())
+        .withSchemaDateCreated(sourceSystem.getSchemaDateCreated())
+        .withSchemaDateModified(Date.from(timestamp))
+        .withSchemaCreator(sourceSystem.getSchemaCreator())
+        .withSchemaUrl(sourceSystem.getSchemaUrl())
+        .withLtcCollectionManagementSystem(sourceSystem.getLtcCollectionManagementSystem())
+        .withOdsTranslatorType(sourceSystem.getOdsTranslatorType())
+        .withOdsMaximumRecords(sourceSystem.getOdsMaximumRecords())
+        .withOdsDataMappingID(sourceSystem.getOdsDataMappingID())
+        .withOdsHasTombstoneMetadata(
+            buildTombstoneMetadata(tombstoningAgent,
+                "Source System tombstoned by agent through the orchestration backend", timestamp));
+  }
+
+  @PostConstruct
+  public void setup() throws ApiException {
+    updateCronsToImageTag();
+  }
+
   private void updateCronsToImageTag() throws ApiException {
     log.info("Updating all cron jobs to use image tag: {}", jobProperties.getImage());
     var cronJobs = batchV1Api.listNamespacedCronJob(jobProperties.getNamespace()).execute();
@@ -136,7 +161,7 @@ public class SourceSystemService {
   }
 
   private SourceSystem buildSourceSystem(
-      SourceSystemRequest sourceSystemRequest, int version, Agent user, String handle,
+      SourceSystemRequest sourceSystemRequest, int version, Agent agent, String handle,
       Date created) {
     var id = HANDLE_PROXY + handle;
     return new SourceSystem()
@@ -150,7 +175,7 @@ public class SourceSystemService {
         .withSchemaDescription(sourceSystemRequest.getSchemaDescription())
         .withSchemaDateCreated(created)
         .withSchemaDateModified(Date.from(Instant.now()))
-        .withSchemaCreator(user)
+        .withSchemaCreator(agent)
         .withSchemaUrl(sourceSystemRequest.getSchemaUrl())
         .withOdsDataMappingID(sourceSystemRequest.getOdsDataMappingID())
         .withOdsTranslatorType(
@@ -159,17 +184,17 @@ public class SourceSystemService {
         .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem());
   }
 
-  public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent user,
+  public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent agent,
       String path)
       throws NotFoundException, ProcessingFailedException {
     validateMappingExists(sourceSystemRequest.getOdsDataMappingID());
     String handle = createHandle(sourceSystemRequest);
-    var sourceSystem = buildSourceSystem(sourceSystemRequest, 1, user, handle,
+    var sourceSystem = buildSourceSystem(sourceSystemRequest, 1, agent, handle,
         Date.from(Instant.now()));
     repository.createSourceSystem(sourceSystem);
     createCronJob(sourceSystem);
     createTranslatorJob(sourceSystem, true);
-    publishCreateEvent(sourceSystem);
+    publishCreateEvent(sourceSystem, agent);
     return wrapSingleResponse(sourceSystem, path);
   }
 
@@ -227,10 +252,10 @@ public class SourceSystemService {
     return k8sCron;
   }
 
-  private void publishCreateEvent(SourceSystem sourceSystem)
+  private void publishCreateEvent(SourceSystem sourceSystem, Agent agent)
       throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(sourceSystem));
+      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(sourceSystem), agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);
       rollbackSourceSystemCreation(sourceSystem, true);
@@ -267,7 +292,7 @@ public class SourceSystemService {
   }
 
   public JsonApiWrapper updateSourceSystem(String id, SourceSystemRequest sourceSystemRequest,
-      Agent user, String path, boolean trigger)
+      Agent agent, String path, boolean trigger)
       throws NotFoundException, ProcessingFailedException {
     var currentSourceSystemOptional = repository.getActiveSourceSystem(id);
     if (currentSourceSystemOptional.isEmpty()) {
@@ -276,7 +301,7 @@ public class SourceSystemService {
     }
     var currentSourceSystem = currentSourceSystemOptional.get();
     var sourceSystem = buildSourceSystem(sourceSystemRequest,
-        currentSourceSystem.getSchemaVersion() + 1, user, id,
+        currentSourceSystem.getSchemaVersion() + 1, agent, id,
         currentSourceSystem.getSchemaDateCreated());
     if (isEquals(sourceSystem, currentSourceSystem)) {
       log.info(
@@ -290,7 +315,7 @@ public class SourceSystemService {
       log.info("Translator Job requested for updated source system: {}", id);
       triggerTranslatorForUpdatedSourceSystem(sourceSystem, currentSourceSystem);
     }
-    publishUpdateEvent(sourceSystem, currentSourceSystem);
+    publishUpdateEvent(sourceSystem, currentSourceSystem, agent);
     return wrapSingleResponse(sourceSystem, path);
   }
 
@@ -319,10 +344,10 @@ public class SourceSystemService {
   }
 
   private void publishUpdateEvent(SourceSystem newSourceSystem,
-      SourceSystem currentSourceSystem) throws ProcessingFailedException {
+      SourceSystem currentSourceSystem, Agent agent) throws ProcessingFailedException {
     try {
       kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(newSourceSystem),
-          mapper.valueToTree(currentSourceSystem));
+          mapper.valueToTree(currentSourceSystem), agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to Kafka", e);
       rollbackToPreviousVersion(currentSourceSystem, true);
@@ -379,10 +404,12 @@ public class SourceSystemService {
       var tombstoneSourceSystem = buildTombstoneSourceSystem(sourceSystem, agent, timestamp);
       repository.tombstoneSourceSystem(tombstoneSourceSystem, timestamp);
       try {
-        kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneSourceSystem), mapper.valueToTree(sourceSystem));
+        kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneSourceSystem),
+            mapper.valueToTree(sourceSystem), agent);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
-        throw new ProcessingFailedException("Unable to publish tombstone event to provenance service", e);
+        throw new ProcessingFailedException(
+            "Unable to publish tombstone event to provenance service", e);
       }
       log.info("Delete request for source system: {} was successful", id);
     } else {
@@ -394,34 +421,10 @@ public class SourceSystemService {
     var request = fdoRecordService.buildTombstoneRequest(ObjectType.SOURCE_SYSTEM, handle);
     try {
       handleComponent.tombstoneHandle(request, handle);
-    } catch (PidException e){
+    } catch (PidException e) {
       log.error("Unable to tombstone handle {}", handle, e);
       throw new ProcessingFailedException("Unable to tombstone handle", e);
     }
-  }
-
-  private static SourceSystem buildTombstoneSourceSystem(SourceSystem sourceSystem, Agent tombstoningAgent,
-      Instant timestamp) {
-    return new SourceSystem()
-        .withId(sourceSystem.getId())
-        .withType(sourceSystem.getType())
-        .withSchemaIdentifier(sourceSystem.getSchemaIdentifier())
-        .withOdsFdoType(sourceSystem.getOdsFdoType())
-        .withOdsStatus(OdsStatus.TOMBSTONE)
-        .withSchemaVersion(sourceSystem.getSchemaVersion() + 1)
-        .withSchemaName(sourceSystem.getSchemaName())
-        .withSchemaDescription(sourceSystem.getSchemaDescription())
-        .withSchemaDateCreated(sourceSystem.getSchemaDateCreated())
-        .withSchemaDateModified(Date.from(timestamp))
-        .withSchemaCreator(sourceSystem.getSchemaCreator())
-        .withSchemaUrl(sourceSystem.getSchemaUrl())
-        .withLtcCollectionManagementSystem(sourceSystem.getLtcCollectionManagementSystem())
-        .withOdsTranslatorType(sourceSystem.getOdsTranslatorType())
-        .withOdsMaximumRecords(sourceSystem.getOdsMaximumRecords())
-        .withOdsDataMappingID(sourceSystem.getOdsDataMappingID())
-        .withOdsHasTombstoneMetadata(
-            buildTombstoneMetadata(tombstoningAgent,
-                "Source System tombstoned by user through the orchestration backend", timestamp));
   }
 
   private JsonApiListWrapper wrapResponse(List<SourceSystem> sourceSystems, int pageNum,
