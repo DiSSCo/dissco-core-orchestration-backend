@@ -47,7 +47,7 @@ class ProvenanceServiceTest {
             .withType(Type.SCHEMA_PERSON),
         new Agent()
             .withId(APP_HANDLE)
-            .withType(Type.AS_APPLICATION)
+            .withType(Type.PROV_SOFTWARE_AGENT)
             .withSchemaName(APP_NAME)
     );
   }
@@ -68,11 +68,11 @@ class ProvenanceServiceTest {
     var event = service.generateCreateEvent(MAPPER.valueToTree(machineAnnotationService));
 
     // Then
-    assertThat(event.getOdsID()).isEqualTo(HANDLE + "/" + "1");
+    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "1");
     assertThat(event.getProvActivity().getOdsChangeValue()).isNull();
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object newly created");
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
-    assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
+    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
   }
 
   @Test
@@ -88,11 +88,11 @@ class ProvenanceServiceTest {
         MAPPER.valueToTree(prevMachineAnnotationService));
 
     // Then
-    assertThat(event.getOdsID()).isEqualTo(HANDLE + "/" + "2");
+    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object updated");
     assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(givenChangeValueUpdate());
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
-    assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
+    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
   }
 
   @Test
@@ -107,12 +107,12 @@ class ProvenanceServiceTest {
     var event = service.generateTombstoneEvent(tombstoneMas, originalMas);
 
     // Then
-    assertThat(event.getOdsID()).isEqualTo(HANDLE + "/" + "2");
+    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
     assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(
         givenChangeValueTombstone(ObjectType.MAS));
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object tombstoned");
-    assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
+    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
   }
 
   @Test
@@ -127,11 +127,11 @@ class ProvenanceServiceTest {
     var event = service.generateTombstoneEvent(tombstoneSourceSystem, originalSourceSystem);
 
     // Then
-    assertThat(event.getOdsID()).isEqualTo(HANDLE + "/" + "2");
+    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
     assertThat(event.getProvActivity().getOdsChangeValue()).hasSameElementsAs(
         givenChangeValueTombstone(ObjectType.SOURCE_SYSTEM));
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
-    assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
+    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
   }
 
   @Test
@@ -146,18 +146,18 @@ class ProvenanceServiceTest {
     var event = service.generateTombstoneEvent(tombstoneDataMapping, originalDataMapping);
 
     // Then
-    assertThat(event.getOdsID()).isEqualTo(HANDLE + "/" + "2");
+    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
     assertThat(event.getProvActivity().getOdsChangeValue()).hasSameElementsAs(
         givenChangeValueTombstone(ObjectType.DATA_MAPPING));
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
-    assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
+    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
   }
 
 
   private static List<OdsChangeValue> givenChangeValueTombstone(ObjectType objectType) {
     return List.of(
-        givenOdsChangeValue("add", "/ods:TombstoneMetadata", givenTombstoneMetadata(objectType)),
-        givenOdsChangeValue("replace", "/ods:status", OdsStatus.ODS_TOMBSTONE),
+        givenOdsChangeValue("add", "/ods:hasTombstoneMetadata", givenTombstoneMetadata(objectType)),
+        givenOdsChangeValue("replace", "/ods:status", OdsStatus.TOMBSTONE),
         givenOdsChangeValue("replace", "/schema:version", 2),
         givenOdsChangeValue("replace", "/schema:dateModified", Date.from(UPDATED))
     );

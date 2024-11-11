@@ -159,8 +159,8 @@ class DataMappingRepositoryIT extends BaseRepositoryIT {
   void testTombstoneDataMapping() throws JsonProcessingException {
     // Given
     var dataMapping = givenDataMapping(HANDLE, 1);
-    dataMapping.setOdsStatus(OdsStatus.ODS_TOMBSTONE);
-    dataMapping.setOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.DATA_MAPPING));
+    dataMapping.setOdsStatus(OdsStatus.TOMBSTONE);
+    dataMapping.setOdsHasTombstoneMetadata(givenTombstoneMetadata(ObjectType.DATA_MAPPING));
     postDataMappings(List.of(dataMapping));
 
     // When

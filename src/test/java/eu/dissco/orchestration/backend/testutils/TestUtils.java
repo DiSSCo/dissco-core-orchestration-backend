@@ -17,11 +17,10 @@ import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest.OdsMappingDataStandard;
 import eu.dissco.orchestration.backend.schema.DefaultMapping;
 import eu.dissco.orchestration.backend.schema.EnvironmentalVariable;
-import eu.dissco.orchestration.backend.schema.FieldMapping;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
-import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter;
-import eu.dissco.orchestration.backend.schema.OdsTargetDigitalObjectFilter__1;
+import eu.dissco.orchestration.backend.schema.OdsHasTargetDigitalObjectFilter;
+import eu.dissco.orchestration.backend.schema.OdsHasTargetDigitalObjectFilter__1;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
 import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
 import eu.dissco.orchestration.backend.schema.SecretVariable;
@@ -29,6 +28,7 @@ import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest.OdsTranslatorType;
+import eu.dissco.orchestration.backend.schema.TermMapping;
 import eu.dissco.orchestration.backend.schema.TombstoneMetadata;
 import java.net.URI;
 import java.time.Instant;
@@ -144,10 +144,10 @@ public class TestUtils {
       SourceSystem.OdsTranslatorType translatorType) {
     return new SourceSystem()
         .withId(id)
-        .withOdsID(id)
+        .withSchemaIdentifier(id)
         .withType("ods:SourceSystem")
-        .withOdsType(SOURCE_SYSTEM_TYPE_DOI)
-        .withOdsStatus(OdsStatus.ODS_ACTIVE)
+        .withOdsFdoType(SOURCE_SYSTEM_TYPE_DOI)
+        .withOdsStatus(OdsStatus.ACTIVE)
         .withSchemaVersion(version)
         .withSchemaDateCreated(Date.from(CREATED))
         .withSchemaDateModified(Date.from(CREATED))
@@ -159,12 +159,12 @@ public class TestUtils {
         .withOdsDataMappingID(HANDLE_ALT);
   }
 
-  public static SourceSystem givenTombstoneSourceSystem(){
+  public static SourceSystem givenTombstoneSourceSystem() {
     return givenSourceSystem()
-        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withOdsStatus(OdsStatus.TOMBSTONE)
         .withSchemaDateModified(Date.from(UPDATED))
         .withSchemaVersion(2)
-        .withOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.SOURCE_SYSTEM));
+        .withOdsHasTombstoneMetadata(givenTombstoneMetadata(ObjectType.SOURCE_SYSTEM));
   }
 
   public static SourceSystemRequest givenSourceSystemRequest() {
@@ -215,31 +215,31 @@ public class TestUtils {
   public static DataMapping givenDataMapping(String id, int version, String name) {
     return new DataMapping()
         .withId(id)
-        .withOdsID(id)
+        .withSchemaIdentifier(id)
         .withType("ods:DataMapping")
-        .withOdsType(DATA_MAPPING_TYPE_DOI)
+        .withOdsFdoType(DATA_MAPPING_TYPE_DOI)
         .withSchemaVersion(version)
-        .withOdsStatus(DataMapping.OdsStatus.ODS_ACTIVE)
+        .withOdsStatus(DataMapping.OdsStatus.ACTIVE)
         .withSchemaName(name)
         .withSchemaDescription(OBJECT_DESCRIPTION)
         .withSchemaDateCreated(Date.from(CREATED))
         .withSchemaDateModified(Date.from(CREATED))
-        .withOdsDefaultMapping(List.of(
+        .withOdsHasDefaultMapping(List.of(
             new DefaultMapping().withAdditionalProperty("ods:organisationID",
                 "https://ror.org/05xg72x27")))
-        .withOdsFieldMapping(List.of(
-            new FieldMapping().withAdditionalProperty("ods:physicalSpecimenID",
+        .withOdsHasTermMapping(List.of(
+            new TermMapping().withAdditionalProperty("ods:physicalSpecimenID",
                 "dwc:catalogNumber")))
         .withSchemaCreator(givenAgent())
-        .withOdsMappingDataStandard(DataMapping.OdsMappingDataStandard.DWC);
+        .withOdsMappingDataStandard(DataMapping.OdsMappingDataStandard.DW_C);
   }
 
-  public static DataMapping givenTombstoneDataMapping(){
+  public static DataMapping givenTombstoneDataMapping() {
     return givenDataMapping()
-        .withOdsStatus(DataMapping.OdsStatus.ODS_TOMBSTONE)
+        .withOdsStatus(DataMapping.OdsStatus.TOMBSTONE)
         .withSchemaDateModified(Date.from(UPDATED))
         .withSchemaVersion(2)
-        .withOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.DATA_MAPPING));
+        .withOdsHasTombstoneMetadata(givenTombstoneMetadata(ObjectType.DATA_MAPPING));
   }
 
 
@@ -247,13 +247,13 @@ public class TestUtils {
     return new DataMappingRequest()
         .withSchemaName(OBJECT_NAME)
         .withSchemaDescription(OBJECT_DESCRIPTION)
-        .withOdsDefaultMapping(List.of(
+        .withOdsHasDefaultMapping(List.of(
             new DefaultMapping().withAdditionalProperty("ods:organisationID",
                 "https://ror.org/05xg72x27")))
-        .withOdsFieldMapping(List.of(
-            new FieldMapping().withAdditionalProperty("ods:physicalSpecimenID",
+        .withOdsHasTermMapping(List.of(
+            new TermMapping().withAdditionalProperty("ods:physicalSpecimenID",
                 "dwc:catalogNumber")))
-        .withOdsMappingDataStandard(OdsMappingDataStandard.DWC);
+        .withOdsMappingDataStandard(OdsMappingDataStandard.DW_C);
   }
 
   public static JsonApiListWrapper givenMappingResponse(List<DataMapping> dataMappings,
@@ -281,8 +281,8 @@ public class TestUtils {
         .withSchemaName(MAS_NAME)
         .withOdsContainerImage("public.ecr.aws/dissco/fancy-mas")
         .withOdsContainerTag("sha-54289")
-        .withOdsTargetDigitalObjectFilter(
-            new OdsTargetDigitalObjectFilter().withAdditionalProperty("ods:topicDiscipline",
+        .withOdsHasTargetDigitalObjectFilter(
+            new OdsHasTargetDigitalObjectFilter().withAdditionalProperty("ods:topicDiscipline",
                 "botany"))
         .withSchemaDescription("A fancy mas making all dreams come true")
         .withSchemaCreativeWorkStatus("Definitely production ready")
@@ -297,8 +297,8 @@ public class TestUtils {
         .withOdsMaxReplicas(5)
         .withOdsBatchingPermitted(false)
         .withOdsTimeToLive(TTL)
-        .withOdsHasSecretVariable(givenMasSecrets())
-        .withOdsHasEnvironmentalVariable(givenMasEnvironment());
+        .withOdsHasSecretVariables(givenMasSecrets())
+        .withOdsHasEnvironmentalVariables(givenMasEnvironment());
   }
 
   public static List<EnvironmentalVariable> givenMasEnvironment() {
@@ -329,19 +329,19 @@ public class TestUtils {
       Integer ttl) {
     return new MachineAnnotationService()
         .withId(id)
-        .withOdsID(id)
+        .withSchemaIdentifier(id)
         .withType("ods:MachineAnnotationService")
-        .withOdsType("https://hdl.handle.net/21.T11148/22e71a0015cbcfba8ffa")
+        .withOdsFdoType("https://hdl.handle.net/21.T11148/22e71a0015cbcfba8ffa")
         .withSchemaVersion(version)
-        .withOdsStatus(MachineAnnotationService.OdsStatus.ODS_ACTIVE)
+        .withOdsStatus(MachineAnnotationService.OdsStatus.ACTIVE)
         .withSchemaDateCreated(Date.from(CREATED))
         .withSchemaDateModified(Date.from(CREATED))
         .withSchemaCreator(givenAgent())
         .withSchemaName(name)
         .withOdsContainerImage("public.ecr.aws/dissco/fancy-mas")
         .withOdsContainerTag("sha-54289")
-        .withOdsTargetDigitalObjectFilter(
-            new OdsTargetDigitalObjectFilter__1().withAdditionalProperty("ods:topicDiscipline",
+        .withOdsHasTargetDigitalObjectFilter(
+            new OdsHasTargetDigitalObjectFilter__1().withAdditionalProperty("ods:topicDiscipline",
                 "botany"))
         .withSchemaDescription("A fancy mas making all dreams come true")
         .withSchemaCreativeWorkStatus("Definitely production ready")
@@ -350,22 +350,21 @@ public class TestUtils {
         .withOdsServiceAvailability("99.99%")
         .withSchemaMaintainer(givenAgent())
         .withSchemaLicense("https://www.apache.org/licenses/LICENSE-2.0")
-        .withOdsDependency(List.of())
         .withSchemaContactPoint(new SchemaContactPoint__1().withSchemaEmail("dontmail@dissco.eu"))
         .withOdsTopicName("fancy-topic-name")
         .withOdsMaxReplicas(5)
         .withOdsBatchingPermitted(false)
         .withOdsTimeToLive(ttl)
-        .withOdsHasEnvironmentalVariable(givenMasEnvironment())
-        .withOdsHasSecretVariable(givenMasSecrets());
+        .withOdsHasEnvironmentalVariables(givenMasEnvironment())
+        .withOdsHasSecretVariables(givenMasSecrets());
   }
 
-  public static MachineAnnotationService givenTombstoneMas(){
+  public static MachineAnnotationService givenTombstoneMas() {
     return givenMas()
-        .withOdsStatus(MachineAnnotationService.OdsStatus.ODS_TOMBSTONE)
+        .withOdsStatus(MachineAnnotationService.OdsStatus.TOMBSTONE)
         .withSchemaVersion(2)
         .withSchemaDateModified(Date.from(UPDATED))
-        .withOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.MAS));
+        .withOdsHasTombstoneMetadata(givenTombstoneMetadata(ObjectType.MAS));
   }
 
   public static JsonNode givenMasHandleRequest() throws Exception {
@@ -398,7 +397,7 @@ public class TestUtils {
           "data": {
             "type": "https://doi.org/21.T11148/ce794a6f4df42eb7e77e",
             "attributes": {
-              "sourceDataStandard": "dwc"
+              "sourceDataStandard": "DwC"
             }
           }
         }""");
@@ -428,9 +427,9 @@ public class TestUtils {
 
   public static TombstoneMetadata givenTombstoneMetadata(ObjectType objectType) {
     var message = new StringBuilder();
-    if (objectType.equals(ObjectType.MAS)){
+    if (objectType.equals(ObjectType.MAS)) {
       message.append("Machine Annotation Service ");
-    } else if (objectType.equals(ObjectType.DATA_MAPPING)){
+    } else if (objectType.equals(ObjectType.DATA_MAPPING)) {
       message.append("Data Mapping ");
     } else {
       message.append("Source System ");
@@ -439,12 +438,12 @@ public class TestUtils {
 
     return new TombstoneMetadata()
         .withType("ods:TombstoneMetadata")
-        .withOdsTombstonedByAgent(givenAgent())
+        .withOdsHasAgents(List.of(givenAgent()))
         .withOdsTombstoneDate(Date.from(UPDATED))
         .withOdsTombstoneText(message.toString());
   }
 
-  public static Agent givenAgent(){
+  public static Agent givenAgent() {
     return new Agent().withType(Type.SCHEMA_PERSON).withId(OBJECT_CREATOR);
   }
 
