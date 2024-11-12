@@ -4,7 +4,8 @@ import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
 import static eu.dissco.orchestration.backend.domain.AgentRoleType.PROCESSING_SERVICE;
 import static eu.dissco.orchestration.backend.schema.Agent.Type.PROV_PERSON;
 import static eu.dissco.orchestration.backend.schema.Agent.Type.PROV_SOFTWARE_AGENT;
-import static eu.dissco.orchestration.backend.utils.AgentUtils.createMachineAgent;
+import static eu.dissco.orchestration.backend.utils.AgentUtils.createAgent;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.ORCID;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -95,9 +96,8 @@ public class ProvenanceService {
             .withProvValue(mapEntityToProvValue(digitalObject))
             .withProvWasGeneratedBy(activityID))
         .withOdsHasAgents(
-            List.of(createMachineAgent(agent.getSchemaName(), agent.getId(), CREATOR,
-                    "orcid", PROV_PERSON),
-                createMachineAgent(properties.getName(), properties.getPid(),
+            List.of(createAgent(agent.getSchemaName(), agent.getId(), CREATOR, ORCID, PROV_PERSON),
+                createAgent(properties.getName(), properties.getPid(),
                     PROCESSING_SERVICE, DctermsType.DOI.value(), PROV_SOFTWARE_AGENT)));
   }
 

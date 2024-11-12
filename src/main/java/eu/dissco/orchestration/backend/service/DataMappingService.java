@@ -73,23 +73,21 @@ public class DataMappingService {
     return mappedList;
   }
 
-  private static List<TermMapping> buildFieldMapping(
-      DataMappingRequest dataMappingRequest) {
+  private static List<TermMapping> buildTermMapping(DataMappingRequest dataMappingRequest) {
     var mappedList = new ArrayList<TermMapping>();
     for (var odsDefaultMapping : dataMappingRequest.getOdsHasTermMapping()) {
-      var mappedOdsFieldMapping = new TermMapping();
+      var mappedOdsTermMapping = new TermMapping();
       for (var property : odsDefaultMapping.getAdditionalProperties()
           .entrySet()) {
-        mappedOdsFieldMapping.setAdditionalProperty(property.getKey(), property.getValue());
+        mappedOdsTermMapping.setAdditionalProperty(property.getKey(), property.getValue());
       }
-      mappedList.add(mappedOdsFieldMapping);
+      mappedList.add(mappedOdsTermMapping);
     }
     return mappedList;
   }
 
   private static DataMapping buildTombstoneDataMapping(DataMapping dataMapping,
-      Agent tombstoningAgent,
-      Instant timestamp) {
+      Agent tombstoningAgent, Instant timestamp) {
     return new DataMapping()
         .withId(dataMapping.getId())
         .withType(dataMapping.getType())
@@ -143,7 +141,7 @@ public class DataMappingService {
         .withSchemaDateModified(Date.from(Instant.now()))
         .withSchemaCreator(agent)
         .withOdsHasDefaultMapping(buildDefaultMapping(dataMappingRequest))
-        .withOdsHasTermMapping(buildFieldMapping(dataMappingRequest))
+        .withOdsHasTermMapping(buildTermMapping(dataMappingRequest))
         .withOdsMappingDataStandard(OdsMappingDataStandard.fromValue(
             dataMappingRequest.getOdsMappingDataStandard().value()));
   }

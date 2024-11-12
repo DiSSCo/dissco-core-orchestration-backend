@@ -38,19 +38,19 @@ class ControllerUtilsTest {
                 "orcid", OBJECT_CREATOR,
                 "family_name", "Attenborough",
                 "given_name", "David")),
-            AgentUtils.createMachineAgent("David Attenborough", OBJECT_CREATOR, CREATOR, "orcid",
+            AgentUtils.createAgent("David Attenborough", OBJECT_CREATOR, CREATOR, "orcid",
                 Type.SCHEMA_PERSON)
         ),
         Arguments.of(new HashMap<String, Object>(Map.of(
                 "orcid", OBJECT_CREATOR,
                 "given_name", "David")),
-            AgentUtils.createMachineAgent("David", OBJECT_CREATOR, CREATOR, "orcid",
+            AgentUtils.createAgent("David", OBJECT_CREATOR, CREATOR, "orcid",
                 Type.SCHEMA_PERSON)
         ),
         Arguments.of(new HashMap<String, Object>(Map.of(
                 "orcid", OBJECT_CREATOR,
                 "family_name", "Attenborough")),
-            AgentUtils.createMachineAgent("Attenborough", OBJECT_CREATOR, CREATOR, "orcid",
+            AgentUtils.createAgent("Attenborough", OBJECT_CREATOR, CREATOR, "orcid",
                 Type.SCHEMA_PERSON)
         ));
   }

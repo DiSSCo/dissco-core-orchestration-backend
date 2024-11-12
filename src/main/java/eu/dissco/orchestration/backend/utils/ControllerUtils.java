@@ -1,6 +1,6 @@
 package eu.dissco.orchestration.backend.utils;
 
-import static eu.dissco.orchestration.backend.utils.AgentUtils.createMachineAgent;
+import static eu.dissco.orchestration.backend.utils.AgentUtils.createAgent;
 
 import eu.dissco.orchestration.backend.domain.AgentRoleType;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
@@ -13,7 +13,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 @Slf4j
 public class ControllerUtils {
 
-  private static final String ORCID = "orcid";
+  public static final String ORCID = "orcid";
 
   private ControllerUtils() {
   }
@@ -33,7 +33,7 @@ public class ControllerUtils {
         fullName.append(claims.get("family_name"));
       }
       var nameString = fullName.toString().isEmpty() ? null : fullName.toString();
-      return createMachineAgent(nameString, (String) claims.get(ORCID), roleType, ORCID,
+      return createAgent(nameString, (String) claims.get(ORCID), roleType, ORCID,
           Type.SCHEMA_PERSON);
     } else {
       log.error("Missing ORCID in token");

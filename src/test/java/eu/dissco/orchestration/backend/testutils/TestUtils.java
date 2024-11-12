@@ -446,7 +446,7 @@ public class TestUtils {
   }
 
   public static Agent givenAgent() {
-    return AgentUtils.createMachineAgent(null, OBJECT_CREATOR, AgentRoleType.CREATOR,
+    return AgentUtils.createAgent(null, OBJECT_CREATOR, AgentRoleType.CREATOR,
         "orcid", Type.SCHEMA_PERSON);
   }
 

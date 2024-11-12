@@ -1,9 +1,9 @@
 package eu.dissco.orchestration.backend.utils;
 
 import static eu.dissco.orchestration.backend.schema.Identifier.DctermsType.DOI;
-import static eu.dissco.orchestration.backend.schema.Identifier.DctermsType.HANDLE;
 import static eu.dissco.orchestration.backend.schema.Identifier.OdsGupriLevel.GLOBALLY_UNIQUE_STABLE_PERSISTENT_RESOLVABLE_FDO_COMPLIANT;
 import static eu.dissco.orchestration.backend.schema.Identifier.OdsIdentifierStatus.PREFERRED;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.ORCID;
 
 import eu.dissco.orchestration.backend.domain.AgentRoleType;
 import eu.dissco.orchestration.backend.schema.Agent;
@@ -18,8 +18,8 @@ public class AgentUtils {
   private AgentUtils() {
   }
 
-  public static eu.dissco.orchestration.backend.schema.Agent createMachineAgent(String name,
-      String pid, AgentRoleType role, String idTitle, Type agentType) {
+  public static Agent createAgent(String name, String pid, AgentRoleType role, String idTitle,
+      Type agentType) {
     var agent = new Agent()
         .withType(agentType)
         .withId(pid)
@@ -36,13 +36,10 @@ public class AgentUtils {
           .withOdsIdentifierStatus(PREFERRED)
           .withOdsGupriLevel(
               GLOBALLY_UNIQUE_STABLE_PERSISTENT_RESOLVABLE_FDO_COMPLIANT);
-      if (idTitle.equals(DOI.value())) {
+      if (DOI.value().equals(idTitle)) {
         identifier.withDctermsType(DOI);
         identifier.withDctermsTitle("DOI");
-      } else if (idTitle.equals(HANDLE.value())) {
-        identifier.withDctermsType(HANDLE);
-        identifier.withDctermsTitle("HANDLE");
-      } else if (idTitle.equals("orcid")) {
+      } else if (idTitle.equals(ORCID)) {
         identifier.withDctermsType(DctermsType.URL);
         identifier.withDctermsTitle("ORCID");
       }

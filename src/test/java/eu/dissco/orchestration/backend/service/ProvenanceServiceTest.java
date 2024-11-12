@@ -46,9 +46,9 @@ class ProvenanceServiceTest {
 
   private static List<Agent> givenExpectedAgents() {
     return List.of(
-        AgentUtils.createMachineAgent(null, OBJECT_CREATOR, CREATOR,
+        AgentUtils.createAgent(null, OBJECT_CREATOR, CREATOR,
             "orcid", Type.PROV_PERSON),
-        AgentUtils.createMachineAgent(APP_NAME, APP_HANDLE, PROCESSING_SERVICE,
+        AgentUtils.createAgent(APP_NAME, APP_HANDLE, PROCESSING_SERVICE,
             DctermsType.DOI.value(), Type.PROV_SOFTWARE_AGENT)
     );
   }
