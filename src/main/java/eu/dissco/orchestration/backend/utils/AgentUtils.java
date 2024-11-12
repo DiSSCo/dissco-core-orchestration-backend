@@ -39,7 +39,7 @@ public class AgentUtils {
       if (DOI.value().equals(idTitle)) {
         identifier.withDctermsType(DOI);
         identifier.withDctermsTitle("DOI");
-      } else if (idTitle.equals(ORCID)) {
+      } else if (ORCID.equals(idTitle)) {
         identifier.withDctermsType(DctermsType.URL);
         identifier.withDctermsTitle("ORCID");
       }
