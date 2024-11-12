@@ -57,6 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DataMappingServiceTest {
 
+  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
   private DataMappingService service;
   @Mock
   private FdoRecordService fdoRecordService;
@@ -68,10 +69,8 @@ class DataMappingServiceTest {
   private DataMappingRepository repository;
   @Mock
   private FdoProperties fdoProperties;
-
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
-  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
 
   @BeforeEach
   void setup() {
@@ -102,7 +101,7 @@ class DataMappingServiceTest {
     then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
     then(repository).should().createDataMapping(givenDataMapping(HANDLE, 1));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)));
+        .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)), givenAgent());
   }
 
   @Test
@@ -112,7 +111,7 @@ class DataMappingServiceTest {
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)));
+        .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)), givenAgent());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -144,7 +143,7 @@ class DataMappingServiceTest {
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)));
+        .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)), givenAgent());
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
 
     // When
@@ -177,7 +176,7 @@ class DataMappingServiceTest {
     then(repository).should().updateDataMapping(givenDataMapping(HANDLE, 2));
     then(kafkaPublisherService).should()
         .publishUpdateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 2)),
-            MAPPER.valueToTree(prevDataMapping));
+            MAPPER.valueToTree(prevDataMapping), givenAgent());
   }
 
   @Test
@@ -189,7 +188,7 @@ class DataMappingServiceTest {
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishUpdateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 2)),
-            MAPPER.valueToTree(prevDataMapping));
+            MAPPER.valueToTree(prevDataMapping), givenAgent());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -271,7 +270,7 @@ class DataMappingServiceTest {
     // Then
     then(repository).should().tombstoneDataMapping(givenTombstoneDataMapping(), UPDATED);
     then(handleComponent).should().tombstoneHandle(any(), eq(BARE_HANDLE));
-    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any());
+    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any(), eq(givenAgent()));
   }
 
   @Test
@@ -289,7 +288,8 @@ class DataMappingServiceTest {
     // Given
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(
         Optional.of(givenDataMapping(HANDLE, 1)));
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishTombstoneEvent(any(), any());
+    doThrow(JsonProcessingException.class).when(kafkaPublisherService)
+        .publishTombstoneEvent(any(), any(), eq(givenAgent()));
 
     // Then
     assertThrowsExactly(ProcessingFailedException.class,

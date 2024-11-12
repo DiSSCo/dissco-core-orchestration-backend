@@ -140,7 +140,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
   void testDeleteMas() {
     // Given
     var mas = givenMas();
-    mas.setOdsTombstoneMetadata(givenTombstoneMetadata(ObjectType.MAS));
+    mas.setOdsHasTombstoneMetadata(givenTombstoneMetadata(ObjectType.MAS));
     postMass(List.of(mas));
 
     // When

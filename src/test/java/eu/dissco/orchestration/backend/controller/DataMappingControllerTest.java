@@ -88,7 +88,8 @@ class DataMappingControllerTest {
         givenDataMappingSingleJsonApiWrapper());
 
     // When
-    var result = controller.updateDataMapping(authentication, PREFIX, SUFFIX, requestBody, mockRequest);
+    var result = controller.updateDataMapping(authentication, PREFIX, SUFFIX, requestBody,
+        mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -101,7 +102,8 @@ class DataMappingControllerTest {
     var requestBody = givenDataMappingRequestJson();
 
     // When
-    var result = controller.updateDataMapping(authentication, PREFIX, SUFFIX, requestBody, mockRequest);
+    var result = controller.updateDataMapping(authentication, PREFIX, SUFFIX, requestBody,
+        mockRequest);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);

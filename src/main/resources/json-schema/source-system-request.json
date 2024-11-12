@@ -1,20 +1,20 @@
 {
-  "$id": "https://schemas.dissco.tech/schemas/fdo-type/source-system/0.3.0/source-system-request.json",
+  "$id": "https://schemas.dissco.tech/schemas/fdo-type/source-system/0.4.0/source-system-request.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "Source System Request Version 0.3.0",
+  "$comment": "Source System Request Version 0.4.0",
   "title": "SourceSystemRequest",
   "type": "object",
   "properties": {
     "schema:name": {
       "type": "string",
-      "description": "Name of the Source System as provided by the user, https://schema.org/name",
+      "description": "Name of the Source System as provided by the user",
       "examples": [
         "Herbarium of University of Coimbra (COI)"
       ]
     },
     "schema:description": {
       "type": "string",
-      "description": "Description of the Source System as provided by the user, https://schema.org/description",
+      "description": "Description of the Source System as provided by the user",
       "examples": [
         "The herbarium collection of the University of Coimbra is one of the oldest in Portugal, with specimens dating back to the 18th century."
       ]
@@ -53,13 +53,18 @@
       "examples": [
         "https://hdl.handle.net/20.5000.1025/XXX-XXX-XXX"
       ]
+    },
+    "ods:hasTombstoneMetadata": {
+      "type": "object",
+      "description": "Object containing the tombstone metadata of the object. Only present when ods:status is ods:Tombstone",
+      "$ref": "https://schemas.dissco.tech/schemas/fdo-type/shared-model/0.4.0/tombstone-metadata.json"
     }
   },
   "required": [
     "schema:name",
-    "schema:uri",
+    "schema:url",
     "ods:translatorType",
-    "ods:mappingID"
+    "ods:dataMappingID"
   ],
   "additionalProperties": false
 }

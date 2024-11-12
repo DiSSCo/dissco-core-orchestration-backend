@@ -1,6 +1,7 @@
 package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.then;
@@ -35,7 +36,7 @@ class KafkaPublisherServiceTest {
     // Given
 
     // When
-    service.publishCreateEvent(MAPPER.valueToTree(TestUtils.givenMas()));
+    service.publishCreateEvent(MAPPER.valueToTree(TestUtils.givenMas()), givenAgent());
 
     // Then
     then(kafkaTemplate).should().send(eq("createUpdateDeleteTopic"), anyString());
@@ -47,7 +48,7 @@ class KafkaPublisherServiceTest {
 
     // When
     service.publishUpdateEvent(MAPPER.valueToTree(TestUtils.givenMas()),
-        MAPPER.createObjectNode());
+        MAPPER.createObjectNode(), givenAgent());
 
     // Then
     then(kafkaTemplate).should().send(eq("createUpdateDeleteTopic"), anyString());
@@ -59,7 +60,7 @@ class KafkaPublisherServiceTest {
 
     // When
     service.publishTombstoneEvent(MAPPER.valueToTree(TestUtils.givenTombstoneMas()),
-        MAPPER.valueToTree(TestUtils.givenMas()));
+        MAPPER.valueToTree(TestUtils.givenMas()), givenAgent());
 
     // Then
     then(kafkaTemplate).should().send(eq("createUpdateDeleteTopic"), anyString());

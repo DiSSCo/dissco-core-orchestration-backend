@@ -37,9 +37,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 @ExtendWith(MockitoExtension.class)
 class MachineAnnotationServiceControllerTest {
 
+  MockHttpServletRequest mockRequest = new MockHttpServletRequest();
   @Mock
   private Authentication authentication;
-  MockHttpServletRequest mockRequest = new MockHttpServletRequest();
   @Mock
   private MachineAnnotationServiceService service;
   @Mock

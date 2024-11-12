@@ -86,6 +86,7 @@ class MachineAnnotationServiceServiceTest {
 
   private final Configuration configuration = new Configuration(Configuration.VERSION_2_3_32);
   private final KubernetesProperties kubernetesProperties = new KubernetesProperties();
+  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
   @Mock
   private MachineAnnotationServiceRepository repository;
   @Mock
@@ -103,11 +104,19 @@ class MachineAnnotationServiceServiceTest {
   @Mock
   private FdoProperties fdoProperties;
   private MachineAnnotationServiceService service;
-
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
 
-  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
+  private static Stream<Arguments> masKeys() {
+    return Stream.of(
+        Arguments.of(null, null),
+        Arguments.of(givenMasEnvironment(), givenMasSecrets()),
+        Arguments.of(List.of(new EnvironmentalVariable("name", 1)),
+            givenMasSecrets()),
+        Arguments.of(List.of(new EnvironmentalVariable("name", true)),
+            givenMasSecrets())
+    );
+  }
 
   @BeforeEach
   void setup() throws IOException {
@@ -136,16 +145,16 @@ class MachineAnnotationServiceServiceTest {
       List<SecretVariable> masSecret) throws Exception {
     // Given
     var expectedMas = givenMas()
-        .withOdsHasEnvironmentalVariable(masEnv)
-        .withOdsHasSecretVariable(masSecret);
+        .withOdsHasEnvironmentalVariables(masEnv)
+        .withOdsHasSecretVariables(masSecret);
     var expected = new JsonApiWrapper(new JsonApiData(
         expectedMas.getId(),
         ObjectType.MAS,
         flattenMas(expectedMas)
     ), new JsonApiLinks(MAS_PATH));
     var masRequest = givenMasRequest()
-        .withOdsHasEnvironmentalVariable(masEnv)
-        .withOdsHasSecretVariable(masSecret);
+        .withOdsHasEnvironmentalVariables(masEnv)
+        .withOdsHasSecretVariables(masSecret);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(properties.getKafkaHost()).willReturn("kafka.svc.cluster.local:9092");
     given(properties.getNamespace()).willReturn("namespace");
@@ -171,7 +180,7 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             any(Object.class));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(expectedMas));
+        .publishCreateEvent(MAPPER.valueToTree(expectedMas), givenAgent());
   }
 
   @ParameterizedTest
@@ -219,7 +228,7 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             any(Object.class));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(mas));
+        .publishCreateEvent(MAPPER.valueToTree(mas), givenAgent());
   }
 
   @Test
@@ -302,7 +311,7 @@ class MachineAnnotationServiceServiceTest {
     given(properties.getNamespace()).willReturn("namespace");
     given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenMas()));
+        .publishCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent());
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
         .willReturn(createDeploy);
@@ -351,7 +360,7 @@ class MachineAnnotationServiceServiceTest {
     given(properties.getNamespace()).willReturn("namespace");
     given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenMas()));
+        .publishCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent());
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq("namespace"), any(V1Deployment.class)))
@@ -391,7 +400,6 @@ class MachineAnnotationServiceServiceTest {
             eq(SUFFIX.toLowerCase() + "-scaled-object"));
   }
 
-
   @Test
   void testUpdateMas() throws Exception {
     // Given
@@ -429,7 +437,8 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             any(Object.class));
     then(kafkaPublisherService).should()
-        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()));
+        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()),
+            givenAgent());
   }
 
   @Test
@@ -512,7 +521,8 @@ class MachineAnnotationServiceServiceTest {
     given(properties.getNamespace()).willReturn("namespace");
     given(properties.getRunningEndpoint()).willReturn("https://dev.dissco.tech/api/running");
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()));
+        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()),
+            givenAgent());
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq("namespace"), any(V1Deployment.class))).willReturn(replaceDeploy);
@@ -653,7 +663,7 @@ class MachineAnnotationServiceServiceTest {
         .deleteNamespacedCustomObject(anyString(), anyString(), eq("namespace"), anyString(),
             eq(SUFFIX.toLowerCase() + "-scaled-object"));
     then(handleComponent).should().tombstoneHandle(any(), eq(BARE_HANDLE));
-    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any());
+    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any(), eq(givenAgent()));
   }
 
   @Test
@@ -669,7 +679,7 @@ class MachineAnnotationServiceServiceTest {
     given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", "namespace",
         "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
     doThrow(JsonProcessingException.class).when(kafkaPublisherService)
-        .publishTombstoneEvent(any(), any());
+        .publishTombstoneEvent(any(), any(), eq(givenAgent()));
     given(fdoRecordService.buildTombstoneRequest(ObjectType.MAS, BARE_HANDLE)).willReturn(
         givenTombstoneRequestMas());
 
@@ -739,17 +749,6 @@ class MachineAnnotationServiceServiceTest {
     then(appsV1Api).should()
         .createNamespacedDeployment(eq("namespace"), any(V1Deployment.class));
     then(kafkaPublisherService).shouldHaveNoInteractions();
-  }
-
-  private static Stream<Arguments> masKeys() {
-    return Stream.of(
-        Arguments.of(null, null),
-        Arguments.of(givenMasEnvironment(), givenMasSecrets()),
-        Arguments.of(List.of(new EnvironmentalVariable("name", 1)),
-            givenMasSecrets()),
-        Arguments.of(List.of(new EnvironmentalVariable("name", true)),
-            givenMasSecrets())
-    );
   }
 
   private Optional<MachineAnnotationService> buildOptionalPrev() {

@@ -96,7 +96,7 @@ class SourceSystemServiceTest {
   private final Configuration configuration = new Configuration(Configuration.VERSION_2_3_32);
 
   private final Random random = new Random();
-
+  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
   private SourceSystemService service;
   @Mock
   private KafkaPublisherService kafkaPublisherService;
@@ -112,11 +112,8 @@ class SourceSystemServiceTest {
   private BatchV1Api batchV1Api;
   @Mock
   private FdoProperties fdoProperties;
-
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
-  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
-
 
   private static V1CronJob getV1CronJob(String image, String name) {
     var container = new V1Container();
@@ -181,7 +178,7 @@ class SourceSystemServiceTest {
     assertThat(result).isEqualTo(expected);
     then(repository).should().createSourceSystem(givenSourceSystem());
     then(kafkaPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem()));
+        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem()), givenAgent());
   }
 
   @Test
@@ -265,7 +262,7 @@ class SourceSystemServiceTest {
     given(
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem()));
+        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem()), givenAgent());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -300,7 +297,8 @@ class SourceSystemServiceTest {
     given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
         Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem(OdsTranslatorType.DWCA)));
+        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem(OdsTranslatorType.DWCA)),
+            givenAgent());
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
@@ -339,7 +337,8 @@ class SourceSystemServiceTest {
   @ValueSource(booleans = {true, false})
   void testUpdateSourceSystem(boolean triggerTranslator) throws Exception {
     var sourceSystem = givenSourceSystemRequest();
-    var prevSourceSystem = Optional.of(givenSourceSystem(OdsTranslatorType.DWCA).withOdsMaximumRecords(25));
+    var prevSourceSystem = Optional.of(
+        givenSourceSystem(OdsTranslatorType.DWCA).withOdsMaximumRecords(25));
     given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
     var expected = givenSourceSystemSingleJsonApiWrapper(2);
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
@@ -366,7 +365,7 @@ class SourceSystemServiceTest {
     }
     then(kafkaPublisherService).should()
         .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
-            MAPPER.valueToTree(prevSourceSystem.get()));
+            MAPPER.valueToTree(prevSourceSystem.get()), givenAgent());
   }
 
   @Test
@@ -398,7 +397,7 @@ class SourceSystemServiceTest {
     given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
     willThrow(JsonProcessingException.class).given(kafkaPublisherService)
         .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
-            MAPPER.valueToTree(prevSourceSystem.get()));
+            MAPPER.valueToTree(prevSourceSystem.get()), givenAgent());
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
@@ -552,7 +551,7 @@ class SourceSystemServiceTest {
     // Then
     then(repository).should().tombstoneSourceSystem(givenTombstoneSourceSystem(), UPDATED);
     then(handleComponent).should().tombstoneHandle(any(), eq(BARE_HANDLE));
-    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any());
+    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any(), eq(givenAgent()));
   }
 
   @Test

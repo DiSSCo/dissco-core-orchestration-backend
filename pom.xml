@@ -16,10 +16,9 @@
   <description>Backend for orchestration service</description>
   <properties>
     <java.version>17</java.version>
-    <apachecommons.version>4.4</apachecommons.version>
-    <k8s-client-java.version>21.0.0</k8s-client-java.version>
+    <k8s-client-java.version>22.0.0</k8s-client-java.version>
     <json-patch.version>1.13</json-patch.version>
-    <testcontainers.version>1.19.8</testcontainers.version>
+    <testcontainers.version>1.20.3</testcontainers.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <sonar.organization>dissco</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -190,13 +189,13 @@
         <configuration>
           <mainClass>eu.dissco.orchestration.backend.maven.MavenRunner</mainClass>
           <arguments>
-            <argument>https://schemas.dissco.tech/schemas/fdo-type/data-mapping/0.3.0/data-mapping.json</argument>
-            <argument>https://schemas.dissco.tech/schemas/developer-schema/data-mapping/0.3.0/data-mapping-request.json</argument>
-            <argument>https://schemas.dissco.tech/schemas/fdo-type/machine-annotation-service/0.3.0/machine-annotation-service.json</argument>
-            <argument>https://schemas.dissco.tech/schemas/developer-schema/machine-annotation-service/0.3.0/machine-annotation-service-request.json</argument>
-            <argument>https://schemas.dissco.tech/schemas/fdo-type/source-system/0.3.0/source-system.json</argument>
-            <argument>https://schemas.dissco.tech/schemas/developer-schema/source-system/0.3.0/source-system-request.json</argument>
-            <argument>https://schemas.dissco.tech/schemas/fdo-type/create-update-tombstone-event/0.3.0/create-update-tombstone-event.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/fdo-type/data-mapping/0.4.0/data-mapping.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/developer-schema/data-mapping/0.4.0/data-mapping-request.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/fdo-type/machine-annotation-service/0.4.0/machine-annotation-service.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/developer-schema/machine-annotation-service/0.4.0/machine-annotation-service-request.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/fdo-type/source-system/0.4.0/source-system.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/developer-schema/source-system/0.4.0/source-system-request.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/fdo-type/create-update-tombstone-event/0.4.0/create-update-tombstone-event.json</argument>
           </arguments>
         </configuration>
       </plugin>
