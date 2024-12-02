@@ -373,7 +373,7 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "type": "https://doi.org/21.T11148/22e71a0015cbcfba8ffa",
+            "type": "https://doi.org/21.T11148/a369e128df5ef31044d4",
             "attributes": {
               "machineAnnotationServiceName":"A Machine Annotation Service"
             }
@@ -417,7 +417,7 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "type": "https://doi.org/21.T11148/22e71a0015cbcfba8ffa",
+            "type": "https://doi.org/21.T11148/a369e128df5ef31044d4",
             "id": "20.5000.1025/GW0-POP-XSL",
             "attributes": {
               "tombstoneText": "ods:MachineAnnotationService tombstoned by agent through the orchestration backend"
