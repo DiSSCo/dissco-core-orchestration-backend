@@ -15,6 +15,6 @@ public class FdoProperties {
   @NotBlank
   private String dataMappingType = "https://doi.org/21.T11148/ce794a6f4df42eb7e77e";
   @NotBlank
-  private String masType = "https://doi.org/21.T11148/22e71a0015cbcfba8ffa";
+  private String masType = "https://doi.org/21.T11148/a369e128df5ef31044d4";
 
 }
