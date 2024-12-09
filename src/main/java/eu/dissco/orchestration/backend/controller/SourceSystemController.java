@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("/source-system")
+@RequestMapping("/source-system/v1")
 @RequiredArgsConstructor
 public class SourceSystemController {
 
