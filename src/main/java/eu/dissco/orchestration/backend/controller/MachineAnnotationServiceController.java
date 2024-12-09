@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/mas")
+@RequestMapping("/mas/v1")
 public class MachineAnnotationServiceController {
 
   private final MachineAnnotationServiceService service;

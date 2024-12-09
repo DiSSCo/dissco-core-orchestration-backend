@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("/data-mapping")
+@RequestMapping("/data-mapping/v1")
 @RequiredArgsConstructor
 public class DataMappingController {
 
