@@ -385,7 +385,7 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": {
-            "type": "https://doi.org/21.T11148/417a4f472f60f7974c12",
+            "type": "https://doi.org/21.T11148/23a63913d0c800609a50",
             "attributes": {
               "sourceSystemName":"Naturalis Tunicate DWCA endpoint"
             }
