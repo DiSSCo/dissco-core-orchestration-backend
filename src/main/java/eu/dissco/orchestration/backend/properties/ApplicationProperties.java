@@ -17,10 +17,10 @@ public class ApplicationProperties {
   private String baseUrl;
 
   @NotBlank
-  private String name = "dissco-core-orchestration-backend";
+  private String name = "DiSSCo Orchestration Backend";
 
   @NotBlank
-  private String pid = "https://hdl.handle.net/TEST/123-123-123";
+  private String pid = "https://doi.org/10.5281/zenodo.14383664";
 
   @NotBlank
   private String createUpdateTombstoneEventType = "https://doi.org/21.T11148/d7570227982f70256af3";
