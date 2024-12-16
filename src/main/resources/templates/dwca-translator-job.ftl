@@ -32,7 +32,7 @@ spec:
               value: ${sourceSystemId}
           <#if maxItems??>
             - name: application.maxItems
-              value: ${maxItems}
+              value: "${maxItems?c}"
           </#if>
             - name: spring.datasource.url
               value: ${database_url}
