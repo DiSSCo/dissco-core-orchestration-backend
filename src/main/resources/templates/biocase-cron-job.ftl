@@ -27,10 +27,10 @@ spec:
             - name: kafka.topic
               value: ${kafkaTopic}
             - name: application.sourceSystemId
-              value: ${sourceSystemId}
+              value: ${sourceSystemId?c}
           <#if maxItems??>
             - name: application.maxItems
-              value: ${maxItems}
+              value: "${maxItems}"
           </#if>
             - name: spring.datasource.url
               value: ${database_url}
