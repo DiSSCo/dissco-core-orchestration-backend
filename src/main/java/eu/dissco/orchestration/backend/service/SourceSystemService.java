@@ -77,7 +77,7 @@ public class SourceSystemService {
         sourceSystem.getOdsTranslatorType().value().toLowerCase() + "-" +
             getSuffix(sourceSystem.getId()) + "-translator-service";
     if (!isCron) {
-      name = name + "-" + RandomStringUtils.randomAlphabetic(6).toLowerCase();
+      name = name + "-" + RandomStringUtils.insecure().nextAlphabetic(6).toLowerCase();
     }
     return name;
   }
@@ -447,8 +447,14 @@ public class SourceSystemService {
     return mapper.valueToTree(sourceSystem);
   }
 
-  public void runSourceSystemById(String id) throws ProcessingFailedException {
+  public void runSourceSystemById(String id) throws ProcessingFailedException, NotFoundException {
     var sourceSystem = repository.getSourceSystem(id);
+    if (sourceSystem == null || sourceSystem.getOdsHasTombstoneMetadata() != null) {
+      var msg = sourceSystem == null ? "Source system {} does not exist"
+          : "Source system {} is tombstoned";
+      log.error(msg, id);
+      throw new NotFoundException("No active source system with ID " + id + " was found");
+    }
     createTranslatorJob(sourceSystem, false);
   }
 

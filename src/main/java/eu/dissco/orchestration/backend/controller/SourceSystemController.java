@@ -104,7 +104,7 @@ public class SourceSystemController {
   @PostMapping(value = "/{prefix}/{suffix}/run", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> scheduleRunSourceSystemById(
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
-      throws ProcessingFailedException {
+      throws ProcessingFailedException, NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received a request to start a new run for Source System: {}", id);
     service.runSourceSystemById(id);

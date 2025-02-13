@@ -46,6 +46,7 @@ import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
+import eu.dissco.orchestration.backend.schema.TombstoneMetadata;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
 import io.kubernetes.client.openapi.ApiException;
@@ -331,6 +332,26 @@ class SourceSystemServiceTest {
 
     // Then
     assertDoesNotThrow(() -> service.runSourceSystemById(HANDLE));
+  }
+
+  @Test
+  void testRunSourceSystemByIdNotFound() {
+    // Given
+    given(repository.getSourceSystem(HANDLE)).willReturn(null);
+
+
+    // When / Then
+    assertThrowsExactly(NotFoundException.class, () -> service.runSourceSystemById(HANDLE));
+  }
+
+  @Test
+  void testRunSourceSystemByIdTombstoned() {
+    // Given
+    var sourceSystem = givenSourceSystem().withOdsHasTombstoneMetadata(new TombstoneMetadata());
+    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystem);
+
+    // When / Then
+    assertThrowsExactly(NotFoundException.class, () -> service.runSourceSystemById(HANDLE));
   }
 
   @ParameterizedTest
