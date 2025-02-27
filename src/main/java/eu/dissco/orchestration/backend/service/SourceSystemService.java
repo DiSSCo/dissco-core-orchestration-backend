@@ -13,6 +13,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.InvalidTranslatorTypeException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
@@ -36,6 +37,7 @@ import io.kubernetes.client.openapi.models.V1Job;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.net.URI;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -187,13 +189,15 @@ public class SourceSystemService {
   public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent agent,
       String path)
       throws NotFoundException, ProcessingFailedException {
-    validateMappingExists(sourceSystemRequest.getOdsDataMappingID());
+    validateSourceSystem(sourceSystemRequest);
     String handle = createHandle(sourceSystemRequest);
     var sourceSystem = buildSourceSystem(sourceSystemRequest, 1, agent, handle,
         Date.from(Instant.now()));
     repository.createSourceSystem(sourceSystem);
-    createCronJob(sourceSystem);
-    createTranslatorJob(sourceSystem, true);
+    if (sourceSystemRequest.getOdsTranslatorType() != SourceSystemRequest.OdsTranslatorType.NONE) {
+      createCronJob(sourceSystem);
+      createTranslatorJob(sourceSystem, true);
+    }
     publishCreateEvent(sourceSystem, agent);
     return wrapSingleResponse(sourceSystem, path);
   }
@@ -284,10 +288,13 @@ public class SourceSystemService {
     }
   }
 
-  private void validateMappingExists(String mappingId) throws NotFoundException {
-    var dataMapping = dataMappingService.getActiveDataMapping(mappingId);
+  private void validateSourceSystem(SourceSystemRequest sourceSystemRequest)
+      throws NotFoundException {
+    var dataMapping = dataMappingService.getActiveDataMapping(
+        sourceSystemRequest.getOdsDataMappingID());
     if (dataMapping.isEmpty()) {
-      throw new NotFoundException("Unable to locate Data Mapping with id " + mappingId);
+      throw new NotFoundException(
+          "Unable to locate Data Mapping with id " + sourceSystemRequest.getOdsDataMappingID());
     }
   }
 
@@ -300,6 +307,11 @@ public class SourceSystemService {
           "Could not update Source System " + id + ". Verify resource exists.");
     }
     var currentSourceSystem = currentSourceSystemOptional.get();
+    if (sourceSystemRequest.getOdsTranslatorType().equals(SourceSystemRequest.OdsTranslatorType.NONE) && trigger) {
+      log.error("User requested triggering of source system {}, which has None translator type", id);
+      throw new InvalidTranslatorTypeException(
+          "Can not trigger the ingestion of a source system with no translator type");
+    }
     var sourceSystem = buildSourceSystem(sourceSystemRequest,
         currentSourceSystem.getSchemaVersion() + 1, agent, id,
         currentSourceSystem.getSchemaDateCreated());
@@ -310,10 +322,22 @@ public class SourceSystemService {
       return null;
     }
     repository.updateSourceSystem(sourceSystem);
-    updateCronJob(sourceSystem, currentSourceSystem);
-    if (trigger) {
-      log.info("Translator Job requested for updated source system: {}", id);
-      triggerTranslatorForUpdatedSourceSystem(sourceSystem, currentSourceSystem);
+    if (currentSourceSystem.getOdsTranslatorType().equals(OdsTranslatorType.NONE) &&
+        !sourceSystem.getOdsTranslatorType().equals(OdsTranslatorType.NONE)
+    ) {
+      log.info(
+          "Source system {} has updated to a deployable translator type. Creating new cron job",
+          id);
+      createCronJob(sourceSystem);
+      if (trigger){
+        createTranslatorJob(sourceSystem, true);
+      }
+    } else if (!sourceSystem.getOdsTranslatorType().equals(OdsTranslatorType.NONE)) {
+      updateCronJob(sourceSystem, currentSourceSystem);
+      if (trigger) {
+        log.info("Translator Job requested for updated source system: {}", id);
+        triggerTranslatorForUpdatedSourceSystem(sourceSystem, currentSourceSystem);
+      }
     }
     publishUpdateEvent(sourceSystem, currentSourceSystem, agent);
     return wrapSingleResponse(sourceSystem, path);
@@ -454,6 +478,10 @@ public class SourceSystemService {
           : "Source system {} is tombstoned";
       log.error(msg, id);
       throw new NotFoundException("No active source system with ID " + id + " was found");
+    } else if (sourceSystem.getOdsTranslatorType().equals(OdsTranslatorType.NONE)) {
+      log.error("Source system {} does not have a valid translator type", id);
+      throw new InvalidTranslatorTypeException(
+          "Can not run source system with no valid translator type");
     }
     createTranslatorJob(sourceSystem, false);
   }
@@ -509,11 +537,13 @@ public class SourceSystemService {
       return switch (translatorType) {
         case DWCA -> "dwca-cron-job.ftl";
         case BIOCASE -> "biocase-cron-job.ftl";
+        case NONE -> throw new IllegalStateException();
       };
     } else {
       return switch (translatorType) {
         case DWCA -> "dwca-translator-job.ftl";
         case BIOCASE -> "biocase-translator-job.ftl";
+        case NONE -> throw new IllegalStateException();
       };
     }
   }

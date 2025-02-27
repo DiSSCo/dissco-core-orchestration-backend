@@ -14,6 +14,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequestNoneTranslator;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneSourceSystem;
@@ -37,6 +38,7 @@ import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.exception.InvalidTranslatorTypeException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
@@ -68,6 +70,7 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -180,6 +183,28 @@ class SourceSystemServiceTest {
     then(repository).should().createSourceSystem(givenSourceSystem());
     then(kafkaPublisherService).should()
         .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem()), givenAgent());
+  }
+
+  @Test
+  void testCreateSourceSystemNoneType() throws Exception {
+    // Given
+    var sourceSystemRequest = givenSourceSystemRequestNoneTranslator();
+    var expected = givenSourceSystem()
+        .withOdsTranslatorType(OdsTranslatorType.NONE)
+        .withSchemaUrl(URI.create(""));
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(dataMappingService.getActiveDataMapping(
+        sourceSystemRequest.getOdsDataMappingID())).willReturn(
+        Optional.of(givenDataMapping(sourceSystemRequest.getOdsDataMappingID(), 1)));
+
+    // When
+    service.createSourceSystem(sourceSystemRequest, givenAgent(), SYSTEM_PATH);
+
+    // Then
+    then(repository).should().createSourceSystem(expected);
+    then(kafkaPublisherService).should().publishCreateEvent(any(), any());
+    then(batchV1Api).shouldHaveNoInteractions();
   }
 
   @Test
@@ -339,7 +364,6 @@ class SourceSystemServiceTest {
     // Given
     given(repository.getSourceSystem(HANDLE)).willReturn(null);
 
-
     // When / Then
     assertThrowsExactly(NotFoundException.class, () -> service.runSourceSystemById(HANDLE));
   }
@@ -388,6 +412,86 @@ class SourceSystemServiceTest {
         .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
             MAPPER.valueToTree(prevSourceSystem.get()), givenAgent());
   }
+
+  @Test
+  void testUpdateSourceSystemNoneTranslatorType() throws Exception {
+    // Given
+    var sourceSystem = givenSourceSystemRequestNoneTranslator();
+    var prevSourceSystem = Optional.of(
+        givenSourceSystem(OdsTranslatorType.DWCA)
+            .withOdsMaximumRecords(25)
+            .withSchemaUrl(URI.create(""))
+            .withOdsTranslatorType(OdsTranslatorType.NONE)
+    );
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
+
+    // When
+    service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH, false);
+
+    // Then
+    then(repository).should().updateSourceSystem(givenSourceSystem(2)
+        .withSchemaUrl(URI.create(""))
+        .withOdsTranslatorType(OdsTranslatorType.NONE));
+    then(batchV1Api).shouldHaveNoInteractions();
+  }
+
+  @Test
+  void testUpdateSourceSystemTriggerNoneTranslatorType() {
+    // Given
+    var sourceSystem = givenSourceSystemRequestNoneTranslator();
+    var prevSourceSystem = Optional.of(
+        givenSourceSystem(OdsTranslatorType.DWCA)
+            .withOdsMaximumRecords(25)
+            .withSchemaUrl(URI.create(""))
+            .withOdsTranslatorType(OdsTranslatorType.NONE)
+    );
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
+
+    // When / Then
+    assertThrowsExactly(InvalidTranslatorTypeException.class,
+        () -> service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
+            true));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void testUpdateSourceSystemTriggerNewJob(boolean triggerTranslator) throws Exception {
+    // Given
+    var sourceSystem = givenSourceSystemRequest();
+    var prevSourceSystem = Optional.of(
+        givenSourceSystem(OdsTranslatorType.DWCA)
+            .withOdsMaximumRecords(25)
+            .withSchemaUrl(URI.create(""))
+            .withOdsTranslatorType(OdsTranslatorType.NONE)
+    );
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    var createCron = mock(APIcreateNamespacedCronJobRequest.class);
+    given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
+        .willReturn(createCron);
+    var createJob = mock(APIcreateNamespacedJobRequest.class);
+    if (triggerTranslator) {
+      given(
+          batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
+    }
+
+    // When
+    service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
+        triggerTranslator);
+
+    // Then
+    then(repository).should().updateSourceSystem(givenSourceSystem(2));
+    if (!triggerTranslator) {
+      then(batchV1Api).shouldHaveNoMoreInteractions();
+    } else {
+      then(batchV1Api).should().createNamespacedJob(eq(NAMESPACE), any(V1Job.class));
+    }
+    then(kafkaPublisherService).should()
+        .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
+            MAPPER.valueToTree(prevSourceSystem.get()), givenAgent());
+  }
+
 
   @Test
   void testUpdateSourceSystemCronJobFails() throws Exception {

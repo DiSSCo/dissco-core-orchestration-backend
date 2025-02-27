@@ -173,6 +173,11 @@ public class TestUtils {
     return givenSourceSystemRequest(OdsTranslatorType.BIOCASE);
   }
 
+  public static SourceSystemRequest givenSourceSystemRequestNoneTranslator(){
+    return givenSourceSystemRequest(OdsTranslatorType.NONE)
+        .withSchemaUrl(URI.create(""));
+  }
+
   public static SourceSystemRequest givenSourceSystemRequest(OdsTranslatorType translatorType) {
     return new SourceSystemRequest()
         .withSchemaName(OBJECT_NAME)
