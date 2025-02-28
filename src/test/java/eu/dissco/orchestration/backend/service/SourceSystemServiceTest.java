@@ -360,6 +360,20 @@ class SourceSystemServiceTest {
   }
 
   @Test
+  void testRunSourceSystemByIdNoneType() {
+    // Given
+    var sourceSystem = givenSourceSystem().withOdsTranslatorType(OdsTranslatorType.NONE);
+    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystem);
+    var createJob = mock(APIcreateNamespacedJobRequest.class);
+    given(
+        batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
+
+    // Then
+    assertThrowsExactly(InvalidTranslatorTypeException.class,
+        () -> service.runSourceSystemById(HANDLE));
+  }
+
+  @Test
   void testRunSourceSystemByIdNotFound() {
     // Given
     given(repository.getSourceSystem(HANDLE)).willReturn(null);
