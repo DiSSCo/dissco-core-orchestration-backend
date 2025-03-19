@@ -75,11 +75,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -339,7 +342,6 @@ class SourceSystemServiceTest {
     // Given
     given(repository.getSourceSystem(HANDLE)).willReturn(null);
 
-
     // When / Then
     assertThrowsExactly(NotFoundException.class, () -> service.runSourceSystemById(HANDLE));
   }
@@ -470,19 +472,31 @@ class SourceSystemServiceTest {
         () -> service.updateSourceSystem(HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH, true));
   }
 
-  @Test
-  void testUpdateSourceSystemNoChanges() throws Exception {
+  @ParameterizedTest
+  @MethodSource("equalSourceSystems")
+  void testUpdateSourceSystemNoChanges(SourceSystemRequest request, SourceSystem sourceSystem)
+      throws Exception {
     // Given
-    var sourceSystem = givenSourceSystemRequest();
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(
-        Optional.of(givenSourceSystem()));
+        Optional.of(sourceSystem));
 
     // When
-    var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
+    var result = service.updateSourceSystem(BARE_HANDLE, request, givenAgent(), SYSTEM_PATH,
         false);
 
     // Then
     assertThat(result).isNull();
+  }
+
+  static Stream<Arguments> equalSourceSystems() {
+
+    return Stream.of(
+        Arguments.of(givenSourceSystemRequest(), givenSourceSystem()),
+        Arguments.of(
+            givenSourceSystemRequest().withOdsFilters(List.of("filter")),
+            givenSourceSystem().withOdsFilters(List.of("filter"))
+        )
+    );
   }
 
   @Test

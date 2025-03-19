@@ -91,7 +91,7 @@ public class SourceSystemService {
     }
   }
 
-  private static boolean isEquals(SourceSystem sourceSystem, SourceSystem currentSourceSystem) {
+  private static boolean isEqual(SourceSystem sourceSystem, SourceSystem currentSourceSystem) {
     return Objects.equals(sourceSystem.getSchemaName(), currentSourceSystem.getSchemaName())
         &&
         Objects.equals(sourceSystem.getSchemaUrl().toString(),
@@ -105,7 +105,17 @@ public class SourceSystemService {
         Objects.equals(sourceSystem.getLtcCollectionManagementSystem(),
             currentSourceSystem.getLtcCollectionManagementSystem()) &&
         Objects.equals(sourceSystem.getOdsMaximumRecords(),
-            currentSourceSystem.getOdsMaximumRecords());
+            currentSourceSystem.getOdsMaximumRecords()) &&
+        filtersAreEqual(sourceSystem, currentSourceSystem);
+  }
+
+  private static boolean filtersAreEqual(SourceSystem sourceSystem,
+      SourceSystem currentSourceSystem) {
+    return
+        (sourceSystem.getOdsFilters() == null && currentSourceSystem.getOdsFilters() == null)
+            ||
+            sourceSystem.getOdsFilters() != null && sourceSystem.getOdsFilters()
+                .equals(currentSourceSystem.getOdsFilters());
   }
 
   private static SourceSystem buildTombstoneSourceSystem(SourceSystem sourceSystem,
@@ -181,7 +191,8 @@ public class SourceSystemService {
         .withOdsTranslatorType(
             OdsTranslatorType.fromValue(sourceSystemRequest.getOdsTranslatorType().value()))
         .withOdsMaximumRecords(sourceSystemRequest.getOdsMaximumRecords())
-        .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem());
+        .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem())
+        .withOdsFilters(sourceSystemRequest.getOdsFilters());
   }
 
   public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent agent,
@@ -303,7 +314,7 @@ public class SourceSystemService {
     var sourceSystem = buildSourceSystem(sourceSystemRequest,
         currentSourceSystem.getSchemaVersion() + 1, agent, id,
         currentSourceSystem.getSchemaDateCreated());
-    if (isEquals(sourceSystem, currentSourceSystem)) {
+    if (isEqual(sourceSystem, currentSourceSystem)) {
       log.info(
           "Update request for source system: {} is identical to current version, no action taken",
           id);

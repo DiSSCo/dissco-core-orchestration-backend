@@ -1,0 +1,7 @@
+# March 17
+# Issue with binutils in alpine 3.21.3
+CVE-2025-0840
+
+# March 18
+# Issue with libexpat in alpine
+CVE-2024-8176
