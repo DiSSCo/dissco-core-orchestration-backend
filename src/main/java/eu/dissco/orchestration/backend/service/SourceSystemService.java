@@ -112,10 +112,10 @@ public class SourceSystemService {
   private static boolean filtersAreEqual(SourceSystem sourceSystem,
       SourceSystem currentSourceSystem) {
     return
-        (sourceSystem.getOdsHasFilters() == null && currentSourceSystem.getOdsHasFilters() == null)
+        (sourceSystem.getOdsFilters() == null && currentSourceSystem.getOdsFilters() == null)
             ||
-            sourceSystem.getOdsHasFilters() != null && sourceSystem.getOdsHasFilters()
-                .equals(currentSourceSystem.getOdsHasFilters());
+            sourceSystem.getOdsFilters() != null && sourceSystem.getOdsFilters()
+                .equals(currentSourceSystem.getOdsFilters());
   }
 
   private static SourceSystem buildTombstoneSourceSystem(SourceSystem sourceSystem,
@@ -192,7 +192,7 @@ public class SourceSystemService {
             OdsTranslatorType.fromValue(sourceSystemRequest.getOdsTranslatorType().value()))
         .withOdsMaximumRecords(sourceSystemRequest.getOdsMaximumRecords())
         .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem())
-        .withOdsHasFilters(sourceSystemRequest.getOdsHasFilters());
+        .withOdsFilters(sourceSystemRequest.getOdsFilters());
   }
 
   public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent agent,

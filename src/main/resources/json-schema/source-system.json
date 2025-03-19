@@ -97,7 +97,7 @@
         "http://ipt.gbif.pt/ipt/archive.do?r=coi"
       ]
     },
-    "ods:hasFilters": {
+    "ods:filters": {
       "type": "array",
       "description": "List of filters to apply to ingesting from source system. How filters are implemented will vary per translator type.",
       "examples": [
@@ -116,7 +116,7 @@
     },
     "ods:translatorType": {
       "type": "string",
-      "description": "The serialisation of the data the endpoint provides indicating what type of Translator is required",
+      "description": "The serialisation of the data the endpoint provides indicating what type of Translator is required.",
       "enum": [
         "dwca",
         "biocase"

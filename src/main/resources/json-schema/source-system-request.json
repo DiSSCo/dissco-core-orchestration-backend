@@ -27,9 +27,9 @@
         "http://ipt.gbif.pt/ipt/archive.do?r=coi"
       ]
     },
-    "ods:hasFilters": {
+    "ods:filters": {
       "type": "array",
-      "description": "List of filters to apply to ingesting from source system. Currently only applies to BioCASe source systems",
+      "description": "List of filters to apply to ingesting from source system. How filters are implemented will vary per translator type.",
       "examples": [
         "<like path='/DataSets/DataSet/Metadata/Description/Representation/Title'>Herbarium Senckenbergianum (FR)</like>"
       ],

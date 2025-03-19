@@ -493,8 +493,8 @@ class SourceSystemServiceTest {
     return Stream.of(
         Arguments.of(givenSourceSystemRequest(), givenSourceSystem()),
         Arguments.of(
-            givenSourceSystemRequest().withOdsHasFilters(List.of("filter")),
-            givenSourceSystem().withOdsHasFilters(List.of("filter"))
+            givenSourceSystemRequest().withOdsFilters(List.of("filter")),
+            givenSourceSystem().withOdsFilters(List.of("filter"))
         )
     );
   }
