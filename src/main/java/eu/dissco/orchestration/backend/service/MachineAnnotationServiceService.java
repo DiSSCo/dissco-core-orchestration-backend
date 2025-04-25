@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.JsonParser;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -64,7 +63,7 @@ public class MachineAnnotationServiceService {
 
   private final HandleComponent handleComponent;
   private final FdoRecordService fdoRecordService;
-  private final RabbitMqPublisherService kafkaPublisherService;
+  private final RabbitMqPublisherService rabbitMqPublisherService;
   private final MachineAnnotationServiceRepository repository;
   private final AppsV1Api appsV1Api;
   private final CustomObjectsApi customObjectsApi;
@@ -345,7 +344,7 @@ public class MachineAnnotationServiceService {
   private void publishCreateEvent(MachineAnnotationService mas, Agent agent)
       throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(mas), agent);
+      rabbitMqPublisherService.publishCreateEvent(mapper.valueToTree(mas), agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackMasCreation(mas, true, true);
@@ -489,7 +488,7 @@ public class MachineAnnotationServiceService {
       MachineAnnotationService currentMas, Agent agent)
       throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(mas),
+      rabbitMqPublisherService.publishUpdateEvent(mapper.valueToTree(mas),
           mapper.valueToTree(currentMas), agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to RabbitMQ", e);
@@ -535,7 +534,7 @@ public class MachineAnnotationServiceService {
       var tombstoneMas = buildTombstoneMachineAnnotationService(mas, agent, timestamp);
       repository.tombstoneMachineAnnotationService(tombstoneMas, timestamp);
       try {
-        kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneMas),
+        rabbitMqPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneMas),
             mapper.valueToTree(mas), agent);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
