@@ -36,6 +36,7 @@ import io.kubernetes.client.openapi.models.V1Job;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -58,7 +59,7 @@ public class SourceSystemService {
   private final HandleComponent handleComponent;
   private final SourceSystemRepository repository;
   private final DataMappingService dataMappingService;
-  private final KafkaPublisherService kafkaPublisherService;
+  private final RabbitMqPublisherService kafkaPublisherService;
   private final ObjectMapper mapper;
   @Qualifier("yamlMapper")
   private final ObjectMapper yamlMapper;
@@ -268,7 +269,7 @@ public class SourceSystemService {
     try {
       kafkaPublisherService.publishCreateEvent(mapper.valueToTree(sourceSystem), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to RabbitMQ", e);
       rollbackSourceSystemCreation(sourceSystem, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
@@ -360,7 +361,7 @@ public class SourceSystemService {
       kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(newSourceSystem),
           mapper.valueToTree(currentSourceSystem), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentSourceSystem, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
@@ -491,8 +492,6 @@ public class SourceSystemService {
     map.put("jobName", jobName);
     map.put("namespace", jobProperties.getNamespace());
     map.put("containerName", jobName);
-    map.put("kafkaHost", jobProperties.getKafkaHost());
-    map.put("kafkaTopic", jobProperties.getKafkaTopic());
     map.put("database_url", jobProperties.getDatabaseUrl());
     if (isCronJob) {
       map.put("cron", generateCron());

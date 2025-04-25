@@ -64,7 +64,7 @@ class DataMappingServiceTest {
   @Mock
   private HandleComponent handleComponent;
   @Mock
-  private KafkaPublisherService kafkaPublisherService;
+  private RabbitMqPublisherService kafkaPublisherService;
   @Mock
   private DataMappingRepository repository;
   @Mock

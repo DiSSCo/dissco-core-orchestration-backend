@@ -23,10 +23,18 @@ spec:
             - name: webclient.items-per-request
               value: ${itemsPerRequest}
               </#if>
-            - name: kafka.host
-              value: ${kafkaHost}
-            - name: kafka.topic
-              value: ${kafkaTopic}
+            - name: spring.rabbitmq.host
+              value: rabbitmq-cluster.rabbitmq.svc.cluster.local
+            - name: spring.rabbitmq.username
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: rabbitmq-password
+            - name: spring.rabbitmq.password
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: rabbitmq-username
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false

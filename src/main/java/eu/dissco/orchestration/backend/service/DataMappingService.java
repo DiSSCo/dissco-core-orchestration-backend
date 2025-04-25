@@ -41,7 +41,7 @@ public class DataMappingService {
 
   private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
-  private final KafkaPublisherService kafkaPublisherService;
+  private final RabbitMqPublisherService kafkaPublisherService;
   private final DataMappingRepository repository;
   private final ObjectMapper mapper;
   private final FdoProperties fdoProperties;
@@ -151,7 +151,7 @@ public class DataMappingService {
     try {
       kafkaPublisherService.publishCreateEvent(mapper.valueToTree(dataMapping), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to rabbitMQ", e);
       rollbackMappingCreation(dataMapping);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
@@ -194,7 +194,7 @@ public class DataMappingService {
       kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(dataMapping),
           mapper.valueToTree(currentDataMapping), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentDataMapping);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }

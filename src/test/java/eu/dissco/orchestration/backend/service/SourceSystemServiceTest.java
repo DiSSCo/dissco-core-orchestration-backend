@@ -103,7 +103,7 @@ class SourceSystemServiceTest {
   Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
   private SourceSystemService service;
   @Mock
-  private KafkaPublisherService kafkaPublisherService;
+  private RabbitMqPublisherService kafkaPublisherService;
   @Mock
   private SourceSystemRepository repository;
   @Mock

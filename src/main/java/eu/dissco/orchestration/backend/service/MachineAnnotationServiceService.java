@@ -64,7 +64,7 @@ public class MachineAnnotationServiceService {
 
   private final HandleComponent handleComponent;
   private final FdoRecordService fdoRecordService;
-  private final KafkaPublisherService kafkaPublisherService;
+  private final RabbitMqPublisherService kafkaPublisherService;
   private final MachineAnnotationServiceRepository repository;
   private final AppsV1Api appsV1Api;
   private final CustomObjectsApi customObjectsApi;
@@ -73,6 +73,8 @@ public class MachineAnnotationServiceService {
   @Qualifier("deploymentTemplate")
   private final Template deploymentTemplate;
   private final ObjectMapper mapper;
+  @Qualifier("yamlMapper")
+  private final ObjectMapper yamlMapper;
   private final MachineAnnotationServiceProperties properties;
   private final KubernetesProperties kubernetesProperties;
   private final FdoProperties fdoProperties;
@@ -231,13 +233,11 @@ public class MachineAnnotationServiceService {
     }
   }
 
-  private boolean deployMasToCluster(MachineAnnotationService mas,
-      boolean create)
+  private boolean deployMasToCluster(MachineAnnotationService mas, boolean create)
       throws KubernetesFailedException {
     var shortPid = getName(mas.getId());
     try {
-      V1Deployment deployment;
-      deployment = getV1Deployment(mas, shortPid);
+      var deployment = getV1Deployment(mas, shortPid);
       if (create) {
         appsV1Api.createNamespacedDeployment(properties.getNamespace(), deployment).execute();
       } else {
@@ -266,14 +266,13 @@ public class MachineAnnotationServiceService {
       throws TemplateException, IOException {
     var templateProperties = getKedaTemplateProperties(mas, name);
     var kedaString = fillKedaTemplate(templateProperties);
-    return JsonParser.parseString(kedaString.toString()).getAsJsonObject();
+    return yamlMapper.readTree(kedaString.toString());
   }
 
   private Map<String, Object> getKedaTemplateProperties(MachineAnnotationService mas,
       String name) {
     var map = new HashMap<String, Object>();
     map.put(NAME, name);
-    map.put("kafkaHost", properties.getKafkaHost());
     map.put("maxReplicas", mas.getOdsMaxReplicas());
     map.put("topicName", mas.getOdsTopicName());
     return map;
@@ -294,7 +293,6 @@ public class MachineAnnotationServiceService {
     map.put("pid", shortPid);
     map.put(NAME, mas.getSchemaName());
     map.put("id", removeProxy(mas.getId()));
-    map.put("kafkaHost", properties.getKafkaHost());
     map.put("topicName", mas.getOdsTopicName());
     map.put("runningEndpoint", properties.getRunningEndpoint());
     return map;
@@ -337,7 +335,7 @@ public class MachineAnnotationServiceService {
       throws IOException, TemplateException {
     var writer = new StringWriter();
     deploymentTemplate.process(templateProperties, writer);
-    var templateAsNode = (ObjectNode) mapper.readTree(writer.toString());
+    var templateAsNode = (ObjectNode) yamlMapper.readTree(writer.toString());
     var defaultKeyNode = (ArrayNode) templateAsNode.get("spec").get("template").get("spec")
         .get("containers").get(0).get("env");
     defaultKeyNode.addAll(addMasKeys(mas));
@@ -349,7 +347,7 @@ public class MachineAnnotationServiceService {
     try {
       kafkaPublisherService.publishCreateEvent(mapper.valueToTree(mas), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to RabbitMQ", e);
       rollbackMasCreation(mas, true, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
@@ -494,7 +492,7 @@ public class MachineAnnotationServiceService {
       kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(mas),
           mapper.valueToTree(currentMas), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentMas, true, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }

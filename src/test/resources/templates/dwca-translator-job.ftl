@@ -20,10 +20,18 @@ spec:
               value: /temp/darwin.zip
             - name: dwca.temp-folder
               value: /temp/darwin
-            - name: kafka.host
-              value: ${kafkaHost}
-            - name: kafka.topic
-              value: ${kafkaTopic}
+            - name: spring.rabbitmq.host
+              value: rabbitmq-cluster.rabbitmq.svc.cluster.local
+            - name: spring.rabbitmq.username
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: rabbitmq-password
+            - name: spring.rabbitmq.password
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: rabbitmq-username
             - name: webclient.sourceSystemId
               value: ${sourceSystemId}
             - name: spring.datasource.url

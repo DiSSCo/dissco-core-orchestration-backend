@@ -14,9 +14,6 @@ public class MachineAnnotationServiceProperties {
   private String namespace = "machine-annotation-services";
 
   @NotBlank
-  private String kafkaHost;
-
-  @NotBlank
   private String masSecretStore = "mas-secrets";
 
   @NotBlank
