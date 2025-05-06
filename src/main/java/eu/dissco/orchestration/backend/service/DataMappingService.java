@@ -41,7 +41,7 @@ public class DataMappingService {
 
   private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
-  private final KafkaPublisherService kafkaPublisherService;
+  private final RabbitMqPublisherService rabbitMqPublisherService;
   private final DataMappingRepository repository;
   private final ObjectMapper mapper;
   private final FdoProperties fdoProperties;
@@ -149,9 +149,9 @@ public class DataMappingService {
   private void publishCreateEvent(DataMapping dataMapping, Agent agent)
       throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(dataMapping), agent);
+      rabbitMqPublisherService.publishCreateEvent(mapper.valueToTree(dataMapping), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to RabbitMQ", e);
       rollbackMappingCreation(dataMapping);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
@@ -191,10 +191,10 @@ public class DataMappingService {
   private void publishUpdateEvent(DataMapping dataMapping,
       DataMapping currentDataMapping, Agent agent) throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(dataMapping),
+      rabbitMqPublisherService.publishUpdateEvent(mapper.valueToTree(dataMapping),
           mapper.valueToTree(currentDataMapping), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentDataMapping);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
@@ -214,7 +214,7 @@ public class DataMappingService {
       var tombstoneDataMapping = buildTombstoneDataMapping(dataMapping, agent, timestamp);
       repository.tombstoneDataMapping(tombstoneDataMapping, timestamp);
       try {
-        kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneDataMapping),
+        rabbitMqPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneDataMapping),
             mapper.valueToTree(tombstoneDataMapping), agent);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish tombstone event to provenance service", e);

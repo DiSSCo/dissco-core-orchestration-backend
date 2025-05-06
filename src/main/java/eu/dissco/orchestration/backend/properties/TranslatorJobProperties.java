@@ -17,12 +17,6 @@ public class TranslatorJobProperties {
   private String image = "public.ecr.aws/dissco/dissco-core-translator:latest";
 
   @NotBlank
-  private String kafkaHost = "kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092";
-
-  @NotBlank
-  private String kafkaTopic = "col";
-
-  @NotBlank
   private String namespace = "translator-services";
 
   @NotBlank

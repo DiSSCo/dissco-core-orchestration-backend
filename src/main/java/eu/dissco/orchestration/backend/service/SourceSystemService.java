@@ -58,7 +58,7 @@ public class SourceSystemService {
   private final HandleComponent handleComponent;
   private final SourceSystemRepository repository;
   private final DataMappingService dataMappingService;
-  private final KafkaPublisherService kafkaPublisherService;
+  private final RabbitMqPublisherService rabbitMqPublisherService;
   private final ObjectMapper mapper;
   @Qualifier("yamlMapper")
   private final ObjectMapper yamlMapper;
@@ -266,9 +266,9 @@ public class SourceSystemService {
   private void publishCreateEvent(SourceSystem sourceSystem, Agent agent)
       throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishCreateEvent(mapper.valueToTree(sourceSystem), agent);
+      rabbitMqPublisherService.publishCreateEvent(mapper.valueToTree(sourceSystem), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to RabbitMQ", e);
       rollbackSourceSystemCreation(sourceSystem, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
@@ -357,10 +357,10 @@ public class SourceSystemService {
   private void publishUpdateEvent(SourceSystem newSourceSystem,
       SourceSystem currentSourceSystem, Agent agent) throws ProcessingFailedException {
     try {
-      kafkaPublisherService.publishUpdateEvent(mapper.valueToTree(newSourceSystem),
+      rabbitMqPublisherService.publishUpdateEvent(mapper.valueToTree(newSourceSystem),
           mapper.valueToTree(currentSourceSystem), agent);
     } catch (JsonProcessingException e) {
-      log.error("Unable to publish message to Kafka", e);
+      log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentSourceSystem, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
@@ -415,7 +415,7 @@ public class SourceSystemService {
       var tombstoneSourceSystem = buildTombstoneSourceSystem(sourceSystem, agent, timestamp);
       repository.tombstoneSourceSystem(tombstoneSourceSystem, timestamp);
       try {
-        kafkaPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneSourceSystem),
+        rabbitMqPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneSourceSystem),
             mapper.valueToTree(sourceSystem), agent);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
@@ -491,8 +491,6 @@ public class SourceSystemService {
     map.put("jobName", jobName);
     map.put("namespace", jobProperties.getNamespace());
     map.put("containerName", jobName);
-    map.put("kafkaHost", jobProperties.getKafkaHost());
-    map.put("kafkaTopic", jobProperties.getKafkaTopic());
     map.put("database_url", jobProperties.getDatabaseUrl());
     if (isCronJob) {
       map.put("cron", generateCron());

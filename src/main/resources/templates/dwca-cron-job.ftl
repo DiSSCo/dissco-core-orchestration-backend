@@ -26,10 +26,18 @@ spec:
               value: /temp/darwin.zip
             - name: dwca.temp-folder
               value: /temp/darwin
-            - name: kafka.host
-              value: ${kafkaHost}
-            - name: kafka.topic
-              value: ${kafkaTopic}
+            - name: spring.rabbitmq.host
+              value: rabbitmq-cluster.rabbitmq.svc.cluster.local
+            - name: spring.rabbitmq.username
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: rabbitmq-password
+            - name: spring.rabbitmq.password
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: rabbitmq-username
             - name: application.sourceSystemId
               value: ${sourceSystemId}
           <#if maxItems??>
@@ -63,6 +71,9 @@ spec:
               - name: db-secrets
                 mountPath: "/mnt/secrets-store/db-secrets"
                 readOnly: true
+              - name: aws-secrets
+                mountPath: "/mnt/secrets-store/aws-secrets"
+                readOnly: true
           volumes:
             - name: temp-volume
               emptyDir: { }
@@ -72,3 +83,9 @@ spec:
                 readOnly: true
                 volumeAttributes:
                   secretProviderClass: "db-secrets"
+            - name: aws-secrets
+              csi:
+                driver: secrets-store.csi.k8s.io
+                readOnly: true
+                volumeAttributes:
+                  secretProviderClass: "aws-secrets"

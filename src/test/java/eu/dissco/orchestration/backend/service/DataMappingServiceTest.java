@@ -64,7 +64,7 @@ class DataMappingServiceTest {
   @Mock
   private HandleComponent handleComponent;
   @Mock
-  private KafkaPublisherService kafkaPublisherService;
+  private RabbitMqPublisherService rabbitMqPublisherService;
   @Mock
   private DataMappingRepository repository;
   @Mock
@@ -74,7 +74,7 @@ class DataMappingServiceTest {
 
   @BeforeEach
   void setup() {
-    service = new DataMappingService(fdoRecordService, handleComponent, kafkaPublisherService,
+    service = new DataMappingService(fdoRecordService, handleComponent, rabbitMqPublisherService,
         repository, MAPPER, fdoProperties);
     initTime();
   }
@@ -100,17 +100,17 @@ class DataMappingServiceTest {
     assertThat(result).isEqualTo(expected);
     then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
     then(repository).should().createDataMapping(givenDataMapping(HANDLE, 1));
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)), givenAgent());
   }
 
   @Test
-  void testCreateDataMappingKafkaFails() throws Exception {
+  void testCreateDataMappingEventFails() throws Exception {
     // Given
     var dataMapping = givenDataMappingRequest();
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
-    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
         .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)), givenAgent());
 
     // When
@@ -137,12 +137,12 @@ class DataMappingServiceTest {
   }
 
   @Test
-  void testCreateDataMappingKafkaAndRollbackFails() throws Exception {
+  void testCreateDataMappingEventAndRollbackFails() throws Exception {
     // Given
     var dataMapping = givenDataMappingRequest();
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
-    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
         .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)), givenAgent());
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
 
@@ -174,19 +174,19 @@ class DataMappingServiceTest {
     // Then
     assertThat(result).isEqualTo(expected);
     then(repository).should().updateDataMapping(givenDataMapping(HANDLE, 2));
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishUpdateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 2)),
             MAPPER.valueToTree(prevDataMapping), givenAgent());
   }
 
   @Test
-  void testUpdateDataMappingKafkaFails() throws Exception {
+  void testUpdateDataMappingEventFails() throws Exception {
     // Given
     var prevDataMapping = givenDataMapping(HANDLE, 1, "old name");
     var dataMapping = givenDataMappingRequest();
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(Optional.of(prevDataMapping));
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
-    willThrow(JsonProcessingException.class).given(kafkaPublisherService)
+    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
         .publishUpdateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 2)),
             MAPPER.valueToTree(prevDataMapping), givenAgent());
 
@@ -270,7 +270,7 @@ class DataMappingServiceTest {
     // Then
     then(repository).should().tombstoneDataMapping(givenTombstoneDataMapping(), UPDATED);
     then(handleComponent).should().tombstoneHandle(any(), eq(BARE_HANDLE));
-    then(kafkaPublisherService).should().publishTombstoneEvent(any(), any(), eq(givenAgent()));
+    then(rabbitMqPublisherService).should().publishTombstoneEvent(any(), any(), eq(givenAgent()));
   }
 
   @Test
@@ -284,11 +284,11 @@ class DataMappingServiceTest {
   }
 
   @Test
-  void testTombstoneDataMappingKafkaFailed() throws Exception {
+  void testTombstoneDataMappingEventFailed() throws Exception {
     // Given
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(
         Optional.of(givenDataMapping(HANDLE, 1)));
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService)
+    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
         .publishTombstoneEvent(any(), any(), eq(givenAgent()));
 
     // Then
