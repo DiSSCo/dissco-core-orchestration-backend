@@ -105,7 +105,7 @@ class DataMappingServiceTest {
   }
 
   @Test
-  void testCreateDataMappingKafkaFails() throws Exception {
+  void testCreateDataMappingEventFails() throws Exception {
     // Given
     var dataMapping = givenDataMappingRequest();
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
@@ -137,7 +137,7 @@ class DataMappingServiceTest {
   }
 
   @Test
-  void testCreateDataMappingKafkaAndRollbackFails() throws Exception {
+  void testCreateDataMappingEventAndRollbackFails() throws Exception {
     // Given
     var dataMapping = givenDataMappingRequest();
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
@@ -180,7 +180,7 @@ class DataMappingServiceTest {
   }
 
   @Test
-  void testUpdateDataMappingKafkaFails() throws Exception {
+  void testUpdateDataMappingEventFails() throws Exception {
     // Given
     var prevDataMapping = givenDataMapping(HANDLE, 1, "old name");
     var dataMapping = givenDataMappingRequest();
@@ -284,7 +284,7 @@ class DataMappingServiceTest {
   }
 
   @Test
-  void testTombstoneDataMappingKafkaFailed() throws Exception {
+  void testTombstoneDataMappingEventFailed() throws Exception {
     // Given
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(
         Optional.of(givenDataMapping(HANDLE, 1)));
