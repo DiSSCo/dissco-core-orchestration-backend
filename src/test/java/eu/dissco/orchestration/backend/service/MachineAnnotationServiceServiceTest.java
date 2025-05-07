@@ -316,8 +316,6 @@ class MachineAnnotationServiceServiceTest {
     var mas = givenMasRequest();
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent());
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq(MAS_NAMESPACE), any(V1Deployment.class)))
         .willReturn(createDeploy);
@@ -333,8 +331,6 @@ class MachineAnnotationServiceServiceTest {
     given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
         anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
     given(createCustom.execute()).willReturn(mock(Object.class)).willThrow(new ApiException());
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
-        anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-binding"))).willReturn(deleteCustom);
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -350,9 +346,6 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedDeployment(eq(MAS_NAMESPACE), any(V1Deployment.class));
     then(customObjectsApi).should()
         .createNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE), anyString(),
-            any(Object.class));
-    then(customObjectsApi).should(times(2))
-        .createNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE), anyString(),
             any(Object.class));
     then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
