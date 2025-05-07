@@ -311,7 +311,7 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
-  void testCreateMasRabbitFails() throws Exception {
+  void testCreateMasRabbitBindingFails() throws Exception {
     // Given
     var mas = givenMasRequest();
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
