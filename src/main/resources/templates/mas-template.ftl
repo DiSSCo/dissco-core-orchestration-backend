@@ -9,8 +9,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: "${pid}"
+      app: ${pid}
   template:
+    metadata:
+      labels:
+        app: ${pid}
     spec:
       containers:
       - name: ${pid}

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.JsonParser;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -58,6 +59,8 @@ public class MachineAnnotationServiceService {
 
   private static final String DEPLOYMENT = "-deployment";
   private static final String SCALED_OBJECT = "-scaled-object";
+  private static final String BINDING = "-binding";
+  private static final String QUEUE = "-queue";
   private static final String NAME = "name";
   private static final String VALUE = "value";
 
@@ -71,6 +74,10 @@ public class MachineAnnotationServiceService {
   private final Template kedaTemplate;
   @Qualifier("deploymentTemplate")
   private final Template deploymentTemplate;
+  @Qualifier("masRabbitBindingTemplate")
+  private final Template rabbitBindingTemplate;
+  @Qualifier("masRabbitQueueTemplate")
+  private final Template rabbitQueueTemplate;
   private final ObjectMapper mapper;
   @Qualifier("yamlMapper")
   private final ObjectMapper yamlMapper;
@@ -205,16 +212,60 @@ public class MachineAnnotationServiceService {
   private void createDeployment(MachineAnnotationService mas)
       throws ProcessingFailedException {
     var successfulDeployment = false;
+    var successfulKeda = false;
     try {
       successfulDeployment = deployMasToCluster(mas, true);
-      deployKedaToCluster(mas);
+      successfulKeda = deployKedaToCluster(mas);
+      deployRabbitToCluster(mas);
     } catch (KubernetesFailedException e) {
-      rollbackMasCreation(mas, successfulDeployment, false);
+      rollbackMasCreation(mas, successfulDeployment, successfulKeda, false);
       throw new ProcessingFailedException("Failed to create kubernetes resources", e);
     }
   }
 
-  private void deployKedaToCluster(MachineAnnotationService mas)
+  private void deployRabbitToCluster(MachineAnnotationService mas)
+      throws KubernetesFailedException {
+    var name = getName(mas.getId());
+    try {
+      var rabbitResources = createRabbitFiles(name);
+      for (var rabbitResource : rabbitResources.entrySet()) {
+        var rabbitObject = JsonParser.parseString(rabbitResource.getValue());
+        customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+            kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+            rabbitResource.getKey(), rabbitObject).execute();
+      }
+    } catch (TemplateException | IOException e) {
+      log.error("Failed to create rabbitmq kubernetes files for: {}", mas, e);
+      throw new KubernetesFailedException("Failed to deploy keda to cluster");
+    } catch (ApiException e) {
+      log.error("Failed to deploy rabbitmq objects to cluster with code: {} and message: {}",
+          e.getCode(), e.getResponseBody());
+      throw new KubernetesFailedException("Failed to deploy keda to cluster");
+    }
+  }
+
+  private Map<String, String> createRabbitFiles(String name)
+      throws TemplateException, IOException {
+    var rabbitResources = new HashMap<String, String>();
+    var templateProperties = Map.of(
+        NAME, name, "exchangeName",
+        properties.getMasRabbitExchange());
+    rabbitResources.put(kubernetesProperties.getRabbitBindingResource(),
+        getRabbitResourceString(templateProperties, rabbitBindingTemplate));
+    rabbitResources.put(kubernetesProperties.getRabbitQueueResource(),
+        getRabbitResourceString(templateProperties, rabbitQueueTemplate));
+    return rabbitResources;
+  }
+
+  private String getRabbitResourceString(Map<String, String> templateProperties,
+      Template rabbitTemplate)
+      throws TemplateException, IOException {
+    var writer = new StringWriter();
+    rabbitTemplate.process(templateProperties, writer);
+    return writer.toString();
+  }
+
+  private boolean deployKedaToCluster(MachineAnnotationService mas)
       throws KubernetesFailedException {
     var name = getName(mas.getId());
     try {
@@ -222,6 +273,7 @@ public class MachineAnnotationServiceService {
       customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
           kubernetesProperties.getKedaVersion(), properties.getNamespace(),
           kubernetesProperties.getKedaResource(), keda).execute();
+      return true;
     } catch (TemplateException | IOException e) {
       log.error("Failed to create keda scaledObject files for: {}", mas, e);
       throw new KubernetesFailedException("Failed to deploy keda to cluster");
@@ -265,7 +317,7 @@ public class MachineAnnotationServiceService {
       throws TemplateException, IOException {
     var templateProperties = getKedaTemplateProperties(mas, name);
     var kedaString = fillKedaTemplate(templateProperties);
-    return yamlMapper.readTree(kedaString.toString());
+    return JsonParser.parseString(kedaString.toString());
   }
 
   private Map<String, Object> getKedaTemplateProperties(MachineAnnotationService mas,
@@ -347,13 +399,13 @@ public class MachineAnnotationServiceService {
       rabbitMqPublisherService.publishCreateEvent(mapper.valueToTree(mas), agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to RabbitMQ", e);
-      rollbackMasCreation(mas, true, true);
+      rollbackMasCreation(mas, true, true, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
     }
   }
 
   private void rollbackMasCreation(MachineAnnotationService mas,
-      boolean rollbackDeployment, boolean rollbackKeda) {
+      boolean rollbackDeployment, boolean rollbackKeda, boolean rollbackRabbit) {
     var request = fdoRecordService.buildRollbackCreateRequest(mas.getId());
     try {
       handleComponent.rollbackHandleCreation(request);
@@ -382,6 +434,20 @@ public class MachineAnnotationServiceService {
       } catch (ApiException e) {
         log.error(
             "Fatal exception, unable to rollback kubernetes keda for: {} error message with code: {} and message: {}",
+            mas, e.getCode(), e.getResponseBody());
+      }
+    }
+    if (rollbackRabbit) {
+      try {
+        customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+            kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+            kubernetesProperties.getRabbitBindingResource(), "mas-" + name + BINDING).execute();
+        customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+            kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+            kubernetesProperties.getRabbitQueueResource(), "mas-" + name + QUEUE).execute();
+      } catch (ApiException e) {
+        log.error(
+            "Fatal exception, unable to rollback kubernetes rabbitmq for: {} error message with code: {} and message: {}",
             mas, e.getCode(), e.getResponseBody());
       }
     }
@@ -581,6 +647,23 @@ public class MachineAnnotationServiceService {
         log.error("Failed error, unable to create deployment after failed keda deletion");
       }
       throw new ProcessingFailedException("Failed to delete kubernetes resources", e);
+    }
+    removeRabbitResources(currentMas);
+  }
+
+  private void removeRabbitResources(MachineAnnotationService currentMas) {
+    try {
+      var name = getName(currentMas.getId());
+      customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+          kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+          kubernetesProperties.getRabbitBindingResource(), "mas-" + name + BINDING).execute();
+      customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+          kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+          kubernetesProperties.getRabbitQueueResource(), "mas-" + name + QUEUE).execute();
+    } catch (ApiException e) {
+      log.warn(
+          "Deletion of kubernetes rabbit resources failed for record: {}, with code: {} and message: {}",
+          currentMas, e.getCode(), e.getResponseBody());
     }
   }
 
