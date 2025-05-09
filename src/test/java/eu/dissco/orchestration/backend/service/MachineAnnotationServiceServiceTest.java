@@ -174,7 +174,8 @@ class MachineAnnotationServiceServiceTest {
     var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
-    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
 
     // When
@@ -224,7 +225,8 @@ class MachineAnnotationServiceServiceTest {
     var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
-    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
 
     // When
@@ -322,7 +324,8 @@ class MachineAnnotationServiceServiceTest {
     var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
-    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
@@ -347,11 +350,75 @@ class MachineAnnotationServiceServiceTest {
     then(customObjectsApi).should()
         .createNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE), anyString(),
             any(Object.class));
+    then(customObjectsApi).should(times(1))
+        .createNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE), anyString(),
+            any(Object.class));
     then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should().rollbackMasCreation(HANDLE);
     then(appsV1Api).should()
         .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq(MAS_NAMESPACE));
+    then(customObjectsApi).should()
+        .deleteNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE), anyString(),
+            eq(SUFFIX.toLowerCase() + "-scaled-object"));
+  }
+
+  @Test
+  void testCreateMasRabbitQueueFails() throws Exception {
+    // Given
+    var mas = givenMasRequest();
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
+    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
+    given(appsV1Api.createNamespacedDeployment(eq(MAS_NAMESPACE), any(V1Deployment.class)))
+        .willReturn(createDeploy);
+    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
+        anyString(), any(Object.class))).willReturn(createCustom);
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
+        anyString(), any(Object.class))).willReturn(createCustom);
+    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
+    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
+        MAS_NAMESPACE)).willReturn(deleteDeploy);
+    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
+        anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
+        anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-binding"))).willReturn(deleteCustom);
+    given(createCustom.execute()).willReturn(mock(Object.class)).willReturn(mock(Object.class))
+        .willThrow(new ApiException());
+
+    // When
+    assertThrowsExactly(ProcessingFailedException.class,
+        () -> service.createMachineAnnotationService(mas, givenAgent(), MAS_PATH));
+
+    // Then
+    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
+    then(repository).should().createMachineAnnotationService(givenMas());
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
+
+    then(appsV1Api).should()
+        .createNamespacedDeployment(eq(MAS_NAMESPACE), any(V1Deployment.class));
+    then(customObjectsApi).should()
+        .createNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE), anyString(),
+            any(Object.class));
+    then(customObjectsApi).should(times(2))
+        .createNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE), anyString(),
+            any(Object.class));
+    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
+    then(handleComponent).should().rollbackHandleCreation(any());
+    then(repository).should().rollbackMasCreation(HANDLE);
+    then(appsV1Api).should()
+        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq(MAS_NAMESPACE));
+    then(customObjectsApi).should()
+        .deleteNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE), anyString(),
+            eq(SUFFIX.toLowerCase() + "-scaled-object"));
+    then(customObjectsApi).should()
+        .deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE), anyString(),
+            eq("mas-" + SUFFIX.toLowerCase() + "-binding"));
   }
 
   @Test
@@ -368,7 +435,8 @@ class MachineAnnotationServiceServiceTest {
     var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
-    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
@@ -376,9 +444,11 @@ class MachineAnnotationServiceServiceTest {
     var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
     given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
         anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-binding"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-queue"))).willReturn(deleteCustom);
 
     // When
@@ -430,7 +500,8 @@ class MachineAnnotationServiceServiceTest {
     var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
-    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
@@ -438,9 +509,11 @@ class MachineAnnotationServiceServiceTest {
     var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
     given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(MAS_NAMESPACE),
         anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-binding"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-queue"))).willReturn(deleteCustom);
 
     // When
@@ -715,9 +788,11 @@ class MachineAnnotationServiceServiceTest {
         "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
     mockedStatic.when(Instant::now).thenReturn(UPDATED);
     mockedClock.when(Clock::systemUTC).thenReturn(updatedClock);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-binding"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-queue"))).willReturn(deleteCustom);
 
     // When
@@ -751,9 +826,11 @@ class MachineAnnotationServiceServiceTest {
     var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
     given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", MAS_NAMESPACE,
         "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-binding"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(RABBIT_NAMESPACE),
+    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
+        eq(RABBIT_NAMESPACE),
         anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-queue"))).willReturn(deleteCustom);
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
         .publishTombstoneEvent(any(), any(), eq(givenAgent()));

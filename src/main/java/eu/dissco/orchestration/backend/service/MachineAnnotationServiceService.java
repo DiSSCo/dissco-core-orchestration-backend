@@ -220,7 +220,8 @@ public class MachineAnnotationServiceService {
       successfulRabbitBinding = deployRabbitBindingToCluster(mas);
       deployRabbitQueueToCluster(mas);
     } catch (KubernetesFailedException e) {
-      rollbackMasCreation(mas, successfulDeployment, successfulKeda, successfulRabbitBinding, false);
+      rollbackMasCreation(mas, successfulDeployment, successfulKeda, successfulRabbitBinding,
+          false);
       throw new ProcessingFailedException("Failed to create kubernetes resources", e);
     }
   }
@@ -239,7 +240,8 @@ public class MachineAnnotationServiceService {
       log.error("Failed to create rabbitmq binding kubernetes files for: {}", mas, e);
       throw new KubernetesFailedException("Failed to deploy rabbit binding to cluster");
     } catch (ApiException e) {
-      log.error("Failed to deploy rabbitmq binding objects to cluster with code: {} and message: {}",
+      log.error(
+          "Failed to deploy rabbitmq binding objects to cluster with code: {} and message: {}",
           e.getCode(), e.getResponseBody());
       throw new KubernetesFailedException("Failed to deploy rabbit binding to cluster");
     }
@@ -427,7 +429,8 @@ public class MachineAnnotationServiceService {
   }
 
   private void rollbackMasCreation(MachineAnnotationService mas,
-      boolean rollbackDeployment, boolean rollbackKeda, boolean rollbackRabbitBinding, boolean rollbackRabbitQueue) {
+      boolean rollbackDeployment, boolean rollbackKeda, boolean rollbackRabbitBinding,
+      boolean rollbackRabbitQueue) {
     var request = fdoRecordService.buildRollbackCreateRequest(mas.getId());
     try {
       handleComponent.rollbackHandleCreation(request);
@@ -691,8 +694,9 @@ public class MachineAnnotationServiceService {
           kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
           kubernetesProperties.getRabbitQueueResource(), "mas-" + name + QUEUE).execute();
     } catch (ApiException e) {
-      log.warn(
-          "Deletion of kubernetes rabbit resources failed for record: {}, with code: {} and message: {}",
+      log.error(
+          "Deletion of kubernetes rabbit resources failed for record: {}, with code: {} and message: {}. "
+              + "Resources need to be removed manually.",
           currentMas, e.getCode(), e.getResponseBody());
     }
   }
