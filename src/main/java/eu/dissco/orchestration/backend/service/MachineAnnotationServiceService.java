@@ -255,7 +255,7 @@ public class MachineAnnotationServiceService {
       var rabbitObject = JsonParser.parseString(rabbitResource);
       customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
           kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
-          kubernetesProperties.getRabbitBindingResource(), rabbitObject).execute();
+          kubernetesProperties.getRabbitQueueResource(), rabbitObject).execute();
       return true;
     } catch (TemplateException | IOException e) {
       log.error("Failed to create rabbitmq queue kubernetes files for: {}", mas, e);
@@ -480,7 +480,7 @@ public class MachineAnnotationServiceService {
             kubernetesProperties.getRabbitQueueResource(), "mas-" + name + QUEUE).execute();
       } catch (ApiException e) {
         log.error(
-            "Fatal exception, unable to rollback kubernetes rabbitmq queuefor: {} error message with code: {} and message: {}",
+            "Fatal exception, unable to rollback kubernetes rabbitmq queue for: {} error message with code: {} and message: {}",
             mas, e.getCode(), e.getResponseBody());
       }
     }
