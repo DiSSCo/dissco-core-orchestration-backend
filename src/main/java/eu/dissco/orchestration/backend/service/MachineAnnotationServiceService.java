@@ -247,7 +247,7 @@ public class MachineAnnotationServiceService {
     }
   }
 
-  private boolean deployRabbitQueueToCluster(MachineAnnotationService mas)
+  private void deployRabbitQueueToCluster(MachineAnnotationService mas)
       throws KubernetesFailedException {
     var name = getName(mas.getId());
     try {
@@ -256,7 +256,6 @@ public class MachineAnnotationServiceService {
       customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
           kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
           kubernetesProperties.getRabbitQueueResource(), rabbitObject).execute();
-      return true;
     } catch (TemplateException | IOException e) {
       log.error("Failed to create rabbitmq queue kubernetes files for: {}", mas, e);
       throw new KubernetesFailedException("Failed to deploy rabbit queue to cluster");
