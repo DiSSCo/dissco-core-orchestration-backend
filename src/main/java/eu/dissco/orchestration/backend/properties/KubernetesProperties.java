@@ -36,6 +36,18 @@ public class KubernetesProperties {
   @NotBlank
   private String kedaResource = "scaledobjects";
 
+  @NotBlank
+  private String rabbitGroup = "rabbitmq.com";
+
+  @NotBlank
+  private String rabbitVersion = "v1beta1";
+
+  @NotBlank
+  private String rabbitBindingResource = "bindings";
+
+  @NotBlank
+  private String rabbitQueueResource = "queues";
+
   @Positive
   private int kedaPatchWait = 500;
 

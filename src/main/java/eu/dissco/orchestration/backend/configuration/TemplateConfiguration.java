@@ -22,5 +22,14 @@ public class TemplateConfiguration {
     return configuration.getTemplate("mas-template.ftl");
   }
 
+  @Bean(name = "masRabbitBindingTemplate")
+  public Template rabbitBindingTemplate() throws IOException {
+    return configuration.getTemplate("mas-rabbitmq-binding.ftl");
+  }
+
+  @Bean(name = "masRabbitQueueTemplate")
+  public Template rabbitQueueTemplate() throws IOException {
+    return configuration.getTemplate("mas-rabbitmq-queue.ftl");
+  }
 
 }
