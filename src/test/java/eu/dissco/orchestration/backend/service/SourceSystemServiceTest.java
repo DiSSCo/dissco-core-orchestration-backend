@@ -373,6 +373,7 @@ class SourceSystemServiceTest {
       given(
           batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
     }
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
 
     // When
     var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
@@ -401,6 +402,7 @@ class SourceSystemServiceTest {
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
     given(updateCron.execute()).willThrow(ApiException.class);
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -424,6 +426,7 @@ class SourceSystemServiceTest {
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -448,6 +451,7 @@ class SourceSystemServiceTest {
     given(
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
     given(createJob.execute()).willThrow(ApiException.class);
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -479,6 +483,7 @@ class SourceSystemServiceTest {
     // Given
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(
         Optional.of(sourceSystem));
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
 
     // When
     var result = service.updateSourceSystem(BARE_HANDLE, request, givenAgent(), SYSTEM_PATH,

@@ -310,6 +310,7 @@ public class SourceSystemService {
       throw new NotFoundException(
           "Could not update Source System " + id + ". Verify resource exists.");
     }
+    validateMappingExists(sourceSystemRequest.getOdsDataMappingID());
     var currentSourceSystem = currentSourceSystemOptional.get();
     var sourceSystem = buildSourceSystem(sourceSystemRequest,
         currentSourceSystem.getSchemaVersion() + 1, agent, id,
