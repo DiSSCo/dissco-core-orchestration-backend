@@ -26,12 +26,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: aws-secrets
-                  key: rabbitmq-password
+                  key: rabbitmq-username
             - name: spring.rabbitmq.password
               valueFrom:
                 secretKeyRef:
                   name: aws-secrets
-                  key: rabbitmq-username
+                  key: rabbitmq-password
             - name: application.sourceSystemId
               value: ${sourceSystemId}
           <#if maxItems??>
