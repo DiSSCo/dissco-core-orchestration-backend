@@ -3,15 +3,16 @@
     "kind": "Queue",
     "metadata": {
         "name": "mas-${name}-queue",
-        "namespace": "rabbitmq"
+        "namespace": "machine-annotation-services"
     },
     "spec": {
-        "autoDelete": false,
         "durable": true,
         "name": "mas-${name}-queue",
         "type": "quorum",
+        "vhost": "/",
         "rabbitmqClusterReference": {
-            "name": "rabbitmq-cluster"
+            "name": "rabbitmq-cluster",
+            "namespace": "rabbitmq"
         }
     }
 }

@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -144,30 +145,52 @@ public class SourceSystemService {
   }
 
   @PostConstruct
-  public void setup() throws ApiException {
-    updateCronsToImageTag();
+  public void setup() throws ApiException, TemplateException, IOException {
+    synchronizeCronJobs();
   }
 
-  private void updateCronsToImageTag() throws ApiException {
-    log.info("Updating all cron jobs to use image tag: {}", jobProperties.getImage());
-    var cronJobs = batchV1Api.listNamespacedCronJob(jobProperties.getNamespace()).execute();
-    log.info("Found a total of: {} cron jobs", cronJobs.getItems().size());
-    for (var cron : cronJobs.getItems()) {
-      var currentImage = cron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec()
-          .getContainers().get(0).getImage();
-      if (!jobProperties.getImage().equals(currentImage)) {
-        log.info("Updating cron job: {} to use image tag: {}", cron.getMetadata().getName(),
-            jobProperties.getImage());
-        cron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0)
-            .setImage(jobProperties.getImage());
-        batchV1Api.replaceNamespacedCronJob(cron.getMetadata().getName(),
-            jobProperties.getNamespace(), cron).execute();
+  private void synchronizeCronJobs() throws ApiException, TemplateException, IOException {
+    log.info("Synchronizing Cron Jobs of Source System");
+    var cronJobs = batchV1Api.listNamespacedCronJob(jobProperties.getNamespace()).execute()
+        .getItems().stream().collect(
+            Collectors.toMap(cj -> cj.getMetadata().getName(), cj -> cj));
+    var sourceSystemList = repository.getSourceSystems(0, 5000);
+    for (var sourceSystem : sourceSystemList) {
+      var cronJob = setCronJobProperties(sourceSystem);
+      var existingCronJob = cronJobs.get(generateJobName(sourceSystem, true));
+      if (existingCronJob == null) {
+        log.warn("Found a source system: {} without a cron job, creating one",
+            sourceSystem.getId());
+        batchV1Api.createNamespacedCronJob(jobProperties.getNamespace(), cronJob).execute();
+      } else if (equalsCheckCron(cronJob, existingCronJob)) {
+        log.debug("Cronjob: {} is in sync with the database", sourceSystem.getId());
       } else {
-        log.info("Cron job: {} already uses image tag: {}", cron.getMetadata().getName(),
-            jobProperties.getImage());
+        log.warn("Found an out of sync Cron Job, synchronizing sourceSystem: {}",
+            sourceSystem.getId());
+        batchV1Api.replaceNamespacedCronJob(cronJob.getMetadata().getName(),
+            jobProperties.getNamespace(), cronJob).execute();
       }
     }
-    log.info("Successfully updated all cron jobs to use image tag: {}", jobProperties.getImage());
+    cronJobs.keySet()
+        .removeAll(sourceSystemList.stream().map(ss -> generateJobName(ss, true)).collect(
+            Collectors.toSet()));
+    for (V1CronJob cronjob : cronJobs.values()) {
+      log.warn("Found a cron job: {} without a source system, deleting it",
+          cronjob.getMetadata().getName());
+      batchV1Api.deleteNamespacedCronJob(cronjob.getMetadata().getName(),
+          jobProperties.getNamespace()).execute();
+    }
+
+  }
+
+  private static boolean equalsCheckCron(V1CronJob cronJob, V1CronJob existingCronJob) {
+    var container = cronJob.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0);
+    var existingContainer = existingCronJob.getSpec().getJobTemplate().getSpec().getTemplate().getSpec()
+        .getContainers().get(0);
+    return Objects.equals(container.getEnv(), existingContainer.getEnv()) &&
+        Objects.equals(container.getImage(), existingContainer.getImage()) &&
+        Objects.equals(container.getName(), existingContainer.getName()) &&
+        Objects.equals(container.getVolumeMounts(), existingContainer.getVolumeMounts());
   }
 
   private SourceSystem buildSourceSystem(

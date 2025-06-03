@@ -3,12 +3,15 @@ package eu.dissco.orchestration.backend.service;
 import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
 import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
+import static java.util.stream.Collectors.toMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
@@ -38,6 +41,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.V1Deployment;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -47,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -59,10 +64,13 @@ public class MachineAnnotationServiceService {
 
   private static final String DEPLOYMENT = "-deployment";
   private static final String SCALED_OBJECT = "-scaled-object";
+  private static final String MAS_PREFIX = "mas-";
   private static final String BINDING = "-binding";
   private static final String QUEUE = "-queue";
   private static final String NAME = "name";
   private static final String VALUE = "value";
+  private static final String ITEMS = "items";
+  private static final String METADATA = "metadata";
 
   private final HandleComponent handleComponent;
   private final FdoRecordService fdoRecordService;
@@ -137,6 +145,236 @@ public class MachineAnnotationServiceService {
         .withOdsHasSecretVariables(mas.getOdsHasSecretVariables());
   }
 
+  private static boolean equalsCheckKeda(JsonObject kedaObject, JsonObject existingKedaObject) {
+    var existingSpec = existingKedaObject.get("spec").getAsJsonObject();
+    var kedaSpec = kedaObject.get("spec").getAsJsonObject();
+    return Objects.equals(kedaSpec.get("maxReplicaCount").getAsString(),
+        existingSpec.get("maxReplicaCount").getAsString()) &&
+        Objects.equals(kedaSpec.get("scaleTargetRef").getAsJsonObject().get("name").getAsString(),
+            existingSpec.get("scaleTargetRef").getAsJsonObject().get("name").getAsString()) &&
+        Objects.equals(kedaSpec.get("triggers"), existingSpec.get("triggers"));
+  }
+
+  @PostConstruct
+  public void setup() throws ApiException, TemplateException, IOException, InterruptedException {
+    var masList = repository.getMachineAnnotationServices(0, 5000);
+    synchronizeDeployment(masList);
+    synchronizeKeda(masList);
+    synchronizeRabbitBinding(masList);
+    synchronizeRabbitQueue(masList);
+  }
+
+  private void synchronizeRabbitQueue(List<MachineAnnotationService> masList)
+      throws ApiException, TemplateException, IOException, InterruptedException {
+    log.info("Synchronizing Rabbit queue resources of Machine Annotation Service");
+    var existingKedaList = customObjectsApi.listNamespacedCustomObject(
+        kubernetesProperties.getRabbitGroup(), kubernetesProperties.getRabbitVersion(),
+        properties.getNamespace(), kubernetesProperties.getRabbitQueueResource()).execute();
+    var items = new Gson().toJsonTree(existingKedaList).getAsJsonObject().get(ITEMS)
+        .getAsJsonArray();
+    if (items != null) {
+      var existingKedaMap = items.asList().stream()
+          .collect(toMap(keda -> (((JsonObject) keda).get(METADATA).getAsJsonObject()).get("name")
+                  .getAsString(),
+              keda -> keda));
+      for (var machineAnnotationService : masList) {
+        var name = getName(machineAnnotationService.getId());
+        var kedaObject = JsonParser.parseString(createRabbitQueueResource(name));
+        var existingKedaObject = existingKedaMap.get(MAS_PREFIX + name + QUEUE);
+        if (existingKedaObject == null) {
+          log.warn(
+              "Found a machine annotation service: {} without a rabbit queue, creating one",
+              machineAnnotationService.getId());
+          customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+              kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
+              kubernetesProperties.getRabbitQueueResource(), kedaObject).execute();
+        } else if (equalsCheckRabbitSpec((JsonObject) kedaObject, existingKedaObject.getAsJsonObject())) {
+          log.debug("Rabbit queue resource for machine annotation service: {} is in sync with the database",
+              machineAnnotationService.getId());
+        } else {
+          log.warn(
+              "Found an out of sync Rabbit queue for machine annotation service: {}, synchronizing",
+              machineAnnotationService.getId());
+          customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+              kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
+              kubernetesProperties.getRabbitQueueResource(), MAS_PREFIX + name + QUEUE).execute();
+          Thread.sleep(kubernetesProperties.getKedaPatchWait());
+          customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+              kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
+              kubernetesProperties.getRabbitQueueResource(), kedaObject).execute();
+        }
+      }
+      existingKedaMap.keySet().removeAll(masList.stream()
+          .map(mas -> MAS_PREFIX + getName(mas.getId()) + QUEUE)
+          .collect(Collectors.toSet()));
+      for (var existingKeda : existingKedaMap.entrySet()) {
+        log.warn("Found a Rabbit Queue Resource: {} without a machine annotation service, deleting it",
+            existingKeda.getKey());
+        customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+            kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
+            kubernetesProperties.getRabbitQueueResource(), existingKeda.getKey()).execute();
+      }
+    }
+  }
+
+  private void synchronizeRabbitBinding(List<MachineAnnotationService> masList)
+      throws TemplateException, IOException, ApiException, InterruptedException {
+    log.info("Synchronizing Rabbit binding resources of Machine Annotation Service");
+    var existingKedaList = customObjectsApi.listNamespacedCustomObject(
+        kubernetesProperties.getRabbitGroup(), kubernetesProperties.getRabbitVersion(),
+        properties.getNamespace(), kubernetesProperties.getRabbitBindingResource()).execute();
+    var items = new Gson().toJsonTree(existingKedaList).getAsJsonObject().get(ITEMS)
+        .getAsJsonArray();
+    if (items != null) {
+      var existingKedaMap = items.asList().stream()
+          .collect(toMap(keda -> (((JsonObject) keda).get(METADATA).getAsJsonObject()).get("name")
+                  .getAsString(),
+              keda -> keda));
+      for (var machineAnnotationService : masList) {
+        var name = getName(machineAnnotationService.getId());
+        var kedaObject = JsonParser.parseString(createRabbitBindingResource(name));
+        var existingKedaObject = existingKedaMap.get(MAS_PREFIX + name + BINDING);
+        if (existingKedaObject == null) {
+          log.warn(
+              "Found a machine annotation service: {} without a rabbit binding, creating one",
+              machineAnnotationService.getId());
+          customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+              kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
+              kubernetesProperties.getRabbitBindingResource(), kedaObject).execute();
+        } else if (equalsCheckRabbitSpec((JsonObject) kedaObject, existingKedaObject.getAsJsonObject())) {
+          log.debug("Rabbit binding resource for machine annotation service: {} is in sync with the database",
+              machineAnnotationService.getId());
+        } else {
+          log.warn(
+              "Found an out of sync Rabbit binding for machine annotation service: {}, synchronizing",
+              machineAnnotationService.getId());
+          customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+              kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
+              kubernetesProperties.getRabbitBindingResource(), MAS_PREFIX + name + BINDING).execute();
+          Thread.sleep(kubernetesProperties.getKedaPatchWait());
+          customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+              kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
+              kubernetesProperties.getRabbitBindingResource(), kedaObject).execute();
+        }
+      }
+      existingKedaMap.keySet().removeAll(masList.stream()
+          .map(mas -> MAS_PREFIX + getName(mas.getId()) + BINDING)
+          .collect(Collectors.toSet()));
+      for (var existingKeda : existingKedaMap.entrySet()) {
+        log.warn("Found a Rabbit Binding Resource: {} without a machine annotation service, deleting it",
+            existingKeda.getKey());
+        customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
+            kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
+            kubernetesProperties.getRabbitBindingResource(), existingKeda.getKey()).execute();
+      }
+    }
+  }
+
+  private boolean equalsCheckRabbitSpec(JsonObject kedaObject, JsonObject existingKeda) {
+    return Objects.equals(kedaObject.get("spec"), existingKeda.get("spec"));
+  }
+
+  private void synchronizeKeda(List<MachineAnnotationService> masList)
+      throws ApiException, TemplateException, IOException, InterruptedException {
+    log.info("Synchronizing KEDA resources of Machine Annotation Service");
+    var existingKedaList = customObjectsApi.listNamespacedCustomObject(
+        kubernetesProperties.getKedaGroup(), kubernetesProperties.getKedaVersion(),
+        properties.getNamespace(), kubernetesProperties.getKedaResource()).execute();
+    var items = new Gson().toJsonTree(existingKedaList).getAsJsonObject().get(ITEMS)
+        .getAsJsonArray();
+    if (items != null) {
+      var existingKedaMap = items.asList().stream()
+          .collect(toMap(keda -> (((JsonObject) keda).get(METADATA).getAsJsonObject()).get("name")
+                  .getAsString(),
+              keda -> keda));
+      for (var machineAnnotationService : masList) {
+        var name = getName(machineAnnotationService.getId());
+        var kedaObject = createKedaFiles(machineAnnotationService, name);
+        var existingKedaObject = existingKedaMap.get(name + SCALED_OBJECT);
+        if (existingKedaObject == null) {
+          log.warn(
+              "Found a machine annotation service: {} without a keda scaled object, creating one",
+              machineAnnotationService.getId());
+          customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
+              kubernetesProperties.getKedaVersion(), properties.getNamespace(),
+              kubernetesProperties.getKedaResource(), kedaObject).execute();
+        } else if (equalsCheckKeda((JsonObject) kedaObject, existingKedaObject.getAsJsonObject())) {
+          log.debug("Keda resource for machine annotation service: {} is in sync with the database",
+              machineAnnotationService.getId());
+        } else {
+          log.warn(
+              "Found an out of sync keda scaled object for machine annotation service: {}, synchronizing",
+              machineAnnotationService.getId());
+          customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
+              kubernetesProperties.getKedaVersion(), properties.getNamespace(),
+              kubernetesProperties.getKedaResource(), name + SCALED_OBJECT).execute();
+          Thread.sleep(kubernetesProperties.getKedaPatchWait());
+          customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
+              kubernetesProperties.getKedaVersion(), properties.getNamespace(),
+              kubernetesProperties.getKedaResource(), kedaObject).execute();
+        }
+      }
+      existingKedaMap.keySet().removeAll(masList.stream()
+          .map(mas -> getName(mas.getId()) + SCALED_OBJECT)
+          .collect(Collectors.toSet()));
+      for (var existingKeda : existingKedaMap.entrySet()) {
+        log.warn("Found a KEDA resource: {} without a machine annotation service, deleting it",
+            existingKeda.getKey());
+        customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
+            kubernetesProperties.getKedaVersion(), properties.getNamespace(),
+            kubernetesProperties.getKedaResource(), existingKeda.getKey()).execute();
+      }
+    }
+  }
+
+  private void synchronizeDeployment(List<MachineAnnotationService> masList)
+      throws ApiException, TemplateException, IOException {
+    log.info("Synchronizing deployment of Machine Annotation Service");
+    var existingDeployment = appsV1Api.listNamespacedDeployment(properties.getNamespace()).execute()
+        .getItems().stream()
+        .collect(toMap(mas -> mas.getMetadata().getName(), mas -> mas));
+    for (var machineAnnotationService : masList) {
+      var databaseMasDeploy = getV1Deployment(machineAnnotationService,
+          getName(machineAnnotationService.getId()));
+      var existingMas = existingDeployment.get(
+          getName(machineAnnotationService.getId()) + DEPLOYMENT);
+      if (existingMas == null) {
+        log.warn("Found a machine annotation service: {} without a deployment, creating one",
+            machineAnnotationService.getId());
+        appsV1Api.createNamespacedDeployment(properties.getNamespace(), databaseMasDeploy)
+            .execute();
+      } else if (equalsCheckDeployment(databaseMasDeploy, existingMas)) {
+        log.debug("Deployment for machine annotation service: {} is in sync with the database",
+            machineAnnotationService.getId());
+      } else {
+        log.warn(
+            "Found an out of sync deployment for machine annotation service: {}, synchronizing",
+            machineAnnotationService.getId());
+        appsV1Api.replaceNamespacedDeployment(existingMas.getMetadata().getName(),
+            properties.getNamespace(), databaseMasDeploy).execute();
+      }
+    }
+    existingDeployment.keySet()
+        .removeAll(masList.stream().map(mas -> getName(mas.getId()) + DEPLOYMENT)
+            .collect(Collectors.toSet()));
+    for (var existingDeploy : existingDeployment.values()) {
+      log.warn("Found a deployment: {} without a machine annotation service, deleting it",
+          existingDeploy.getMetadata().getName());
+      appsV1Api.deleteNamespacedDeployment(existingDeploy.getMetadata().getName(),
+          properties.getNamespace()).execute();
+    }
+  }
+
+  private boolean equalsCheckDeployment(V1Deployment databaseMasDeploy, V1Deployment existingMas) {
+    var existingContainer = existingMas.getSpec().getTemplate().getSpec().getContainers().get(0);
+    var databaseContainer = databaseMasDeploy.getSpec().getTemplate().getSpec().getContainers()
+        .get(0);
+    return existingContainer.getName().equals(databaseContainer.getName()) &&
+        existingContainer.getImage().equals(databaseContainer.getImage()) &&
+        existingContainer.getEnv().equals(databaseContainer.getEnv()) &&
+        existingContainer.getVolumeMounts().equals(databaseContainer.getVolumeMounts());
+  }
+  
   public JsonApiWrapper createMachineAnnotationService(
       MachineAnnotationServiceRequest masRequest,
       Agent agent, String path) throws ProcessingFailedException {
@@ -233,7 +471,7 @@ public class MachineAnnotationServiceService {
       var rabbitResource = createRabbitBindingResource(name);
       var rabbitObject = JsonParser.parseString(rabbitResource);
       customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
-          kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+          kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
           kubernetesProperties.getRabbitBindingResource(), rabbitObject).execute();
       return true;
     } catch (TemplateException | IOException e) {
@@ -254,7 +492,7 @@ public class MachineAnnotationServiceService {
       var rabbitResource = createRabbitQueueResource(name);
       var rabbitObject = JsonParser.parseString(rabbitResource);
       customObjectsApi.createNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
-          kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+          kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
           kubernetesProperties.getRabbitQueueResource(), rabbitObject).execute();
     } catch (TemplateException | IOException e) {
       log.error("Failed to create rabbitmq queue kubernetes files for: {}", mas, e);
@@ -464,7 +702,7 @@ public class MachineAnnotationServiceService {
     if (rollbackRabbitBinding) {
       try {
         customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
-            kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+            kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
             kubernetesProperties.getRabbitBindingResource(), "mas-" + name + BINDING).execute();
       } catch (ApiException e) {
         log.error(
@@ -475,7 +713,7 @@ public class MachineAnnotationServiceService {
     if (rollbackRabbitQueue) {
       try {
         customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
-            kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+            kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
             kubernetesProperties.getRabbitQueueResource(), "mas-" + name + QUEUE).execute();
       } catch (ApiException e) {
         log.error(
@@ -687,10 +925,10 @@ public class MachineAnnotationServiceService {
     try {
       var name = getName(currentMas.getId());
       customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
-          kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+          kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
           kubernetesProperties.getRabbitBindingResource(), "mas-" + name + BINDING).execute();
       customObjectsApi.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
-          kubernetesProperties.getRabbitVersion(), properties.getRabbitNamespace(),
+          kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
           kubernetesProperties.getRabbitQueueResource(), "mas-" + name + QUEUE).execute();
     } catch (ApiException e) {
       log.error(

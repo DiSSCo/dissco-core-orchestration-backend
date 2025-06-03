@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -49,6 +50,7 @@ import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import eu.dissco.orchestration.backend.schema.TombstoneMetadata;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Configuration;
+import freemarker.template.TemplateException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.BatchV1Api.APIcreateNamespacedCronJobRequest;
@@ -60,12 +62,16 @@ import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1CronJob;
 import io.kubernetes.client.openapi.models.V1CronJobList;
 import io.kubernetes.client.openapi.models.V1CronJobSpec;
+import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1EnvVarSource;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobSpec;
 import io.kubernetes.client.openapi.models.V1JobTemplateSpec;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
+import io.kubernetes.client.openapi.models.V1SecretKeySelector;
+import io.kubernetes.client.openapi.models.V1VolumeMount;
 import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
@@ -122,6 +128,33 @@ class SourceSystemServiceTest {
   private static V1CronJob getV1CronJob(String image, String name) {
     var container = new V1Container();
     container.setImage(image);
+    container.setName(name);
+    container.setEnv(List.of(
+            new V1EnvVar().name("spring.profiles.active").value("biocase"),
+            new V1EnvVar().name("spring.rabbitmq.host")
+                .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
+            new V1EnvVar().name("spring.rabbitmq.username").valueFrom(new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("rabbitmq-username").name("aws-secrets"))),
+            new V1EnvVar().name("spring.rabbitmq.password").valueFrom(new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("rabbitmq-password").name("aws-secrets"))),
+            new V1EnvVar().name("application.sourceSystemId").value("20.5000.1025/GW0-POP-XSL"),
+            new V1EnvVar().name("spring.datasource.url")
+                .value("jdbc:postgresql://localhost:5432/translator"),
+            new V1EnvVar().name("spring.datasource.username")
+                .valueFrom(new V1EnvVarSource().secretKeyRef(
+                    new V1SecretKeySelector().key("db-username").name("db-secrets"))),
+            new V1EnvVar().name("spring.datasource.password")
+                .valueFrom(new V1EnvVarSource().secretKeyRef(
+                    new V1SecretKeySelector().key("db-password").name("db-secrets"))),
+            new V1EnvVar().name("fdo.digital-media-type").value("https://doi.org/21.T11148/bbad8c4e101e8af01115"),
+            new V1EnvVar().name("fdo.digital-specimen-type").value("https://doi.org/21.T11148/894b1e6cad57e921764e"),
+            new V1EnvVar().name("JAVA_TOOL_OPTIONS").value("-XX:MaxRAMPercentage=85")
+        )
+    );
+    container.setVolumeMounts(List.of(
+        new V1VolumeMount().name("db-secrets").mountPath("/mnt/secrets-store/db-secrets").readOnly(true),
+        new V1VolumeMount().name("aws-secrets").mountPath("/mnt/secrets-store/aws-secrets").readOnly(true)
+    ));
     var podSpec = new V1PodSpec();
     podSpec.addContainersItem(container);
     var podTemplateSpec = new V1PodTemplateSpec();
@@ -139,11 +172,22 @@ class SourceSystemServiceTest {
     return cronJob;
   }
 
+  static Stream<Arguments> equalSourceSystems() {
+    return Stream.of(
+        Arguments.of(givenSourceSystemRequest(), givenSourceSystem()),
+        Arguments.of(
+            givenSourceSystemRequest().withOdsFilters(List.of("filter")),
+            givenSourceSystem().withOdsFilters(List.of("filter"))
+        )
+    );
+  }
+
   @BeforeEach
   void setup() throws IOException {
     jobProperties.setDatabaseUrl("jdbc:postgresql://localhost:5432/translator");
     service = new SourceSystemService(fdoRecordService, handleComponent, repository,
-        dataMappingService, rabbitMqPublisherService, MAPPER, yamlMapper, jobProperties, configuration,
+        dataMappingService, rabbitMqPublisherService, MAPPER, yamlMapper, jobProperties,
+        configuration,
         batchV1Api, random, fdoProperties);
     initTime();
     initFreeMaker();
@@ -373,7 +417,8 @@ class SourceSystemServiceTest {
       given(
           batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
     }
-    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(
+        Optional.of(givenDataMapping()));
 
     // When
     var result = service.updateSourceSystem(BARE_HANDLE, sourceSystem, givenAgent(), SYSTEM_PATH,
@@ -402,7 +447,8 @@ class SourceSystemServiceTest {
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
     given(updateCron.execute()).willThrow(ApiException.class);
-    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(
+        Optional.of(givenDataMapping()));
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -426,7 +472,8 @@ class SourceSystemServiceTest {
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
-    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(
+        Optional.of(givenDataMapping()));
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -451,7 +498,8 @@ class SourceSystemServiceTest {
     given(
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
     given(createJob.execute()).willThrow(ApiException.class);
-    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(
+        Optional.of(givenDataMapping()));
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -483,7 +531,8 @@ class SourceSystemServiceTest {
     // Given
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(
         Optional.of(sourceSystem));
-    given(dataMappingService.getActiveDataMapping(any())).willReturn(Optional.of(givenDataMapping()));
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(
+        Optional.of(givenDataMapping()));
 
     // When
     var result = service.updateSourceSystem(BARE_HANDLE, request, givenAgent(), SYSTEM_PATH,
@@ -491,17 +540,6 @@ class SourceSystemServiceTest {
 
     // Then
     assertThat(result).isNull();
-  }
-
-  static Stream<Arguments> equalSourceSystems() {
-
-    return Stream.of(
-        Arguments.of(givenSourceSystemRequest(), givenSourceSystem()),
-        Arguments.of(
-            givenSourceSystemRequest().withOdsFilters(List.of("filter")),
-            givenSourceSystem().withOdsFilters(List.of("filter"))
-        )
-    );
   }
 
   @Test
@@ -620,26 +658,77 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void setupTest() throws ApiException {
+  void synchronizeMissingSourceSystem() throws ApiException, TemplateException, IOException {
     // Given
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
-    var cronName = "cron-1";
-    var updatedCron = getV1CronJob("a-random-image", cronName);
-    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
-    var equalCron = getV1CronJob(jobProperties.getImage(), "cron-2");
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
-    given(cronResponse.execute()).willReturn(
-        new V1CronJobList().addItemsItem(updatedCron).addItemsItem(equalCron));
-    var replaceResponse = mock(APIreplaceNamespacedCronJobRequest.class);
-    given(batchV1Api.replaceNamespacedCronJob(cronName, NAMESPACE, expectedCron)).willReturn(
-        replaceResponse);
+    given(cronResponse.execute()).willReturn(new V1CronJobList());
+    given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of(givenSourceSystem()));
+    given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class))).willReturn(
+        mock(APIcreateNamespacedCronJobRequest.class));
 
     // When
     service.setup();
 
     // Then
-    then(batchV1Api).should(times(1)).replaceNamespacedCronJob(cronName, NAMESPACE,
-        expectedCron);
+    then(batchV1Api).should().createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class));
+  }
+
+  @Test
+  void synchronizeExcessSourceSystem() throws ApiException, TemplateException, IOException {
+    // Given
+    var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
+    var cronName = "biocase-gw0-pop-xsl-translator-service";
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
+    given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
+    given(cronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedCron));
+    given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of());
+    given(batchV1Api.deleteNamespacedCronJob(cronName, NAMESPACE)).willReturn(
+        mock(APIdeleteNamespacedCronJobRequest.class));
+
+    // When
+    service.setup();
+
+    // Then
+    then(batchV1Api).should().deleteNamespacedCronJob(cronName, NAMESPACE);
+  }
+
+  @Test
+  void synchronizeOutOfSyncSourceSystem() throws ApiException, TemplateException, IOException {
+    // Given
+    var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
+    var cronName = "biocase-gw0-pop-xsl-translator-service";
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
+    expectedCron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0).setEnv(List.of());
+    given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
+    given(cronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedCron));
+    given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of(givenSourceSystem()));
+    given(batchV1Api.replaceNamespacedCronJob(eq(cronName), eq(NAMESPACE),
+        any(V1CronJob.class))).willReturn(mock(APIreplaceNamespacedCronJobRequest.class));
+
+    // When
+    service.setup();
+
+    // Then
+    then(batchV1Api).should()
+        .replaceNamespacedCronJob(eq(cronName), eq(NAMESPACE), any(V1CronJob.class));
+  }
+
+  @Test
+  void synchronizeInSyncSourceSystem() throws ApiException, TemplateException, IOException {
+    // Given
+    var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
+    var cronName = "biocase-gw0-pop-xsl-translator-service";
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
+    given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
+    given(cronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedCron));
+    given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of(givenSourceSystem()));
+
+    // When
+    service.setup();
+
+    // Then
+    then(batchV1Api).shouldHaveNoMoreInteractions();
   }
 
   private void initTime() {

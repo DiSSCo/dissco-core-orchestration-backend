@@ -6,7 +6,7 @@
   },
   "spec": {
     "minReplicaCount": 0,
-    "maxReplicaCount": ${maxReplicas},
+    "maxReplicaCount": ${maxReplicas}.0,
     "scaleTargetRef": {
       "name": "${name}-deployment"
     },
@@ -14,7 +14,7 @@
       "type" : "rabbitmq",
       "metadata" : {
         "mode" : "QueueLength",
-        "value" : "1",
+        "value" : "1.0",
         "queueName" : "${name}-queue"
       },
       "authenticationRef" : {
