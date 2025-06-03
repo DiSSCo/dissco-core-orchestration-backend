@@ -32,12 +32,12 @@ spec:
           valueFrom:
             secretKeyRef:
               name: aws-secrets
-              key: rabbitmq-password
+              key: rabbitmq-username
         - name: RABBITMQ_PASSWORD
           valueFrom:
             secretKeyRef:
               name: aws-secrets
-              key: rabbitmq-username
+              key: rabbitmq-password
         - name: RUNNING_ENDPOINT
           value: https://dev.dissco.tech/api/v1/mjr
         - name: GEOPICK_USER

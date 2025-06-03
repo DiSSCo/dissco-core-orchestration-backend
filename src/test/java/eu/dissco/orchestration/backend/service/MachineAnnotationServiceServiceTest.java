@@ -70,9 +70,13 @@ import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1Deployment;
 import io.kubernetes.client.openapi.models.V1DeploymentList;
 import io.kubernetes.client.openapi.models.V1DeploymentSpec;
+import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1EnvVarSource;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
+import io.kubernetes.client.openapi.models.V1SecretKeySelector;
+import io.kubernetes.client.openapi.models.V1VolumeMount;
 import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
@@ -135,31 +139,73 @@ class MachineAnnotationServiceServiceTest {
     );
   }
 
-  private static JsonElement givenKedaResource() {
+  private static JsonElement givenKedaResource(String maxCount) {
     return GSON.fromJson(
-        "{\"apiVersion\":\"keda.sh/v1alpha1\",\"items\":[{\"apiVersion\":\"keda.sh/v1alpha1\",\"kind\":\"ScaledObject\",\"metadata\":{\"name\":\"gw0-pop-xsl-scaled-object\",\"namespace\":\"machine-annotation-services\"},\"spec\":{\"maxReplicaCount\":1,\"minReplicaCount\":0,\"scaleTargetRef\":{\"name\":\"gw0-pop-xsl-deployment\"},\"triggers\":[{\"authenticationRef\":{\"name\":\"keda-trigger-auth-rabbitmq-conn\"},\"metadata\":{\"mode\":\"QueueLength\",\"queueName\":\"5y6-tzv-k3a-queue\",\"value\":\"1.0\"},\"type\":\"rabbitmq\"}]}}]}",
+        "{\"apiVersion\":\"keda.sh/v1alpha1\",\"items\":[{\"apiVersion\":\"keda.sh/v1alpha1\",\"kind\":\"ScaledObject\",\"metadata\":{\"name\":\"gw0-pop-xsl-scaled-object\",\"namespace\":\"machine-annotation-services\"},\"spec\":{\"maxReplicaCount\":"
+            + maxCount
+            + ",\"minReplicaCount\":0,\"scaleTargetRef\":{\"name\":\"gw0-pop-xsl-deployment\"},\"triggers\":[{\"authenticationRef\":{\"name\":\"keda-trigger-auth-rabbitmq-conn\"},\"metadata\":{\"mode\":\"QueueLength\",\"queueName\":\"gw0-pop-xsl-queue\",\"value\":\"1.0\"},\"type\":\"rabbitmq\"}]}}]}",
         JsonElement.class);
   }
 
-  private static JsonElement givenRabbitBinding() {
+  private static JsonElement givenRabbitBinding(String routingKey) {
     return GSON.fromJson(
-        "{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"items\":[{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"kind\":\"Binding\",\"metadata\":{\"name\":\"mas-gw0-pop-xsl-binding\",\"namespace\":\"machine-annotation-services\"},\"spec\":{\"destination\":\"mas-gw0-pop-xsl-queue\",\"destinationType\":\"queue\",\"rabbitmqClusterReference\":{\"name\":\"rabbitmq-cluster\",\"namespace\":\"rabbitmq\"},\"routingKey\":\"5y6-tzv-k3a\",\"source\":\"mas-exchange\",\"vhost\":\"/\"}}]}",
+        "{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"items\":[{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"kind\":\"Binding\",\"metadata\":{\"name\":\"mas-gw0-pop-xsl-binding\",\"namespace\":\"machine-annotation-services\"},\"spec\":{\"destination\":\"mas-gw0-pop-xsl-queue\",\"destinationType\":\"queue\",\"rabbitmqClusterReference\":{\"name\":\"rabbitmq-cluster\",\"namespace\":\"rabbitmq\"},\"routingKey\":\""
+            + routingKey + "\",\"source\":\"mas-exchange\",\"vhost\":\"/\"}}]}",
         JsonElement.class
     );
   }
 
-  private static JsonElement givenRabbitQueue() {
+  private static JsonElement givenRabbitQueue(String durable) {
     return GSON.fromJson(
-        "{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"items\":[{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"kind\":\"Queue\",\"metadata\":{\"name\":\"mas-gw0-pop-xsl-queue\",\"namespace\":\"machine-annotation-services\"},\"spec\":{\"durable\":false,\"name\":\"mas-gw0-pop-xsl-queue\",\"rabbitmqClusterReference\":{\"name\":\"rabbitmq-cluster\",\"namespace\":\"rabbitmq\"},\"type\":\"quorum\",\"vhost\":\"/\"}}]}",
+        "{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"items\":[{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"kind\":\"Queue\",\"metadata\":{\"name\":\"mas-gw0-pop-xsl-queue\",\"namespace\":\"machine-annotation-services\"},\"spec\":{\"durable\":"
+            + durable
+            + ",\"name\":\"mas-gw0-pop-xsl-queue\",\"rabbitmqClusterReference\":{\"name\":\"rabbitmq-cluster\",\"namespace\":\"rabbitmq\"},\"type\":\"quorum\",\"vhost\":\"/\"}}]}",
         JsonElement.class
     );
   }
 
-  private static V1Deployment givenMasDeployment() {
+  private static V1Deployment givenMasDeployment(String image) {
     return new V1Deployment().metadata(new V1ObjectMeta().name("gw0-pop-xsl-deployment"))
         .spec(new V1DeploymentSpec().template(new V1PodTemplateSpec().spec(
-            new V1PodSpec().containers(List.of(new V1Container().name("gw0-pop-xsl-deployment")
-                .image("public.aws.amazon.com/dissco/translator:latest"))))));
+            new V1PodSpec().containers(List.of(
+                new V1Container()
+                    .name("gw0-pop-xsl")
+                    .image(image)
+                    .env(List.of(
+                        new V1EnvVar().name("MAS_NAME").value("A Machine Annotation Service"),
+                        new V1EnvVar().name("MAS_ID").value("20.5000.1025/GW0-POP-XSL"),
+                        new V1EnvVar().name("RABBITMQ_HOST")
+                            .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
+                        new V1EnvVar().name("RABBITMQ_QUEUE").value("fancy-topic-name-queue"),
+                        new V1EnvVar().name("RABBITMQ_USER")
+                            .valueFrom(new V1EnvVarSource().secretKeyRef(
+                                new V1SecretKeySelector().key("rabbitmq-username")
+                                    .name("aws-secrets"))),
+                        new V1EnvVar().name("RABBITMQ_PASSWORD")
+                            .valueFrom(new V1EnvVarSource().secretKeyRef(
+                                new V1SecretKeySelector().key("rabbitmq-password")
+                                    .name("aws-secrets"))),
+                        new V1EnvVar().name("RUNNING_ENDPOINT")
+                            .value("https://dev.dissco.tech/api/v1/mjr"),
+                        new V1EnvVar().name("GEOPICK_USER").valueFrom(
+                            new V1EnvVarSource().secretKeyRef(
+                                new V1SecretKeySelector().key("geopick-user").name("mas-secrets"))),
+                        new V1EnvVar().name("GEOPICK_PASSWORD").valueFrom(
+                            new V1EnvVarSource().secretKeyRef(
+                                new V1SecretKeySelector().key("geopick-password")
+                                    .name("mas-secrets"))),
+                        new V1EnvVar().name("server.port").value("8080"),
+                        new V1EnvVar().name("spring.datasource.password").valueFrom(
+                            new V1EnvVarSource().secretKeyRef(
+                                new V1SecretKeySelector().key("db-password").name("mas-secrets")))
+                    ))
+                    .volumeMounts(List.of(
+                        new V1VolumeMount().name("temp-volume").mountPath("/temp"),
+                        new V1VolumeMount().name("mas-secrets")
+                            .mountPath("/mnt/secrets-store/mas-secrets").readOnly(true),
+                        new V1VolumeMount().name("aws-secrets")
+                            .mountPath("/mnt/secrets-store/aws-secrets").readOnly(true)
+                    )))))));
   }
 
   @BeforeEach
@@ -939,13 +985,13 @@ class MachineAnnotationServiceServiceTest {
     // Given
     var deployResponse = mock(APIlistNamespacedDeploymentRequest.class);
     var customKedaResponse = mock(APIlistNamespacedCustomObjectRequest.class);
-    var k8sKeda = givenKedaResource();
+    var k8sKeda = givenKedaResource("5.0");
     given(customKedaResponse.execute()).willReturn(k8sKeda);
     var customRabbitBinding = mock(APIlistNamespacedCustomObjectRequest.class);
-    var k8sRabbitBinding = givenRabbitBinding();
+    var k8sRabbitBinding = givenRabbitBinding("gw0-pop-xsl");
     given(customRabbitBinding.execute()).willReturn(k8sRabbitBinding);
     var customRabbitQueue = mock(APIlistNamespacedCustomObjectRequest.class);
-    var k8sRabbitQueue = givenRabbitQueue();
+    var k8sRabbitQueue = givenRabbitQueue("true");
     given(customRabbitQueue.execute()).willReturn(k8sRabbitQueue);
     given(appsV1Api.listNamespacedDeployment(NAMESPACE)).willReturn(deployResponse);
     given(customObjectsApi.listNamespacedCustomObject(eq("keda.sh"), anyString(),
@@ -955,7 +1001,8 @@ class MachineAnnotationServiceServiceTest {
     given(customObjectsApi.listNamespacedCustomObject(eq("rabbitmq.com"), anyString(),
         eq(NAMESPACE), eq("queues"))).willReturn(customRabbitQueue);
     given(deployResponse.execute()).willReturn(
-        new V1DeploymentList().addItemsItem(givenMasDeployment()));
+        new V1DeploymentList().addItemsItem(
+            givenMasDeployment("public.ecr.aws/dissco/fancy-mas:sha-54289")));
     given(repository.getMachineAnnotationServices(anyInt(), anyInt())).willReturn(List.of());
     given(appsV1Api.deleteNamespacedDeployment(anyString(), eq(NAMESPACE))).willReturn(
         mock(APIdeleteNamespacedDeploymentRequest.class));
@@ -980,13 +1027,13 @@ class MachineAnnotationServiceServiceTest {
         List.of(givenMas()));
     var deployResponse = mock(APIlistNamespacedDeploymentRequest.class);
     var customKedaResponse = mock(APIlistNamespacedCustomObjectRequest.class);
-    var k8sKeda = givenKedaResource();
+    var k8sKeda = givenKedaResource("1.0");
     given(customKedaResponse.execute()).willReturn(k8sKeda);
     var customRabbitBinding = mock(APIlistNamespacedCustomObjectRequest.class);
-    var k8sRabbitBinding = givenRabbitBinding();
+    var k8sRabbitBinding = givenRabbitBinding("another-routing-key");
     given(customRabbitBinding.execute()).willReturn(k8sRabbitBinding);
     var customRabbitQueue = mock(APIlistNamespacedCustomObjectRequest.class);
-    var k8sRabbitQueue = givenRabbitQueue();
+    var k8sRabbitQueue = givenRabbitQueue("false");
     given(customRabbitQueue.execute()).willReturn(k8sRabbitQueue);
     given(appsV1Api.listNamespacedDeployment(NAMESPACE)).willReturn(deployResponse);
     given(customObjectsApi.listNamespacedCustomObject(eq("keda.sh"), anyString(),
@@ -996,7 +1043,7 @@ class MachineAnnotationServiceServiceTest {
     given(customObjectsApi.listNamespacedCustomObject(eq("rabbitmq.com"), anyString(),
         eq(NAMESPACE), eq("queues"))).willReturn(customRabbitQueue);
     given(deployResponse.execute()).willReturn(
-        new V1DeploymentList().addItemsItem(givenMasDeployment()));
+        new V1DeploymentList().addItemsItem(givenMasDeployment("anotherImage")));
     given(appsV1Api.replaceNamespacedDeployment(anyString(), eq(NAMESPACE), any(
         V1Deployment.class))).willReturn(
         mock(APIreplaceNamespacedDeploymentRequest.class));
@@ -1017,6 +1064,41 @@ class MachineAnnotationServiceServiceTest {
         eq(NAMESPACE), anyString(), anyString());
     then(customObjectsApi).should(times(3)).createNamespacedCustomObject(anyString(), anyString(),
         eq(NAMESPACE), anyString(), any(Object.class));
+  }
+
+  @Test
+  void synchronizeInSyncMas()
+      throws ApiException, TemplateException, IOException, InterruptedException {
+    // Given
+    given(repository.getMachineAnnotationServices(anyInt(), anyInt())).willReturn(
+        List.of(givenMas()));
+    var deployResponse = mock(APIlistNamespacedDeploymentRequest.class);
+    var customKedaResponse = mock(APIlistNamespacedCustomObjectRequest.class);
+    var k8sKeda = givenKedaResource("5.0");
+    given(customKedaResponse.execute()).willReturn(k8sKeda);
+    var customRabbitBinding = mock(APIlistNamespacedCustomObjectRequest.class);
+    var k8sRabbitBinding = givenRabbitBinding("gw0-pop-xsl");
+    given(customRabbitBinding.execute()).willReturn(k8sRabbitBinding);
+    var customRabbitQueue = mock(APIlistNamespacedCustomObjectRequest.class);
+    var k8sRabbitQueue = givenRabbitQueue("true");
+    given(customRabbitQueue.execute()).willReturn(k8sRabbitQueue);
+    given(appsV1Api.listNamespacedDeployment(NAMESPACE)).willReturn(deployResponse);
+    given(customObjectsApi.listNamespacedCustomObject(eq("keda.sh"), anyString(),
+        eq(NAMESPACE), anyString())).willReturn(customKedaResponse);
+    given(customObjectsApi.listNamespacedCustomObject(eq("rabbitmq.com"), anyString(),
+        eq(NAMESPACE), eq("bindings"))).willReturn(customRabbitBinding);
+    given(customObjectsApi.listNamespacedCustomObject(eq("rabbitmq.com"), anyString(),
+        eq(NAMESPACE), eq("queues"))).willReturn(customRabbitQueue);
+    given(deployResponse.execute()).willReturn(
+        new V1DeploymentList().addItemsItem(
+            givenMasDeployment("public.ecr.aws/dissco/fancy-mas:sha-54289")));
+
+    // When
+    service.setup();
+
+    //Then
+    then(appsV1Api).shouldHaveNoMoreInteractions();
+    then(customObjectsApi).shouldHaveNoMoreInteractions();
   }
 
   private void initTime() {
