@@ -15,7 +15,7 @@
       "metadata" : {
         "mode" : "QueueLength",
         "value" : "1.0",
-        "queueName" : "${name}-queue"
+        "queueName" : "mas-${name}-queue"
       },
       "authenticationRef" : {
         "name" : "keda-trigger-auth-rabbitmq-conn"

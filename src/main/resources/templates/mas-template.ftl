@@ -28,7 +28,7 @@ spec:
         - name: RABBITMQ_HOST
           value: rabbitmq-cluster.rabbitmq.svc.cluster.local
         - name: RABBITMQ_QUEUE
-          value: ${topicName}-queue
+          value: mas-${topicName}-queue
         - name: RABBITMQ_USER
           valueFrom:
             secretKeyRef:
