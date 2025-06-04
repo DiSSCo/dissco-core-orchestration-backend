@@ -143,7 +143,7 @@ class MachineAnnotationServiceServiceTest {
     return GSON.fromJson(
         "{\"apiVersion\":\"keda.sh/v1alpha1\",\"items\":[{\"apiVersion\":\"keda.sh/v1alpha1\",\"kind\":\"ScaledObject\",\"metadata\":{\"name\":\"gw0-pop-xsl-scaled-object\",\"namespace\":\"machine-annotation-services\"},\"spec\":{\"maxReplicaCount\":"
             + maxCount
-            + ",\"minReplicaCount\":0,\"scaleTargetRef\":{\"name\":\"gw0-pop-xsl-deployment\"},\"triggers\":[{\"authenticationRef\":{\"name\":\"keda-trigger-auth-rabbitmq-conn\"},\"metadata\":{\"mode\":\"QueueLength\",\"queueName\":\"gw0-pop-xsl-queue\",\"value\":\"1.0\"},\"type\":\"rabbitmq\"}]}}]}",
+            + ",\"minReplicaCount\":0,\"scaleTargetRef\":{\"name\":\"gw0-pop-xsl-deployment\"},\"triggers\":[{\"authenticationRef\":{\"name\":\"keda-trigger-auth-rabbitmq-conn\"},\"metadata\":{\"mode\":\"QueueLength\",\"queueName\":\"mas-gw0-pop-xsl-queue\",\"value\":\"1.0\"},\"type\":\"rabbitmq\"}]}}]}",
         JsonElement.class);
   }
 
@@ -176,7 +176,7 @@ class MachineAnnotationServiceServiceTest {
                         new V1EnvVar().name("MAS_ID").value("20.5000.1025/GW0-POP-XSL"),
                         new V1EnvVar().name("RABBITMQ_HOST")
                             .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
-                        new V1EnvVar().name("RABBITMQ_QUEUE").value("fancy-topic-name-queue"),
+                        new V1EnvVar().name("RABBITMQ_QUEUE").value("mas-fancy-topic-name-queue"),
                         new V1EnvVar().name("RABBITMQ_USER")
                             .valueFrom(new V1EnvVarSource().secretKeyRef(
                                 new V1SecretKeySelector().key("rabbitmq-username")
