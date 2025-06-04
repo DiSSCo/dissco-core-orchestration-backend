@@ -15,6 +15,7 @@ spec:
       labels:
         app: ${pid}
     spec:
+      serviceAccountName: mas-secret-manager
       containers:
       - name: ${pid}
         image: ${image}:${imageTag}
