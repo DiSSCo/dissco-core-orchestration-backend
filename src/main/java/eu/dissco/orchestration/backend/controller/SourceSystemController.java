@@ -19,11 +19,8 @@ import eu.dissco.orchestration.backend.service.SourceSystemService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -107,7 +104,7 @@ public class SourceSystemController {
   }
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{prefix}/{suffix}/dwc-dp", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{prefix}/{suffix}/download/dwc-dp", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Resource> getSourceSystemDwcDp(@PathVariable("prefix") String prefix,
       @PathVariable("suffix") String suffix) throws URISyntaxException {
     var id = prefix + '/' + suffix;
