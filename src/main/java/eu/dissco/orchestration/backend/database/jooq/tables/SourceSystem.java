@@ -8,8 +8,10 @@ import eu.dissco.orchestration.backend.database.jooq.Keys;
 import eu.dissco.orchestration.backend.database.jooq.Public;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.SourceSystemRecord;
+
 import java.time.Instant;
 import java.util.Collection;
+
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.JSONB;
@@ -104,6 +106,21 @@ public class SourceSystem extends TableImpl<SourceSystemRecord> {
      * The column <code>public.source_system.data</code>.
      */
     public final TableField<SourceSystemRecord, JSONB> DATA = createField(DSL.name("data"), SQLDataType.JSONB.nullable(false), this, "");
+
+    /**
+     * The column <code>public.source_system.dwc_dp_link</code>.
+     */
+    public final TableField<SourceSystemRecord, String> DWC_DP_LINK = createField(DSL.name("dwc_dp_link"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.source_system.dwca_link</code>.
+     */
+    public final TableField<SourceSystemRecord, String> DWCA_LINK = createField(DSL.name("dwca_link"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.source_system.eml</code>.
+     */
+    public final TableField<SourceSystemRecord, byte[]> EML = createField(DSL.name("eml"), SQLDataType.BLOB, this, "");
 
     private SourceSystem(Name alias, Table<SourceSystemRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

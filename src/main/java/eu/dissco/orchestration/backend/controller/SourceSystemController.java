@@ -18,8 +18,14 @@ import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -98,6 +104,24 @@ public class SourceSystemController {
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var sourceSystem = service.getSourceSystemById(id, path);
     return ResponseEntity.ok(sourceSystem);
+  }
+
+  @ResponseStatus(HttpStatus.OK)
+  @GetMapping(value = "/{prefix}/{suffix}/dwc-dp", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Resource> getSourceSystemDwcDp(@PathVariable("prefix") String prefix,
+      @PathVariable("suffix") String suffix) throws URISyntaxException {
+    var id = prefix + '/' + suffix;
+    log.info("Received DwC-DP for source system with id: {}", id);
+    var dwcDpInputStream = service.getSourceSystemDwcDp(id);
+    var resource = new InputStreamResource(dwcDpInputStream);
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType("application/zip"))
+        .header("Content-Disposition", "attachment; filename=\"" + generateDownloadName(id) + "\"")
+        .body(resource);
+  }
+
+  private static String generateDownloadName(String id) {
+    return id.toLowerCase().replace("/", "_") + "_dwc-dp.zip";
   }
 
   @ResponseStatus(HttpStatus.OK)
