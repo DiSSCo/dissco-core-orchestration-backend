@@ -104,9 +104,9 @@ public class SourceSystemController {
   }
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{prefix}/{suffix}/download/dwc-dp", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{prefix}/{suffix}/download/dwc-dp")
   public ResponseEntity<Resource> getSourceSystemDwcDp(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix) throws URISyntaxException {
+      @PathVariable("suffix") String suffix) throws URISyntaxException, NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received DwC-DP for source system with id: {}", id);
     var dwcDpInputStream = service.getSourceSystemDwcDp(id);

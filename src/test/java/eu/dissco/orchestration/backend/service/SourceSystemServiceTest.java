@@ -2,7 +2,7 @@ package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.DWC_DP_S3_BUCKET;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.DWC_DP_S3_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
@@ -20,6 +20,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneSourceSystem;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -568,9 +569,9 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testGetSourceSystemDwcDp() throws URISyntaxException {
+  void testGetSourceSystemDwcDp() throws URISyntaxException, NotFoundException {
     // Given
-    given(repository.getDwcDpLink(HANDLE)).willReturn(DWC_DP_S3_BUCKET);
+    given(repository.getDwcDpLink(HANDLE)).willReturn(DWC_DP_S3_URI);
     var getObjectRequest = GetObjectRequest.builder()
         .key("2025-06-10/640f3acb-dc1d-4300-99a0-32e2c5ae6220.zip")
         .bucket("dissco-data-export-test").build();
@@ -581,6 +582,15 @@ class SourceSystemServiceTest {
 
     // Then
     then(s3Client).should().getObject(getObjectRequest);
+  }
+
+  @Test
+  void testGetSourceSystemDwcDpNotFound() {
+    // Given
+    given(repository.getDwcDpLink(HANDLE)).willReturn(null);
+
+    // When / Then
+    assertThrows(NotFoundException.class, () -> service.getSourceSystemDwcDp(HANDLE));
   }
 
   @Test

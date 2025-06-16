@@ -117,7 +117,6 @@ public class SourceSystemRepository {
     return context.select(SOURCE_SYSTEM.DWC_DP_LINK)
         .from(SOURCE_SYSTEM)
         .where(SOURCE_SYSTEM.ID.eq(id))
-        .fetchOptional(Record1::value1)
-        .orElse(null);
+        .fetchOne(Record1::value1);
   }
 }

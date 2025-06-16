@@ -573,8 +573,11 @@ public class SourceSystemService {
     }
   }
 
-  public InputStream getSourceSystemDwcDp(String id) throws URISyntaxException {
+  public InputStream getSourceSystemDwcDp(String id) throws URISyntaxException, NotFoundException {
     var fileLocation = repository.getDwcDpLink(id);
+    if (fileLocation == null) {
+      throw new NotFoundException("No DWC-A file found for source system with ID: " + id);
+    }
     URI uri = new URI(fileLocation);
     String bucketName = uri.getHost();
     String objectKey = uri.getPath()

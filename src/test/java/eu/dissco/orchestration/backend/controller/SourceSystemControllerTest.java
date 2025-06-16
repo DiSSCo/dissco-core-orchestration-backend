@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
@@ -124,7 +125,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testDownloadSourceSystemDwcDp() throws URISyntaxException, IOException {
+  void testDownloadSourceSystemDwcDp() throws URISyntaxException, IOException, NotFoundException {
     // Given
     given(service.getSourceSystemDwcDp(BARE_HANDLE)).willReturn(
         new ByteArrayInputStream("test".getBytes()));
