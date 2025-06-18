@@ -4,6 +4,7 @@ import static eu.dissco.orchestration.backend.configuration.ApplicationConfigura
 import static eu.dissco.orchestration.backend.database.jooq.Tables.SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.DWC_DP_S3_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
@@ -86,6 +87,18 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetDwcDpLink() throws JsonProcessingException {
+    // Given
+    postSourceSystem(List.of(givenSourceSystem()));
+
+    // When
+    var result = repository.getDwcDpLink(BARE_HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(DWC_DP_S3_URI);
   }
 
   @Test
@@ -217,6 +230,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
           .set(SOURCE_SYSTEM.MAPPING_ID, sourceSystem.getOdsDataMappingID())
           .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
               sourceSystem.getOdsTranslatorType().value()))
+          .set(SOURCE_SYSTEM.DWC_DP_LINK, DWC_DP_S3_URI)
           .set(SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem)));
     }
     context.batch(queryList).execute();

@@ -6,7 +6,9 @@ package eu.dissco.orchestration.backend.database.jooq.tables.records;
 
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
+
 import java.time.Instant;
+
 import org.jooq.JSONB;
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
@@ -174,6 +176,48 @@ public class SourceSystemRecord extends UpdatableRecordImpl<SourceSystemRecord> 
         return (JSONB) get(10);
     }
 
+    /**
+     * Setter for <code>public.source_system.dwc_dp_link</code>.
+     */
+    public void setDwcDpLink(String value) {
+        set(11, value);
+    }
+
+    /**
+     * Getter for <code>public.source_system.dwc_dp_link</code>.
+     */
+    public String getDwcDpLink() {
+        return (String) get(11);
+    }
+
+    /**
+     * Setter for <code>public.source_system.dwca_link</code>.
+     */
+    public void setDwcaLink(String value) {
+        set(12, value);
+    }
+
+    /**
+     * Getter for <code>public.source_system.dwca_link</code>.
+     */
+    public String getDwcaLink() {
+        return (String) get(12);
+    }
+
+    /**
+     * Setter for <code>public.source_system.eml</code>.
+     */
+    public void setEml(byte[] value) {
+        set(13, value);
+    }
+
+    /**
+     * Getter for <code>public.source_system.eml</code>.
+     */
+    public byte[] getEml() {
+        return (byte[]) get(13);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -197,7 +241,7 @@ public class SourceSystemRecord extends UpdatableRecordImpl<SourceSystemRecord> 
     /**
      * Create a detached, initialised SourceSystemRecord
      */
-    public SourceSystemRecord(String id, Integer version, String name, String endpoint, Instant created, Instant modified, Instant tombstoned, String mappingId, String creator, TranslatorType translatorType, JSONB data) {
+    public SourceSystemRecord(String id, Integer version, String name, String endpoint, Instant created, Instant modified, Instant tombstoned, String mappingId, String creator, TranslatorType translatorType, JSONB data, String dwcDpLink, String dwcaLink, byte[] eml) {
         super(SourceSystem.SOURCE_SYSTEM);
 
         setId(id);
@@ -211,6 +255,9 @@ public class SourceSystemRecord extends UpdatableRecordImpl<SourceSystemRecord> 
         setCreator(creator);
         setTranslatorType(translatorType);
         setData(data);
+        setDwcDpLink(dwcDpLink);
+        setDwcaLink(dwcaLink);
+        setEml(eml);
         resetChangedOnNotNull();
     }
 }

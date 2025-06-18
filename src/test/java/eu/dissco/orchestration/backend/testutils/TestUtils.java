@@ -68,6 +68,7 @@ public class TestUtils {
   public static final String SOURCE_SYSTEM_TYPE_DOI = "https://hdl.handle.net/21.T11148/417a4f472f60f7974c12";
   public static final String DATA_MAPPING_TYPE_DOI = "https://hdl.handle.net/21.T11148/ce794a6f4df42eb7e77e";
   public static final String MAS_TYPE_DOI = "https://hdl.handle.net/21.T11148/22e71a0015cbcfba8ffa";
+  public static final String DWC_DP_S3_URI = "s3://dissco-data-export-test/2025-06-10/640f3acb-dc1d-4300-99a0-32e2c5ae6220.zip";
 
   private TestUtils() {
     throw new IllegalStateException("Utility class");

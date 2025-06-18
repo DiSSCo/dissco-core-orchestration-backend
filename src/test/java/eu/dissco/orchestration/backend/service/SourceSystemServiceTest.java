@@ -2,6 +2,7 @@ package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.DWC_DP_S3_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
@@ -19,6 +20,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneSourceSystem;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -74,6 +76,7 @@ import io.kubernetes.client.openapi.models.V1SecretKeySelector;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -93,6 +96,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 @ExtendWith(MockitoExtension.class)
 class SourceSystemServiceTest {
@@ -122,6 +128,8 @@ class SourceSystemServiceTest {
   private BatchV1Api batchV1Api;
   @Mock
   private FdoProperties fdoProperties;
+  @Mock
+  private S3Client s3Client;
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
 
@@ -146,14 +154,18 @@ class SourceSystemServiceTest {
             new V1EnvVar().name("spring.datasource.password")
                 .valueFrom(new V1EnvVarSource().secretKeyRef(
                     new V1SecretKeySelector().key("db-password").name("db-secrets"))),
-            new V1EnvVar().name("fdo.digital-media-type").value("https://doi.org/21.T11148/bbad8c4e101e8af01115"),
-            new V1EnvVar().name("fdo.digital-specimen-type").value("https://doi.org/21.T11148/894b1e6cad57e921764e"),
+            new V1EnvVar().name("fdo.digital-media-type")
+                .value("https://doi.org/21.T11148/bbad8c4e101e8af01115"),
+            new V1EnvVar().name("fdo.digital-specimen-type")
+                .value("https://doi.org/21.T11148/894b1e6cad57e921764e"),
             new V1EnvVar().name("JAVA_TOOL_OPTIONS").value("-XX:MaxRAMPercentage=85")
         )
     );
     container.setVolumeMounts(List.of(
-        new V1VolumeMount().name("db-secrets").mountPath("/mnt/secrets-store/db-secrets").readOnly(true),
-        new V1VolumeMount().name("aws-secrets").mountPath("/mnt/secrets-store/aws-secrets").readOnly(true)
+        new V1VolumeMount().name("db-secrets").mountPath("/mnt/secrets-store/db-secrets")
+            .readOnly(true),
+        new V1VolumeMount().name("aws-secrets").mountPath("/mnt/secrets-store/aws-secrets")
+            .readOnly(true)
     ));
     var podSpec = new V1PodSpec();
     podSpec.addContainersItem(container);
@@ -187,8 +199,7 @@ class SourceSystemServiceTest {
     jobProperties.setDatabaseUrl("jdbc:postgresql://localhost:5432/translator");
     service = new SourceSystemService(fdoRecordService, handleComponent, repository,
         dataMappingService, rabbitMqPublisherService, MAPPER, yamlMapper, jobProperties,
-        configuration,
-        batchV1Api, random, fdoProperties);
+        configuration, batchV1Api, random, fdoProperties, s3Client);
     initTime();
     initFreeMaker();
   }
@@ -558,6 +569,31 @@ class SourceSystemServiceTest {
   }
 
   @Test
+  void testGetSourceSystemDwcDp() throws URISyntaxException, NotFoundException {
+    // Given
+    given(repository.getDwcDpLink(HANDLE)).willReturn(DWC_DP_S3_URI);
+    var getObjectRequest = GetObjectRequest.builder()
+        .key("2025-06-10/640f3acb-dc1d-4300-99a0-32e2c5ae6220.zip")
+        .bucket("dissco-data-export-test").build();
+    given(s3Client.getObject(getObjectRequest)).willReturn(mock(ResponseInputStream.class));
+
+    // When
+    service.getSourceSystemDwcDp(HANDLE);
+
+    // Then
+    then(s3Client).should().getObject(getObjectRequest);
+  }
+
+  @Test
+  void testGetSourceSystemDwcDpNotFound() {
+    // Given
+    given(repository.getDwcDpLink(HANDLE)).willReturn(null);
+
+    // When / Then
+    assertThrows(NotFoundException.class, () -> service.getSourceSystemDwcDp(HANDLE));
+  }
+
+  @Test
   void testGetSourceSystemByIdIsDeleted() {
     // Given
     var sourceSystem = givenSourceSystem();
@@ -699,7 +735,8 @@ class SourceSystemServiceTest {
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
     var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
-    expectedCron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0).setEnv(List.of());
+    expectedCron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0)
+        .setEnv(List.of());
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
     given(cronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedCron));
     given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of(givenSourceSystem()));

@@ -22,6 +22,7 @@
     <ok-http.version>4.12.0</ok-http.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <sonar.organization>dissco</sonar.organization>
+    <amazon.awssdk.version>2.29.6</amazon.awssdk.version>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.coverage.jacoco.xmlReportPaths>
       ../app-it/target/site/jacoco-aggregate/jacoco.xml
@@ -107,6 +108,11 @@
       <groupId>com.github.java-json-tools</groupId>
       <artifactId>json-patch</artifactId>
       <version>${json-patch.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+      <version>${amazon.awssdk.version}</version>
     </dependency>
 
     <dependency>

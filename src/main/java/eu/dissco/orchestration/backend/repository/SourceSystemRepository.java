@@ -112,4 +112,11 @@ public class SourceSystemRepository {
         .where(SOURCE_SYSTEM.ID.eq(removeProxy(id)))
         .execute();
   }
+
+  public String getDwcDpLink(String id) {
+    return context.select(SOURCE_SYSTEM.DWC_DP_LINK)
+        .from(SOURCE_SYSTEM)
+        .where(SOURCE_SYSTEM.ID.eq(id))
+        .fetchOne(Record1::value1);
+  }
 }

@@ -21,9 +21,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,6 +122,22 @@ class SourceSystemControllerTest {
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test
+  void testDownloadSourceSystemDwcDp() throws URISyntaxException, IOException, NotFoundException {
+    // Given
+    given(service.getSourceSystemDwcDp(BARE_HANDLE)).willReturn(
+        new ByteArrayInputStream("test".getBytes()));
+
+    // When
+    var result = controller.getSourceSystemDwcDp(PREFIX, SUFFIX);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(new String(result.getBody().getContentAsByteArray())).isEqualTo("test");
+    assertThat(result.getHeaders().containsValue(List.of("application/zip"))).isTrue();
+    assertThat(result.getHeaders().containsValue(List.of("attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\""))).isTrue();
   }
 
   @Test

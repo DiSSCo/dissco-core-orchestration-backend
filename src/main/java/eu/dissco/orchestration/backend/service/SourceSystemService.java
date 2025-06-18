@@ -35,7 +35,10 @@ import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -49,6 +52,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 @Slf4j
 @Service
@@ -68,6 +73,7 @@ public class SourceSystemService {
   private final BatchV1Api batchV1Api;
   private final Random random;
   private final FdoProperties fdoProperties;
+  private final S3Client s3Client;
 
   private static String getSuffix(String sourceSystemId) {
     return sourceSystemId.substring(sourceSystemId.lastIndexOf('/') + 1).toLowerCase();
@@ -565,5 +571,21 @@ public class SourceSystemService {
       envImageOnly.setValue(enrichmentList.get(i).getImageOnly());
       container.addEnvItem(envImageOnly);
     }
+  }
+
+  public InputStream getSourceSystemDwcDp(String id) throws URISyntaxException, NotFoundException {
+    var fileLocation = repository.getDwcDpLink(id);
+    if (fileLocation == null) {
+      throw new NotFoundException("No DWC-A file found for source system with ID: " + id);
+    }
+    URI uri = new URI(fileLocation);
+    String bucketName = uri.getHost();
+    String objectKey = uri.getPath()
+        .substring(1);
+    GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+        .bucket(bucketName)
+        .key(objectKey)
+        .build();
+    return s3Client.getObject(getObjectRequest);
   }
 }
