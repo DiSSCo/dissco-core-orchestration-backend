@@ -23,7 +23,7 @@ public class WebSecurityConfig {
     http.authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
         .requestMatchers(EndpointRequest.to(HealthEndpoint.class))
         .permitAll()
-        .requestMatchers(HttpMethod.GET, "**")
+        .requestMatchers(HttpMethod.GET, "/**")
         .permitAll()
         .anyRequest()
         .hasRole("orchestration-admin"));
