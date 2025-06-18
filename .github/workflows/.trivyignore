@@ -1,3 +1,7 @@
 # Jun 13 2025
 # Issue with postgres lib, needs a spring boot parent update
 CVE-2025-49146
+
+# Jun 18 2025
+# Issue with Tomcat, needs a spring boot parent update
+CVE-2025-48988
