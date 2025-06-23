@@ -573,7 +573,7 @@ class SourceSystemServiceTest {
     // Given
     given(repository.getDwcDpLink(HANDLE)).willReturn(DWC_DP_S3_URI);
     var getObjectRequest = GetObjectRequest.builder()
-        .key("2025-06-10/640f3acb-dc1d-4300-99a0-32e2c5ae6220.zip")
+        .key("2025-06-20/36a61c1d-0734-4549-b3f3-ba78233bcb5d.zip")
         .bucket("dissco-data-export-test").build();
     given(s3Client.getObject(getObjectRequest)).willReturn(mock(ResponseInputStream.class));
 

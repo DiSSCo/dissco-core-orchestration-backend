@@ -578,11 +578,11 @@ public class SourceSystemService {
     if (fileLocation == null) {
       throw new NotFoundException("No DWC-A file found for source system with ID: " + id);
     }
-    URI uri = new URI(fileLocation);
-    String bucketName = uri.getHost();
-    String objectKey = uri.getPath()
+    var uri = new URI(fileLocation);
+    var objectKey = uri.getPath()
         .substring(1);
-    GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+    var bucketName = uri.getHost().split("\\.")[0];
+    var getObjectRequest = GetObjectRequest.builder()
         .bucket(bucketName)
         .key(objectKey)
         .build();
