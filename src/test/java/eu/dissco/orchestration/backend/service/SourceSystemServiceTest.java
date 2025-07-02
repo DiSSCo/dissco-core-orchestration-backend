@@ -640,7 +640,7 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testGetSourceSystemDwcDpNotFound() {
+  void testGetSourceSystemDwcDpNotFound() throws NotFoundException {
     // Given
     var exportType = "dwca";
     given(repository.getExportLink(HANDLE, exportType)).willReturn(null);
