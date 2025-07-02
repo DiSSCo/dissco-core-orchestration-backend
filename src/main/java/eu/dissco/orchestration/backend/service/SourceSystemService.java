@@ -668,7 +668,7 @@ public class SourceSystemService {
     }
   }
 
-  public InputStream getSourceSystemDwcDp(String id, String exportType)
+  public InputStream getSourceSystemDownload(String id, String exportType)
       throws URISyntaxException, NotFoundException {
     var fileLocation = repository.getExportLink(id, exportType);
     if (fileLocation == null) {

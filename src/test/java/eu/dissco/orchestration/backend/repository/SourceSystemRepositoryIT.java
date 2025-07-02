@@ -90,7 +90,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetDwcDpLink() throws JsonProcessingException {
+  void testGetDownloadLink() throws JsonProcessingException {
     // Given
     var exportType = "dwc-dp";
     postSourceSystem(List.of(givenSourceSystem()));

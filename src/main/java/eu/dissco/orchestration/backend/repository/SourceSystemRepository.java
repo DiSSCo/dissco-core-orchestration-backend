@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import java.time.Instant;
 import java.util.List;
@@ -113,11 +114,11 @@ public class SourceSystemRepository {
         .execute();
   }
 
-  public String getExportLink(String id, String exportType) {
+  public String getExportLink(String id, String exportType) throws NotFoundException {
     var linkColumn = switch (exportType) {
       case "dwc-dp" -> SOURCE_SYSTEM.DWC_DP_LINK;
       case "dwca" -> SOURCE_SYSTEM.DWCA_LINK;
-      default -> throw new IllegalArgumentException("Unsupported export type: " + exportType);
+      default -> throw new NotFoundException("Unsupported export type: " + exportType);
     };
     return context.select(linkColumn)
         .from(SOURCE_SYSTEM)

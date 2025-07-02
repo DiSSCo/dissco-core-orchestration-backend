@@ -108,7 +108,7 @@ public class SourceSystemController {
 
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}/download/{export-type}")
-  public ResponseEntity<Resource> getSourceSystemDwcDp(@PathVariable("prefix") String prefix,
+  public ResponseEntity<Resource> getSourceSystemDownload(@PathVariable("prefix") String prefix,
       @PathVariable("suffix") String suffix, @PathVariable("export-type") String exportType) throws URISyntaxException, NotFoundException {
     var id = prefix + '/' + suffix;
     if (!ALLOWED_EXPORT_TYPES.contains(exportType)) {
@@ -116,7 +116,7 @@ public class SourceSystemController {
       throw new NotFoundException("Export type " + exportType + " is not allowed for source system: " + id);
     }
     log.info("Received {} for source system with id: {}", exportType, id);
-    var dwcDpInputStream = service.getSourceSystemDwcDp(id, exportType);
+    var dwcDpInputStream = service.getSourceSystemDownload(id, exportType);
     var resource = new InputStreamResource(dwcDpInputStream);
     return ResponseEntity.ok()
         .contentType(MediaType.parseMediaType("application/zip"))

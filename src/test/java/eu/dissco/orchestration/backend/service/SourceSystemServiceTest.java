@@ -633,7 +633,7 @@ class SourceSystemServiceTest {
     given(s3Client.getObject(getObjectRequest)).willReturn(mock(ResponseInputStream.class));
 
     // When
-    service.getSourceSystemDwcDp(HANDLE, exportType);
+    service.getSourceSystemDownload(HANDLE, exportType);
 
     // Then
     then(s3Client).should().getObject(getObjectRequest);
@@ -646,7 +646,7 @@ class SourceSystemServiceTest {
     given(repository.getExportLink(HANDLE, exportType)).willReturn(null);
 
     // When / Then
-    assertThrows(NotFoundException.class, () -> service.getSourceSystemDwcDp(HANDLE, exportType));
+    assertThrows(NotFoundException.class, () -> service.getSourceSystemDownload(HANDLE, exportType));
   }
 
   @Test

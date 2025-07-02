@@ -129,11 +129,11 @@ class SourceSystemControllerTest {
   void testDownloadSourceSystemDwcDp() throws URISyntaxException, IOException, NotFoundException {
     // Given
     var exportType = "dwc-dp";
-    given(service.getSourceSystemDwcDp(BARE_HANDLE, exportType)).willReturn(
+    given(service.getSourceSystemDownload(BARE_HANDLE, exportType)).willReturn(
         new ByteArrayInputStream("test".getBytes()));
 
     // When
-    var result = controller.getSourceSystemDwcDp(PREFIX, SUFFIX, exportType);
+    var result = controller.getSourceSystemDownload(PREFIX, SUFFIX, exportType);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -149,7 +149,7 @@ class SourceSystemControllerTest {
 
     // When / Then
     assertThrows(NotFoundException.class,
-        () -> controller.getSourceSystemDwcDp(PREFIX, SUFFIX, exportType));
+        () -> controller.getSourceSystemDownload(PREFIX, SUFFIX, exportType));
   }
 
   @Test
