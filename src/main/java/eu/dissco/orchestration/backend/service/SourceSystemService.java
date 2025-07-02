@@ -89,6 +89,10 @@ public class SourceSystemService {
     return name;
   }
 
+  private static String generateDwcaExportJobName(SourceSystem sourceSystem) {
+    return "dwca-" + getSuffix(sourceSystem.getId());
+  }
+
   private static void logException(SourceSystem sourceSystem, Exception e) {
     if (e instanceof IOException || e instanceof TemplateException) {
       log.error("Failed to create translator template for: {}", sourceSystem, e);
@@ -165,10 +169,45 @@ public class SourceSystemService {
   @PostConstruct
   public void setup() throws ApiException, TemplateException, IOException {
     synchronizeCronJobs();
+    synchronizeExportJob();
+  }
+
+  private void synchronizeExportJob() throws ApiException, TemplateException, IOException {
+    log.info("Synchronizing DWCA Export cron jobs for Source Systems");
+    var existingCronJobMap = batchV1Api.listNamespacedCronJob(jobProperties.getExport().getNamespace())
+        .execute()
+        .getItems().stream().filter(job -> job.getMetadata().getName().startsWith("dwca")).collect(
+            Collectors.toMap(cj -> cj.getMetadata().getName(), cj -> cj));
+    var existingSourceSystemList = repository.getSourceSystems(0, 5000);
+    for (var sourceSystem : existingSourceSystemList) {
+      var expectedCronJob = setSourceSystemExportProperties(sourceSystem, generateDwcaExportJobName(sourceSystem));
+      var existingCronJob = existingCronJobMap.get(generateDwcaExportJobName(sourceSystem));
+      if (existingCronJob == null) {
+        log.warn("Found a source system: {} without a DwCA cron Job, creating one",
+            sourceSystem.getId());
+        batchV1Api.createNamespacedCronJob(jobProperties.getExport().getNamespace(), expectedCronJob).execute();
+      } else if (equalsCheckCron(expectedCronJob, existingCronJob)) {
+        log.debug("DwCA cron job: {} is in sync with the database", sourceSystem.getId());
+      } else {
+        log.warn("Found an out of sync DwCA cron job, synchronizing sourceSystem: {}",
+            sourceSystem.getId());
+        batchV1Api.replaceNamespacedCronJob(expectedCronJob.getMetadata().getName(),
+            jobProperties.getExport().getNamespace(), expectedCronJob).execute();
+      }
+    }
+    existingCronJobMap.keySet()
+        .removeAll(existingSourceSystemList.stream().map(ss -> generateDwcaExportJobName(ss)).collect(
+            Collectors.toSet()));
+    for (V1CronJob cronjob : existingCronJobMap.values()) {
+      log.warn("Found a DwCA cron job: {} without a source system, deleting it",
+          cronjob.getMetadata().getName());
+      batchV1Api.deleteNamespacedCronJob(cronjob.getMetadata().getName(),
+          jobProperties.getExport().getNamespace()).execute();
+    }
   }
 
   private void synchronizeCronJobs() throws ApiException, TemplateException, IOException {
-    log.info("Synchronizing Cron Jobs of Source System");
+    log.info("Synchronizing Cron Jobs for Source Systems");
     var existingCronJobMap = batchV1Api.listNamespacedCronJob(jobProperties.getNamespace())
         .execute()
         .getItems().stream().collect(
@@ -237,8 +276,52 @@ public class SourceSystemService {
     repository.createSourceSystem(sourceSystem);
     createCronJob(sourceSystem);
     createTranslatorJob(sourceSystem, true);
+    createDwcaCronJob(sourceSystem);
     publishCreateEvent(sourceSystem, agent);
     return wrapSingleResponse(sourceSystem, path);
+  }
+
+  private void createDwcaCronJob(SourceSystem sourceSystem) {
+    try {
+      var jobName = generateDwcaExportJobName(sourceSystem);
+      var k8sCron = setSourceSystemExportProperties(sourceSystem, jobName);
+      batchV1Api.createNamespacedCronJob(jobProperties.getExport().getNamespace(), k8sCron)
+          .execute();
+      log.info("Successfully published DwCA cron job: {} to Kubernetes for source system: {}",
+          k8sCron.getMetadata().getName(), sourceSystem.getId());
+    } catch (IOException | TemplateException | ApiException e) {
+      log.error(
+          "Fatal error. Failed to create DwCA cron job for source system: {}. Cause: {}. Will not rollback full deployment.",
+          sourceSystem.getId(), e.getMessage(), e);
+    }
+  }
+
+  private V1CronJob setSourceSystemExportProperties(SourceSystem sourceSystem, String jobName)
+      throws IOException, TemplateException {
+    var jobProps = getExportTemplateProperties(sourceSystem, jobName);
+    var job = fillExportTemplate(jobProps);
+    return yamlMapper.readValue(job.toString(), V1CronJob.class);
+  }
+
+  private StringWriter fillExportTemplate(Map<String, String> jobProps)
+      throws IOException, TemplateException {
+    var writer = new StringWriter();
+    var template = configuration.getTemplate("source-system-cron-job.ftl");
+    template.process(jobProps, writer);
+    return writer;
+  }
+
+  private Map<String, String> getExportTemplateProperties(SourceSystem sourceSystem, String jobName) {
+    var map = new HashMap<String, String>();
+    map.put("cron", generateCron());
+    map.put("namespace", jobProperties.getExport().getNamespace());
+    map.put("jobName", jobName);
+    map.put("jobImage", jobProperties.getExport().getExportImage());
+    map.put("KeycloakServer", jobProperties.getExport().getKeycloak());
+    map.put("disscoDomain", jobProperties.getExport().getDisscoDomain());
+    map.put("sourceSystemId", sourceSystem.getId());
+    map.put("exportType", "DWCA");
+    return map;
   }
 
   private String createHandle(SourceSystemRequest sourceSystemRequest)
@@ -438,11 +521,12 @@ public class SourceSystemService {
     if (result.isPresent()) {
       var sourceSystem = result.get();
       try {
-        batchV1Api.deleteNamespacedCronJob(generateJobName(result.get(), true),
+        batchV1Api.deleteNamespacedCronJob(generateJobName(sourceSystem, true),
             jobProperties.getNamespace()).execute();
       } catch (ApiException e) {
         throw new ProcessingFailedException("Failed to delete cronJob for source system: " + id, e);
       }
+      deleteExportCronJob(sourceSystem);
       tombstoneHandle(id);
       var timestamp = Instant.now();
       var tombstoneSourceSystem = buildTombstoneSourceSystem(sourceSystem, agent, timestamp);
@@ -458,6 +542,17 @@ public class SourceSystemService {
       log.info("Delete request for source system: {} was successful", id);
     } else {
       throw new NotFoundException("Requested source system: " + id + " does not exist");
+    }
+  }
+
+  private void deleteExportCronJob(SourceSystem sourceSystem) {
+    var jobName = generateDwcaExportJobName(sourceSystem);
+    try {
+      batchV1Api.deleteNamespacedCronJob(jobName,
+          jobProperties.getExport().getNamespace()).execute();
+    } catch (ApiException e) {
+      log.error("Failed to delete DwCA cron job for source system: {}. Cause: {}",
+          sourceSystem.getId(), e.getResponseBody(), e);
     }
   }
 
@@ -573,10 +668,12 @@ public class SourceSystemService {
     }
   }
 
-  public InputStream getSourceSystemDwcDp(String id) throws URISyntaxException, NotFoundException {
-    var fileLocation = repository.getDwcDpLink(id);
+  public InputStream getSourceSystemDwcDp(String id, String exportType)
+      throws URISyntaxException, NotFoundException {
+    var fileLocation = repository.getExportLink(id, exportType);
     if (fileLocation == null) {
-      throw new NotFoundException("No DWC-A file found for source system with ID: " + id);
+      throw new NotFoundException(
+          "No " + exportType + " file found for source system with ID: " + id);
     }
     var uri = new URI(fileLocation);
     var objectKey = uri.getPath()

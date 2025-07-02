@@ -19,6 +19,7 @@ import eu.dissco.orchestration.backend.service.SourceSystemService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -43,6 +44,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/source-system/v1")
 @RequiredArgsConstructor
 public class SourceSystemController {
+
+  private static final Set<String> ALLOWED_EXPORT_TYPES = Set.of("dwc-dp", "dwca");
 
   private final SourceSystemService service;
   private final ObjectMapper mapper;
@@ -104,12 +107,16 @@ public class SourceSystemController {
   }
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{prefix}/{suffix}/download/dwc-dp")
+  @GetMapping(value = "/{prefix}/{suffix}/download/{export-type}")
   public ResponseEntity<Resource> getSourceSystemDwcDp(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix) throws URISyntaxException, NotFoundException {
+      @PathVariable("suffix") String suffix, @PathVariable("export-type") String exportType) throws URISyntaxException, NotFoundException {
     var id = prefix + '/' + suffix;
-    log.info("Received DwC-DP for source system with id: {}", id);
-    var dwcDpInputStream = service.getSourceSystemDwcDp(id);
+    if (!ALLOWED_EXPORT_TYPES.contains(exportType)) {
+      log.error("Export type {} is not allowed for source system: {}", exportType, id);
+      throw new NotFoundException("Export type " + exportType + " is not allowed for source system: " + id);
+    }
+    log.info("Received {} for source system with id: {}", exportType, id);
+    var dwcDpInputStream = service.getSourceSystemDwcDp(id, exportType);
     var resource = new InputStreamResource(dwcDpInputStream);
     return ResponseEntity.ok()
         .contentType(MediaType.parseMediaType("application/zip"))

@@ -16,6 +16,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -127,17 +128,28 @@ class SourceSystemControllerTest {
   @Test
   void testDownloadSourceSystemDwcDp() throws URISyntaxException, IOException, NotFoundException {
     // Given
-    given(service.getSourceSystemDwcDp(BARE_HANDLE)).willReturn(
+    var exportType = "dwc-dp";
+    given(service.getSourceSystemDwcDp(BARE_HANDLE, exportType)).willReturn(
         new ByteArrayInputStream("test".getBytes()));
 
     // When
-    var result = controller.getSourceSystemDwcDp(PREFIX, SUFFIX);
+    var result = controller.getSourceSystemDwcDp(PREFIX, SUFFIX, exportType);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(new String(result.getBody().getContentAsByteArray())).isEqualTo("test");
     assertThat(result.getHeaders().containsValue(List.of("application/zip"))).isTrue();
     assertThat(result.getHeaders().containsValue(List.of("attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\""))).isTrue();
+  }
+
+  @Test
+  void testDownloadSourceSystemTypeNotExists() {
+    // Given
+    var exportType = "test-export-type";
+
+    // When / Then
+    assertThrows(NotFoundException.class,
+        () -> controller.getSourceSystemDwcDp(PREFIX, SUFFIX, exportType));
   }
 
   @Test

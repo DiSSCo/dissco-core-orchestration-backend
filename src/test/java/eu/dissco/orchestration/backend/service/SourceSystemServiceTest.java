@@ -45,6 +45,7 @@ import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
+import eu.dissco.orchestration.backend.properties.TranslatorJobProperties.Export;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
@@ -104,6 +105,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 class SourceSystemServiceTest {
 
   private static final String NAMESPACE = "translator-services";
+  private static final String EXPORT_NAMESPACE = "data-export-job";
 
   private final ObjectMapper yamlMapper = new ObjectMapper(
       new YAMLFactory()).findAndRegisterModules();
@@ -194,9 +196,54 @@ class SourceSystemServiceTest {
     );
   }
 
+  private static Export givenExport() {
+    var export = new Export();
+    export.setDisscoDomain("dev.dissco.tech");
+    export.setExportImage("public.ecr.aws/dissco/source-system-job-scheduler:latest");
+    export.setKeycloak("https://login-demo.dissco.eu/");
+    export.setNamespace(EXPORT_NAMESPACE);
+    return export;
+  }
+
+  private static V1CronJob getV1DwcaCronJob(String dwcaCronName) {
+    var container = new V1Container();
+    container.setImage("public.ecr.aws/dissco/source-system-job-scheduler:latest");
+    container.setName(dwcaCronName);
+    container.setEnv(List.of(
+            new V1EnvVar().name("KEYCLOAK_SERVER").value("https://login-demo.dissco.eu/"),
+            new V1EnvVar().name("REALM").value("dissco"),
+            new V1EnvVar().name("CLIENT_ID").valueFrom(new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("export-client-id").name("aws-secrets"))),
+            new V1EnvVar().name("CLIENT_SECRET")
+                .valueFrom(new V1EnvVarSource().secretKeyRef(
+                    new V1SecretKeySelector().key("export-client-secret").name("aws-secrets"))),
+            new V1EnvVar().name("SOURCE_SYSTEM_ID").value("https://hdl.handle.net/20.5000.1025/GW0-POP-XSL"),
+            new V1EnvVar().name("DISSCO_DOMAIN").value("dev.dissco.tech"),
+            new V1EnvVar().name("EXPORT_TYPE").value("DWCA")
+        )
+    );
+    var podSpec = new V1PodSpec();
+    podSpec.addContainersItem(container);
+    var podTemplateSpec = new V1PodTemplateSpec();
+    podTemplateSpec.setSpec(podSpec);
+    var jobSpec = new V1JobSpec();
+    jobSpec.setTemplate(podTemplateSpec);
+    var job = new V1Job();
+    job.setSpec(jobSpec);
+    var jobTemplateSpec = new V1JobTemplateSpec();
+    jobTemplateSpec.setSpec(jobSpec);
+    var cronJobSpec = new V1CronJobSpec();
+    cronJobSpec.setJobTemplate(jobTemplateSpec);
+    var cronJob = new V1CronJob().metadata(
+        new V1ObjectMeta().name(dwcaCronName).namespace(EXPORT_NAMESPACE));
+    cronJob.setSpec(cronJobSpec);
+    return cronJob;
+  }
+
   @BeforeEach
   void setup() throws IOException {
     jobProperties.setDatabaseUrl("jdbc:postgresql://localhost:5432/translator");
+    jobProperties.setExport(givenExport());
     service = new SourceSystemService(fdoRecordService, handleComponent, repository,
         dataMappingService, rabbitMqPublisherService, MAPPER, yamlMapper, jobProperties,
         configuration, batchV1Api, random, fdoProperties, s3Client);
@@ -226,6 +273,9 @@ class SourceSystemServiceTest {
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);
+    given(batchV1Api.createNamespacedCronJob(eq(EXPORT_NAMESPACE), any(V1CronJob.class)))
+        .willReturn(createCron);
+
     var createJob = mock(APIcreateNamespacedJobRequest.class);
     given(
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
@@ -315,6 +365,8 @@ class SourceSystemServiceTest {
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);
+    given(batchV1Api.createNamespacedCronJob(eq(EXPORT_NAMESPACE), any(V1CronJob.class)))
+        .willReturn(createCron);
     var deleteCron = mock(APIdeleteNamespacedCronJobRequest.class);
     given(batchV1Api.deleteNamespacedCronJob(anyString(), eq(NAMESPACE))).willReturn(deleteCron);
     var createJob = mock(APIcreateNamespacedJobRequest.class);
@@ -361,6 +413,8 @@ class SourceSystemServiceTest {
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
+        .willReturn(createCron);
+    given(batchV1Api.createNamespacedCronJob(eq(EXPORT_NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);
     var deleteCron = mock(APIdeleteNamespacedCronJobRequest.class);
     given(batchV1Api.deleteNamespacedCronJob(anyString(), eq(NAMESPACE))).willReturn(deleteCron);
@@ -571,14 +625,15 @@ class SourceSystemServiceTest {
   @Test
   void testGetSourceSystemDwcDp() throws URISyntaxException, NotFoundException {
     // Given
-    given(repository.getDwcDpLink(HANDLE)).willReturn(DWC_DP_S3_URI);
+    var exportType = "dwc-dp";
+    given(repository.getExportLink(HANDLE, exportType)).willReturn(DWC_DP_S3_URI);
     var getObjectRequest = GetObjectRequest.builder()
         .key("2025-06-20/36a61c1d-0734-4549-b3f3-ba78233bcb5d.zip")
         .bucket("dissco-data-export-test").build();
     given(s3Client.getObject(getObjectRequest)).willReturn(mock(ResponseInputStream.class));
 
     // When
-    service.getSourceSystemDwcDp(HANDLE);
+    service.getSourceSystemDwcDp(HANDLE, exportType);
 
     // Then
     then(s3Client).should().getObject(getObjectRequest);
@@ -587,10 +642,11 @@ class SourceSystemServiceTest {
   @Test
   void testGetSourceSystemDwcDpNotFound() {
     // Given
-    given(repository.getDwcDpLink(HANDLE)).willReturn(null);
+    var exportType = "dwca";
+    given(repository.getExportLink(HANDLE, exportType)).willReturn(null);
 
     // When / Then
-    assertThrows(NotFoundException.class, () -> service.getSourceSystemDwcDp(HANDLE));
+    assertThrows(NotFoundException.class, () -> service.getSourceSystemDwcDp(HANDLE, exportType));
   }
 
   @Test
@@ -656,6 +712,8 @@ class SourceSystemServiceTest {
     var deleteCron = mock(APIdeleteNamespacedCronJobRequest.class);
     given(batchV1Api.deleteNamespacedCronJob(anyString(), eq(NAMESPACE)))
         .willReturn(deleteCron);
+    given(batchV1Api.deleteNamespacedCronJob(anyString(), eq(EXPORT_NAMESPACE)))
+        .willReturn(deleteCron);
     mockedStatic.when(Instant::now).thenReturn(UPDATED);
     mockedClock.when(Clock::systemUTC).thenReturn(updatedClock);
 
@@ -698,9 +756,13 @@ class SourceSystemServiceTest {
     // Given
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
+    given(batchV1Api.listNamespacedCronJob(EXPORT_NAMESPACE)).willReturn(cronResponse);
     given(cronResponse.execute()).willReturn(new V1CronJobList());
     given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of(givenSourceSystem()));
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class))).willReturn(
+        mock(APIcreateNamespacedCronJobRequest.class));
+    given(
+        batchV1Api.createNamespacedCronJob(eq(EXPORT_NAMESPACE), any(V1CronJob.class))).willReturn(
         mock(APIcreateNamespacedCronJobRequest.class));
 
     // When
@@ -708,18 +770,25 @@ class SourceSystemServiceTest {
 
     // Then
     then(batchV1Api).should().createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class));
+    then(batchV1Api).should().createNamespacedCronJob(eq(EXPORT_NAMESPACE), any(V1CronJob.class));
   }
 
   @Test
   void synchronizeExcessSourceSystem() throws ApiException, TemplateException, IOException {
     // Given
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
+    var dwcaCronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
     var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
+    var dwcaCronName = "dwca-gw0-pop-xsl";
+    var expectedDwcaCron = getV1DwcaCronJob(dwcaCronName);
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
+    given(batchV1Api.listNamespacedCronJob(EXPORT_NAMESPACE)).willReturn(dwcaCronResponse);
     given(cronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedCron));
+    given(dwcaCronResponse.execute()).willReturn(
+        new V1CronJobList().addItemsItem(expectedDwcaCron));
     given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of());
-    given(batchV1Api.deleteNamespacedCronJob(cronName, NAMESPACE)).willReturn(
+    given(batchV1Api.deleteNamespacedCronJob(anyString(), anyString())).willReturn(
         mock(APIdeleteNamespacedCronJobRequest.class));
 
     // When
@@ -727,20 +796,30 @@ class SourceSystemServiceTest {
 
     // Then
     then(batchV1Api).should().deleteNamespacedCronJob(cronName, NAMESPACE);
+    then(batchV1Api).should().deleteNamespacedCronJob(dwcaCronName, EXPORT_NAMESPACE);
   }
 
   @Test
   void synchronizeOutOfSyncSourceSystem() throws ApiException, TemplateException, IOException {
     // Given
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
+    var dwcaCronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
     var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
     expectedCron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0)
         .setEnv(List.of());
+    var dwcaCronName = "dwca-gw0-pop-xsl";
+    var expectedDwcaCron = getV1DwcaCronJob(dwcaCronName);
+    expectedDwcaCron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers()
+        .get(0).setEnv(List.of());
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
+    given(batchV1Api.listNamespacedCronJob(EXPORT_NAMESPACE)).willReturn(dwcaCronResponse);
     given(cronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedCron));
+    given(dwcaCronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedDwcaCron));
     given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of(givenSourceSystem()));
     given(batchV1Api.replaceNamespacedCronJob(eq(cronName), eq(NAMESPACE),
+        any(V1CronJob.class))).willReturn(mock(APIreplaceNamespacedCronJobRequest.class));
+    given(batchV1Api.replaceNamespacedCronJob(eq(dwcaCronName), eq(EXPORT_NAMESPACE),
         any(V1CronJob.class))).willReturn(mock(APIreplaceNamespacedCronJobRequest.class));
 
     // When
@@ -749,16 +828,23 @@ class SourceSystemServiceTest {
     // Then
     then(batchV1Api).should()
         .replaceNamespacedCronJob(eq(cronName), eq(NAMESPACE), any(V1CronJob.class));
+    then(batchV1Api).should()
+        .replaceNamespacedCronJob(eq(dwcaCronName), eq(EXPORT_NAMESPACE), any(V1CronJob.class));
   }
 
   @Test
   void synchronizeInSyncSourceSystem() throws ApiException, TemplateException, IOException {
     // Given
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
+    var dwcaCronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
     var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
+    var dwcaCronName = "dwca-gw0-pop-xsl";
+    var expectedDwcaCron = getV1DwcaCronJob(dwcaCronName);
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
+    given(batchV1Api.listNamespacedCronJob(EXPORT_NAMESPACE)).willReturn(dwcaCronResponse);
     given(cronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedCron));
+    given(dwcaCronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedDwcaCron));
     given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of(givenSourceSystem()));
 
     // When

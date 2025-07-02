@@ -92,10 +92,11 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetDwcDpLink() throws JsonProcessingException {
     // Given
+    var exportType = "dwc-dp";
     postSourceSystem(List.of(givenSourceSystem()));
 
     // When
-    var result = repository.getDwcDpLink(BARE_HANDLE);
+    var result = repository.getExportLink(BARE_HANDLE, exportType);
 
     // Then
     assertThat(result).isEqualTo(DWC_DP_S3_URI);

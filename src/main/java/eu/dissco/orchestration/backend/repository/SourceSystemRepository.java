@@ -113,8 +113,13 @@ public class SourceSystemRepository {
         .execute();
   }
 
-  public String getDwcDpLink(String id) {
-    return context.select(SOURCE_SYSTEM.DWC_DP_LINK)
+  public String getExportLink(String id, String exportType) {
+    var linkColumn = switch (exportType) {
+      case "dwc-dp" -> SOURCE_SYSTEM.DWC_DP_LINK;
+      case "dwca" -> SOURCE_SYSTEM.DWCA_LINK;
+      default -> throw new IllegalArgumentException("Unsupported export type: " + exportType);
+    };
+    return context.select(linkColumn)
         .from(SOURCE_SYSTEM)
         .where(SOURCE_SYSTEM.ID.eq(id))
         .fetchOne(Record1::value1);

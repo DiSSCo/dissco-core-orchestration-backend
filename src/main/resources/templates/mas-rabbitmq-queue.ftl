@@ -10,6 +10,7 @@
         "name": "mas-${name}-queue",
         "type": "quorum",
         "vhost": "/",
+        "deletionPolicy": "delete",
         "rabbitmqClusterReference": {
             "name": "rabbitmq-cluster",
             "namespace": "rabbitmq"
