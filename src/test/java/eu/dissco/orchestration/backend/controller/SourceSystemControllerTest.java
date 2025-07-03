@@ -105,11 +105,10 @@ class SourceSystemControllerTest {
   }
 
   private static Stream<Arguments> badSourceSystemRequest() {
-
     return Stream.of(
         Arguments.of("schema:url"),
         Arguments.of("ods:translatorType"),
-        Arguments.of("ods:dataMappingIDgivenSourceSystemRequestJson"),
+        Arguments.of("ods:dataMappingID"),
         Arguments.of("schema:name"));
   }
 
