@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.orchestration.backend.domain.ObjectType;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
