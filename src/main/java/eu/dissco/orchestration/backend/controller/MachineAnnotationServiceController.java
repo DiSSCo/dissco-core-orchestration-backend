@@ -95,7 +95,7 @@ public class MachineAnnotationServiceController {
   @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> getMachineAnnotationService(
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      HttpServletRequest servletRequest) {
+      HttpServletRequest servletRequest) throws NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received get request for machine annotation service with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();

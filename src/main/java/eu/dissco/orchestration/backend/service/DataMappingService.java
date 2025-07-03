@@ -245,9 +245,14 @@ public class DataMappingService {
     return wrapResponse(dataMappings, pageNum, pageSize, path);
   }
 
-  public JsonApiWrapper getDataMappingById(String id, String path) {
+  public JsonApiWrapper getDataMappingById(String id, String path) throws NotFoundException {
     var dataMapping = repository.getDataMapping(id);
-    return wrapSingleResponse(dataMapping, path);
+    if (dataMapping != null) {
+      return wrapSingleResponse(dataMapping, path);
+    }
+    log.warn("Unable to find source system {}", id);
+    throw new NotFoundException("Unable to find source system " + id);
+
   }
 
   private JsonApiWrapper wrapSingleResponse(DataMapping dataMapping, String path) {

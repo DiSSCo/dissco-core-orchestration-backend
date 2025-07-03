@@ -95,7 +95,8 @@ public class SourceSystemController {
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> getSourceSystemById(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest) {
+      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest)
+      throws NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received get request for source system with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();

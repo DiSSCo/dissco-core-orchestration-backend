@@ -947,9 +947,15 @@ public class MachineAnnotationServiceService {
     }
   }
 
-  public JsonApiWrapper getMachineAnnotationService(String id, String path) {
+  public JsonApiWrapper getMachineAnnotationService(String id, String path)
+      throws NotFoundException {
     var mas = repository.getMachineAnnotationService(id);
-    return wrapSingleResponse(mas, path);
+    if (mas != null) {
+      return wrapSingleResponse(mas, path);
+    }
+    log.warn("Unable to find MAS {}", id);
+    throw new NotFoundException("Unable to find MAS " + id);
+
   }
 
   public JsonApiListWrapper getMachineAnnotationServices(int pageNum, int pageSize, String path) {

@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.service.DataMappingService;
@@ -110,7 +111,7 @@ class DataMappingControllerTest {
   }
 
   @Test
-  void testGetDataMappingById() {
+  void testGetDataMappingById() throws NotFoundException {
     // When
     var result = controller.getDataMappingById(PREFIX, SUFFIX, mockRequest);
 
