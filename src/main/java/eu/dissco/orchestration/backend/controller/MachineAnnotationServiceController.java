@@ -117,7 +117,7 @@ public class MachineAnnotationServiceController {
   private MachineAnnotationServiceRequest getMachineAnnotation(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
     if (!requestBody.data().type().equals(ObjectType.MAS)) {
-      log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
+      log.warn("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
     var request = mapper.treeToValue(requestBody.data().attributes(),

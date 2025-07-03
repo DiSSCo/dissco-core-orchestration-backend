@@ -148,7 +148,7 @@ public class SourceSystemController {
   private SourceSystemRequest getSourceSystemFromRequest(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
     if (!requestBody.data().type().equals(ObjectType.SOURCE_SYSTEM)) {
-      log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
+      log.warn("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
     var request = mapper.treeToValue(requestBody.data().attributes(), SourceSystemRequest.class);
