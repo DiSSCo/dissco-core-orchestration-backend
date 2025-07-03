@@ -114,10 +114,15 @@ public class DataMappingController {
   private DataMappingRequest getDataMappingRequestFromRequest(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
     if (!requestBody.data().type().equals(ObjectType.DATA_MAPPING)) {
-      log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
+      log.warn("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(), DataMappingRequest.class);
+    var request =  mapper.treeToValue(requestBody.data().attributes(), DataMappingRequest.class);
+    if (request.getOdsMappingDataStandard() == null || request.getSchemaName() == null) {
+      log.warn("Missing required field for data mapping creation");
+      throw new IllegalArgumentException("Missing required field for data mapping creation");
+    }
+    return request;
   }
 
 }

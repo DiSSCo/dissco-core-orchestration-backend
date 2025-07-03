@@ -16,19 +16,29 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappi
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMappingResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequestJson;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.orchestration.backend.domain.ObjectType;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.service.DataMappingService;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -76,6 +86,25 @@ class DataMappingControllerTest {
     assertThrowsExactly(
         IllegalArgumentException.class,
         () -> controller.createDataMapping(authentication, requestBody, mockRequest));
+  }
+
+  @ParameterizedTest
+  @MethodSource("badDataMappingRequest")
+  void testCreateDataMappingMissingInfo(String fieldToRemove) {
+    // Given
+    var requestBody = (ObjectNode) givenDataMappingRequestJson().data().attributes();
+    requestBody.remove(fieldToRemove);
+    var request = new JsonApiRequestWrapper(new JsonApiRequest(ObjectType.DATA_MAPPING, requestBody));
+
+    // When / Then
+    assertThrows(IllegalArgumentException.class, () -> controller.createDataMapping(authentication, request, mockRequest));
+  }
+
+  private static Stream<Arguments> badDataMappingRequest() {
+
+    return Stream.of(
+        Arguments.of("ods:mappingDataStandard"),
+        Arguments.of("schema:name"));
   }
 
   @Test

@@ -151,6 +151,12 @@ public class SourceSystemController {
       log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(), SourceSystemRequest.class);
+    var request = mapper.treeToValue(requestBody.data().attributes(), SourceSystemRequest.class);
+    if (request.getSchemaName() == null || request.getSchemaUrl() == null
+        || request.getOdsTranslatorType() == null || request.getOdsDataMappingID() == null) {
+      log.warn("Missing required field for source system creation");
+      throw new IllegalArgumentException("Missing required field for source system creation");
+    }
+    return request;
   }
 }
