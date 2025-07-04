@@ -227,7 +227,7 @@ class DataMappingServiceTest {
 
 
   @Test
-  void testGetDataMappingById() {
+  void testGetDataMappingById() throws NotFoundException {
     // Given
     var dataMapping = givenDataMapping(HANDLE, 1);
     given(repository.getDataMapping(BARE_HANDLE)).willReturn(dataMapping);
@@ -241,7 +241,15 @@ class DataMappingServiceTest {
   }
 
   @Test
-  void testGetDataMappingByIdIsDeleted() {
+  void testGetDataMappingNotFound(){
+    // Given
+
+    // When / Then
+    assertThrows(NotFoundException.class, () -> service.getDataMappingById(HANDLE, MAPPING_PATH));
+  }
+
+  @Test
+  void testGetDataMappingByIdIsDeleted() throws NotFoundException {
     // Given
     var dataMapping = givenDataMapping();
     given(repository.getDataMapping(BARE_HANDLE)).willReturn(dataMapping);

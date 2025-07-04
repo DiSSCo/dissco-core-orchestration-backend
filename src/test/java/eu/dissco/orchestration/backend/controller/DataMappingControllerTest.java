@@ -26,6 +26,7 @@ import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.schema.DataMapping;
 import eu.dissco.orchestration.backend.service.DataMappingService;
@@ -138,7 +139,7 @@ class DataMappingControllerTest {
   }
 
   @Test
-  void testGetDataMappingById() {
+  void testGetDataMappingById() throws NotFoundException {
     // When
     var result = controller.getDataMappingById(PREFIX, SUFFIX, mockRequest);
 
