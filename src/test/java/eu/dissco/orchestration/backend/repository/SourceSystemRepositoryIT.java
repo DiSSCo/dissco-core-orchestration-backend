@@ -92,7 +92,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetDownloadLink() throws JsonProcessingException, NotFoundException {
+  void testGetDownloadLink() throws JsonProcessingException {
     // Given
     var exportType = ExportType.DWC_DP;
     postSourceSystem(List.of(givenSourceSystem()));

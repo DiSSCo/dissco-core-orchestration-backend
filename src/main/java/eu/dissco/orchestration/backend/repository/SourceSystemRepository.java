@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
-import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import java.time.Instant;
 import java.util.List;
