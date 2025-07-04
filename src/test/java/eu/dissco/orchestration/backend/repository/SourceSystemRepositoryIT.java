@@ -16,7 +16,6 @@ import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
-import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
