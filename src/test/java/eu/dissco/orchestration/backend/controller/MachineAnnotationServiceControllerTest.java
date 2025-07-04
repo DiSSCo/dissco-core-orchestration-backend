@@ -22,6 +22,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.orchestration.backend.domain.ObjectType;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
