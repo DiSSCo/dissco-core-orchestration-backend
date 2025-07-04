@@ -7,6 +7,7 @@ import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
+import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
@@ -114,11 +115,10 @@ public class SourceSystemRepository {
         .execute();
   }
 
-  public String getExportLink(String id, String exportType) throws NotFoundException {
+  public String getExportLink(String id, ExportType exportType) {
     var linkColumn = switch (exportType) {
-      case "dwc-dp" -> SOURCE_SYSTEM.DWC_DP_LINK;
-      case "dwca" -> SOURCE_SYSTEM.DWCA_LINK;
-      default -> throw new NotFoundException("Unsupported export type: " + exportType);
+      case DWC_DP -> SOURCE_SYSTEM.DWC_DP_LINK;
+      case DWCA -> SOURCE_SYSTEM.DWCA_LINK;
     };
     return context.select(linkColumn)
         .from(SOURCE_SYSTEM)

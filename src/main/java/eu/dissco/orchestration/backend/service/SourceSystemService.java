@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.Enrichment;
+import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -317,7 +318,7 @@ public class SourceSystemService {
     map.put("namespace", jobProperties.getExport().getNamespace());
     map.put("jobName", jobName);
     map.put("jobImage", jobProperties.getExport().getExportImage());
-    map.put("KeycloakServer", jobProperties.getExport().getKeycloak());
+    map.put("keycloakServer", jobProperties.getExport().getKeycloak());
     map.put("disscoDomain", jobProperties.getExport().getDisscoDomain());
     map.put("sourceSystemId", sourceSystem.getId());
     map.put("exportType", "DWCA");
@@ -668,7 +669,7 @@ public class SourceSystemService {
     }
   }
 
-  public InputStream getSourceSystemDownload(String id, String exportType)
+  public InputStream getSourceSystemDownload(String id, ExportType exportType)
       throws URISyntaxException, NotFoundException {
     var fileLocation = repository.getExportLink(id, exportType);
     if (fileLocation == null) {

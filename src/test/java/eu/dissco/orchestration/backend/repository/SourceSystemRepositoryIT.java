@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
+import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
@@ -93,7 +94,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetDownloadLink() throws JsonProcessingException, NotFoundException {
     // Given
-    var exportType = "dwc-dp";
+    var exportType = ExportType.DWC_DP;
     postSourceSystem(List.of(givenSourceSystem()));
 
     // When

@@ -6,6 +6,7 @@ import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
@@ -109,12 +110,8 @@ public class SourceSystemController {
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}/download/{export-type}")
   public ResponseEntity<Resource> getSourceSystemDownload(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, @PathVariable("export-type") String exportType) throws URISyntaxException, NotFoundException {
+      @PathVariable("suffix") String suffix, @PathVariable("export-type") ExportType exportType) throws URISyntaxException, NotFoundException {
     var id = prefix + '/' + suffix;
-    if (!ALLOWED_EXPORT_TYPES.contains(exportType)) {
-      log.error("Export type {} is not allowed for source system: {}", exportType, id);
-      throw new NotFoundException("Export type " + exportType + " is not allowed for source system: " + id);
-    }
     log.info("Received {} for source system with id: {}", exportType, id);
     var dwcDpInputStream = service.getSourceSystemDownload(id, exportType);
     var resource = new InputStreamResource(dwcDpInputStream);

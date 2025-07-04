@@ -14,7 +14,7 @@ spec:
               image: ${ jobImage }
               env:
                 - name: KEYCLOAK_SERVER
-                  value: ${KeycloakServer}
+                  value: ${keycloakServer}
                 - name: REALM
                   value: dissco
                 - name: CLIENT_ID

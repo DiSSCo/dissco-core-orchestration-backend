@@ -36,6 +36,7 @@ import static org.mockito.Mockito.times;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -625,7 +626,7 @@ class SourceSystemServiceTest {
   @Test
   void testGetSourceSystemDwcDp() throws URISyntaxException, NotFoundException {
     // Given
-    var exportType = "dwc-dp";
+    var exportType = ExportType.DWC_DP;
     given(repository.getExportLink(HANDLE, exportType)).willReturn(DWC_DP_S3_URI);
     var getObjectRequest = GetObjectRequest.builder()
         .key("2025-06-20/36a61c1d-0734-4549-b3f3-ba78233bcb5d.zip")
@@ -642,7 +643,7 @@ class SourceSystemServiceTest {
   @Test
   void testGetSourceSystemDwcDpNotFound() throws NotFoundException {
     // Given
-    var exportType = "dwca";
+    var exportType = ExportType.DWCA;
     given(repository.getExportLink(HANDLE, exportType)).willReturn(null);
 
     // When / Then

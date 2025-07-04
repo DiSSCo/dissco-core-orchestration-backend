@@ -16,11 +16,12 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
@@ -128,7 +129,7 @@ class SourceSystemControllerTest {
   @Test
   void testDownloadSourceSystemDwcDp() throws URISyntaxException, IOException, NotFoundException {
     // Given
-    var exportType = "dwc-dp";
+    var exportType = ExportType.DWC_DP;
     given(service.getSourceSystemDownload(BARE_HANDLE, exportType)).willReturn(
         new ByteArrayInputStream("test".getBytes()));
 
@@ -138,18 +139,9 @@ class SourceSystemControllerTest {
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(new String(result.getBody().getContentAsByteArray())).isEqualTo("test");
-    assertThat(result.getHeaders().containsValue(List.of("application/zip"))).isTrue();
-    assertThat(result.getHeaders().containsValue(List.of("attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\""))).isTrue();
-  }
-
-  @Test
-  void testDownloadSourceSystemTypeNotExists() {
-    // Given
-    var exportType = "test-export-type";
-
-    // When / Then
-    assertThrows(NotFoundException.class,
-        () -> controller.getSourceSystemDownload(PREFIX, SUFFIX, exportType));
+    assertTrue(result.getHeaders().containsValue(List.of("application/zip")));
+    assertTrue(result.getHeaders().containsValue(
+        List.of("attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\"")));
   }
 
   @Test
