@@ -117,11 +117,16 @@ public class MachineAnnotationServiceController {
   private MachineAnnotationServiceRequest getMachineAnnotation(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
     if (!requestBody.data().type().equals(ObjectType.MAS)) {
-      log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
+      log.warn("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(),
+    var request = mapper.treeToValue(requestBody.data().attributes(),
         MachineAnnotationServiceRequest.class);
+    if (request.getSchemaName() == null || request.getOdsContainerImage() == null || request.getOdsHasTargetDigitalObjectFilter() == null){
+      log.warn("Missing required field for MAS creation");
+      throw new IllegalArgumentException("Missing required field for MAS creation");
+    }
+    return request;
   }
 
 }

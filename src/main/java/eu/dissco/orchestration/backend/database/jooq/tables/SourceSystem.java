@@ -8,10 +8,8 @@ import eu.dissco.orchestration.backend.database.jooq.Keys;
 import eu.dissco.orchestration.backend.database.jooq.Public;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.SourceSystemRecord;
-
 import java.time.Instant;
 import java.util.Collection;
-
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.JSONB;
