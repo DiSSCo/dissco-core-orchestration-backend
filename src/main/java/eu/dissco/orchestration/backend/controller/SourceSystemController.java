@@ -99,7 +99,8 @@ public class SourceSystemController {
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> getSourceSystemById(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest) {
+      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest)
+      throws NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received get request for source system with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
@@ -152,9 +153,15 @@ public class SourceSystemController {
   private SourceSystemRequest getSourceSystemFromRequest(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
     if (!requestBody.data().type().equals(ObjectType.SOURCE_SYSTEM)) {
-      log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
+      log.warn("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(), SourceSystemRequest.class);
+    var request = mapper.treeToValue(requestBody.data().attributes(), SourceSystemRequest.class);
+    if (request.getSchemaName() == null || request.getSchemaUrl() == null
+        || request.getOdsTranslatorType() == null || request.getOdsDataMappingID() == null) {
+      log.warn("Missing required field for source system creation");
+      throw new IllegalArgumentException("Missing required field for source system creation");
+    }
+    return request;
   }
 }

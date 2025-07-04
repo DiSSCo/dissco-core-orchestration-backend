@@ -7,10 +7,8 @@ package eu.dissco.orchestration.backend.database.jooq;
 import eu.dissco.orchestration.backend.database.jooq.tables.DataMapping;
 import eu.dissco.orchestration.backend.database.jooq.tables.MachineAnnotationService;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
-
 import java.util.Arrays;
 import java.util.List;
-
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;

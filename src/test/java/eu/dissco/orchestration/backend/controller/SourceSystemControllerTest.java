@@ -16,6 +16,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemResponse;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -23,6 +24,8 @@ import static org.mockito.Mockito.mock;
 
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
@@ -32,9 +35,13 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -85,6 +92,26 @@ class SourceSystemControllerTest {
         () -> controller.createSourceSystem(authentication, sourceSystem, mockRequest));
   }
 
+  @ParameterizedTest
+  @MethodSource("badSourceSystemRequest")
+  void testCreateDataMappingMissingInfo(String fieldToRemove) {
+    // Given
+    var requestBody = (ObjectNode) givenSourceSystemRequestJson().data().attributes();
+    requestBody.remove(fieldToRemove);
+    var request = new JsonApiRequestWrapper(new JsonApiRequest(ObjectType.SOURCE_SYSTEM, requestBody));
+
+    // When / Then
+    assertThrows(IllegalArgumentException.class, () -> controller.createSourceSystem(authentication, request, mockRequest));
+  }
+
+  private static Stream<Arguments> badSourceSystemRequest() {
+    return Stream.of(
+        Arguments.of("schema:url"),
+        Arguments.of("ods:translatorType"),
+        Arguments.of("ods:dataMappingID"),
+        Arguments.of("schema:name"));
+  }
+
   @Test
   void testUpdateSourceSystem() throws Exception {
     // Given
@@ -117,7 +144,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testGetSourceSystemById() {
+  void testGetSourceSystemById() throws NotFoundException {
     // Given
     // When
     var result = controller.getSourceSystemById(PREFIX, SUFFIX, mockRequest);

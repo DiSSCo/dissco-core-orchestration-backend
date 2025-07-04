@@ -20,6 +20,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingle
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneRequestMas;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -762,7 +763,7 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
-  void testGetMasById() {
+  void testGetMasById() throws NotFoundException {
     // Given
     var mas = givenMas();
     var expected = givenMasSingleJsonApiWrapper();
@@ -773,6 +774,14 @@ class MachineAnnotationServiceServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetMasNotFound(){
+    // Given
+
+    // When / Then
+    assertThrows(NotFoundException.class, () -> service.getMachineAnnotationService(HANDLE, MAS_PATH));
   }
 
   @Test

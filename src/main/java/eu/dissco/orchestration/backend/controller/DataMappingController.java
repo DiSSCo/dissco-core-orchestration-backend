@@ -91,7 +91,7 @@ public class DataMappingController {
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> getDataMappingById(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest) {
+      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest) throws NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received get request for mapping with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
@@ -114,10 +114,15 @@ public class DataMappingController {
   private DataMappingRequest getDataMappingRequestFromRequest(JsonApiRequestWrapper requestBody)
       throws JsonProcessingException, IllegalArgumentException {
     if (!requestBody.data().type().equals(ObjectType.DATA_MAPPING)) {
-      log.error("Incorrect type for this endpoint: {}", requestBody.data().type());
+      log.warn("Incorrect type for this endpoint: {}", requestBody.data().type());
       throw new IllegalArgumentException();
     }
-    return mapper.treeToValue(requestBody.data().attributes(), DataMappingRequest.class);
+    var request =  mapper.treeToValue(requestBody.data().attributes(), DataMappingRequest.class);
+    if (request.getOdsMappingDataStandard() == null || request.getSchemaName() == null) {
+      log.warn("Missing required field for data mapping creation");
+      throw new IllegalArgumentException("Missing required field for data mapping creation");
+    }
+    return request;
   }
 
 }

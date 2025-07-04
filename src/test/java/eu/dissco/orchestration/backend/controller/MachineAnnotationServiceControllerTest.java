@@ -13,6 +13,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasReques
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequestJson;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -21,12 +22,21 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.orchestration.backend.domain.ObjectType;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
+import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -74,6 +84,25 @@ class MachineAnnotationServiceControllerTest {
     assertThrowsExactly(
         IllegalArgumentException.class,
         () -> controller.createMachineAnnotationService(authentication, requestBody, mockRequest));
+  }
+
+  @ParameterizedTest
+  @MethodSource("badMasRequest")
+  void testCreateDataMappingMissingInfo(String fieldToRemove) {
+    // Given
+    var requestBody = (ObjectNode) givenMasRequestJson().data().attributes();
+    requestBody.remove(fieldToRemove);
+    var request = new JsonApiRequestWrapper(new JsonApiRequest(ObjectType.MAS, requestBody));
+
+    // When / Then
+    assertThrows(IllegalArgumentException.class, () -> controller.createMachineAnnotationService(authentication, request, mockRequest));
+  }
+
+  private static Stream<Arguments> badMasRequest() {
+    return Stream.of(
+        Arguments.of("ods:containerImage"),
+        Arguments.of("ods:hasTargetDigitalObjectFilter"),
+        Arguments.of("schema:name"));
   }
 
   @Test
@@ -133,7 +162,7 @@ class MachineAnnotationServiceControllerTest {
   }
 
   @Test
-  void testGetMasById() {
+  void testGetMasById() throws NotFoundException {
     // When
     var result = controller.getMachineAnnotationService(PREFIX, SUFFIX, mockRequest);
 

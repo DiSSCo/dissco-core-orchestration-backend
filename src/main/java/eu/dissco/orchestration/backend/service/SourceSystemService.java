@@ -498,9 +498,13 @@ public class SourceSystemService {
     }
   }
 
-  public JsonApiWrapper getSourceSystemById(String id, String path) {
+  public JsonApiWrapper getSourceSystemById(String id, String path) throws NotFoundException {
     var sourceSystem = repository.getSourceSystem(id);
-    return wrapSingleResponse(sourceSystem, path);
+    if (sourceSystem != null) {
+      return wrapSingleResponse(sourceSystem, path);
+    }
+    log.warn("Unable to fund source system {}", id);
+    throw new NotFoundException("Unable to find source system " + id);
   }
 
   public JsonApiListWrapper getSourceSystems(int pageNum, int pageSize, String path) {
