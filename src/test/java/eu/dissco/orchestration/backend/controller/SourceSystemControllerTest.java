@@ -115,7 +115,7 @@ class SourceSystemControllerTest {
   }
 
   @Test
-  void testGetSourceSystemById() {
+  void testGetSourceSystemById() throws NotFoundException {
     // Given
     // When
     var result = controller.getSourceSystemById(PREFIX, SUFFIX, mockRequest);

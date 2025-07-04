@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
+import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.MachineAnnotationServiceService;
 import java.util.Map;
@@ -133,7 +134,7 @@ class MachineAnnotationServiceControllerTest {
   }
 
   @Test
-  void testGetMasById() {
+  void testGetMasById() throws NotFoundException {
     // When
     var result = controller.getMachineAnnotationService(PREFIX, SUFFIX, mockRequest);
 

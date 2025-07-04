@@ -554,7 +554,7 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testGetSourceSystemById() {
+  void testGetSourceSystemById() throws NotFoundException {
     // Given
     var sourceSystem = givenSourceSystem();
     var expected = givenSourceSystemSingleJsonApiWrapper();
@@ -594,7 +594,7 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testGetSourceSystemByIdIsDeleted() {
+  void testGetSourceSystemByIdIsDeleted() throws NotFoundException {
     // Given
     var sourceSystem = givenSourceSystem();
     var expected = new JsonApiWrapper(
@@ -609,6 +609,14 @@ class SourceSystemServiceTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetSourceSystemNotFound(){
+    // Given
+
+    // When / Then
+    assertThrows(NotFoundException.class, () -> service.getSourceSystemById(HANDLE, SYSTEM_PATH));
   }
 
   @Test
