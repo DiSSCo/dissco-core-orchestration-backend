@@ -6,6 +6,7 @@ import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
@@ -19,6 +20,7 @@ import eu.dissco.orchestration.backend.service.SourceSystemService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -43,6 +45,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/source-system/v1")
 @RequiredArgsConstructor
 public class SourceSystemController {
+
+  private static final Set<String> ALLOWED_EXPORT_TYPES = Set.of("dwc-dp", "dwca");
 
   private final SourceSystemService service;
   private final ObjectMapper mapper;
@@ -105,12 +109,12 @@ public class SourceSystemController {
   }
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = "/{prefix}/{suffix}/download/dwc-dp")
-  public ResponseEntity<Resource> getSourceSystemDwcDp(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix) throws URISyntaxException, NotFoundException {
+  @GetMapping(value = "/{prefix}/{suffix}/download/{export-type}")
+  public ResponseEntity<Resource> getSourceSystemDownload(@PathVariable("prefix") String prefix,
+      @PathVariable("suffix") String suffix, @PathVariable("export-type") ExportType exportType) throws URISyntaxException, NotFoundException {
     var id = prefix + '/' + suffix;
-    log.info("Received DwC-DP for source system with id: {}", id);
-    var dwcDpInputStream = service.getSourceSystemDwcDp(id);
+    log.info("Received {} for source system with id: {}", exportType, id);
+    var dwcDpInputStream = service.getSourceSystemDownload(id, exportType);
     var resource = new InputStreamResource(dwcDpInputStream);
     return ResponseEntity.ok()
         .contentType(MediaType.parseMediaType("application/zip"))

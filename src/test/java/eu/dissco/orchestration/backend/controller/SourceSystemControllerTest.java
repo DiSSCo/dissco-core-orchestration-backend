@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.controller;
 
+import static eu.dissco.orchestration.backend.domain.ObjectType.SOURCE_SYSTEM;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
@@ -18,11 +19,12 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSys
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import eu.dissco.orchestration.backend.domain.ObjectType;
+import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
@@ -62,6 +64,14 @@ class SourceSystemControllerTest {
   @Mock
   private Authentication authentication;
 
+  private static Stream<Arguments> badSourceSystemRequest() {
+    return Stream.of(
+        Arguments.of("schema:url"),
+        Arguments.of("ods:translatorType"),
+        Arguments.of("ods:dataMappingID"),
+        Arguments.of("schema:name"));
+  }
+
   @BeforeEach
   void setup() {
     controller = new SourceSystemController(service, MAPPER, appProperties);
@@ -98,18 +108,11 @@ class SourceSystemControllerTest {
     // Given
     var requestBody = (ObjectNode) givenSourceSystemRequestJson().data().attributes();
     requestBody.remove(fieldToRemove);
-    var request = new JsonApiRequestWrapper(new JsonApiRequest(ObjectType.SOURCE_SYSTEM, requestBody));
+    var request = new JsonApiRequestWrapper(new JsonApiRequest(SOURCE_SYSTEM, requestBody));
 
     // When / Then
-    assertThrows(IllegalArgumentException.class, () -> controller.createSourceSystem(authentication, request, mockRequest));
-  }
-
-  private static Stream<Arguments> badSourceSystemRequest() {
-    return Stream.of(
-        Arguments.of("schema:url"),
-        Arguments.of("ods:translatorType"),
-        Arguments.of("ods:dataMappingID"),
-        Arguments.of("schema:name"));
+    assertThrows(IllegalArgumentException.class,
+        () -> controller.createSourceSystem(authentication, request, mockRequest));
   }
 
   @Test
@@ -156,17 +159,19 @@ class SourceSystemControllerTest {
   @Test
   void testDownloadSourceSystemDwcDp() throws URISyntaxException, IOException, NotFoundException {
     // Given
-    given(service.getSourceSystemDwcDp(BARE_HANDLE)).willReturn(
+    var exportType = ExportType.DWC_DP;
+    given(service.getSourceSystemDownload(BARE_HANDLE, exportType)).willReturn(
         new ByteArrayInputStream("test".getBytes()));
 
     // When
-    var result = controller.getSourceSystemDwcDp(PREFIX, SUFFIX);
+    var result = controller.getSourceSystemDownload(PREFIX, SUFFIX, exportType);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(new String(result.getBody().getContentAsByteArray())).isEqualTo("test");
-    assertThat(result.getHeaders().containsValue(List.of("application/zip"))).isTrue();
-    assertThat(result.getHeaders().containsValue(List.of("attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\""))).isTrue();
+    assertTrue(result.getHeaders().containsValue(List.of("application/zip")));
+    assertTrue(result.getHeaders().containsValue(
+        List.of("attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\"")));
   }
 
   @Test

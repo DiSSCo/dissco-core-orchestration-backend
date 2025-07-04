@@ -7,6 +7,7 @@ import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
+import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import java.time.Instant;
@@ -113,8 +114,12 @@ public class SourceSystemRepository {
         .execute();
   }
 
-  public String getDwcDpLink(String id) {
-    return context.select(SOURCE_SYSTEM.DWC_DP_LINK)
+  public String getExportLink(String id, ExportType exportType) {
+    var linkColumn = switch (exportType) {
+      case DWC_DP -> SOURCE_SYSTEM.DWC_DP_LINK;
+      case DWCA -> SOURCE_SYSTEM.DWCA_LINK;
+    };
+    return context.select(linkColumn)
         .from(SOURCE_SYSTEM)
         .where(SOURCE_SYSTEM.ID.eq(id))
         .fetchOne(Record1::value1);

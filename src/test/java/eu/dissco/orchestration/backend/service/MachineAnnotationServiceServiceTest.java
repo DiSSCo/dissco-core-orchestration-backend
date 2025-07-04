@@ -160,7 +160,7 @@ class MachineAnnotationServiceServiceTest {
     return GSON.fromJson(
         "{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"items\":[{\"apiVersion\":\"rabbitmq.com/v1beta1\",\"kind\":\"Queue\",\"metadata\":{\"name\":\"mas-gw0-pop-xsl-queue\",\"namespace\":\"machine-annotation-services\"},\"spec\":{\"durable\":"
             + durable
-            + ",\"name\":\"mas-gw0-pop-xsl-queue\",\"rabbitmqClusterReference\":{\"name\":\"rabbitmq-cluster\",\"namespace\":\"rabbitmq\"},\"type\":\"quorum\",\"vhost\":\"/\"}}]}",
+            + ",\"name\":\"mas-gw0-pop-xsl-queue\",\"rabbitmqClusterReference\":{\"name\":\"rabbitmq-cluster\",\"namespace\":\"rabbitmq\"},\"type\":\"quorum\",\"deletionPolicy\": \"delete\",\"vhost\":\"/\"}}]}",
         JsonElement.class
     );
   }

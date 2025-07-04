@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.properties;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,4 +24,20 @@ public class TranslatorJobProperties {
   @Value("${spring.datasource.url}")
   private String databaseUrl;
 
+  @Valid
+  private Export export = new Export();
+
+  @Data
+  @Validated
+  public static class Export {
+
+    @NotBlank
+    private String exportImage;
+    @NotBlank
+    private String keycloak;
+    @NotBlank
+    private String disscoDomain;
+    @NotBlank
+    private String namespace = "data-export-job";
+  }
 }
