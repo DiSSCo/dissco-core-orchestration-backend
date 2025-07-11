@@ -46,11 +46,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class SourceSystemController {
 
-  private static final Set<String> ALLOWED_EXPORT_TYPES = Set.of("dwc-dp", "dwca");
-
   private final SourceSystemService service;
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
+
+  private static String generateDownloadName(String id, ExportType exportType) {
+    switch (exportType) {
+      case DWC_DP -> {
+        return id.toLowerCase().replace("/", "_") + "_dwc-dp.zip";
+      }
+      case DWCA -> {
+        return id.toLowerCase().replace("/", "_") + "_dwca.zip";
+      }
+      default -> throw new UnsupportedOperationException(
+          "This case should never happen, as the export type is validated before this method is called.");
+    }
+  }
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
@@ -111,19 +122,17 @@ public class SourceSystemController {
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}/download/{export-type}")
   public ResponseEntity<Resource> getSourceSystemDownload(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, @PathVariable("export-type") ExportType exportType) throws URISyntaxException, NotFoundException {
+      @PathVariable("suffix") String suffix, @PathVariable("export-type") ExportType exportType)
+      throws URISyntaxException, NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received {} for source system with id: {}", exportType, id);
     var dwcDpInputStream = service.getSourceSystemDownload(id, exportType);
     var resource = new InputStreamResource(dwcDpInputStream);
     return ResponseEntity.ok()
         .contentType(MediaType.parseMediaType("application/zip"))
-        .header("Content-Disposition", "attachment; filename=\"" + generateDownloadName(id) + "\"")
+        .header("Content-Disposition",
+            "attachment; filename=\"" + generateDownloadName(id, exportType) + "\"")
         .body(resource);
-  }
-
-  private static String generateDownloadName(String id) {
-    return id.toLowerCase().replace("/", "_") + "_dwc-dp.zip";
   }
 
   @ResponseStatus(HttpStatus.OK)
