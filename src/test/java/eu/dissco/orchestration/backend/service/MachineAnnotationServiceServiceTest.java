@@ -83,6 +83,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -165,41 +166,49 @@ class MachineAnnotationServiceServiceTest {
     );
   }
 
-  private static V1Deployment givenMasDeployment(String image) {
+  private static V1Deployment givenMasDeployment(String image, boolean addSecret) {
+    var envList = new ArrayList<>(List.of(
+        new V1EnvVar().name("MAS_NAME").value("A Machine Annotation Service"),
+        new V1EnvVar().name("MAS_ID").value("20.5000.1025/GW0-POP-XSL"),
+        new V1EnvVar().name("RABBITMQ_HOST")
+            .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
+        new V1EnvVar().name("RABBITMQ_QUEUE").value("mas-fancy-topic-name-queue"),
+        new V1EnvVar().name("RABBITMQ_USER")
+            .valueFrom(new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("rabbitmq-username")
+                    .name("aws-secrets"))),
+        new V1EnvVar().name("RABBITMQ_PASSWORD")
+            .valueFrom(new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("rabbitmq-password")
+                    .name("aws-secrets"))),
+        new V1EnvVar().name("RUNNING_ENDPOINT")
+            .value("https://dev.dissco.tech/api/v1/mjr"),
+        new V1EnvVar().name("server.port").value("8080"),
+        new V1EnvVar().name("spring.datasource.password").valueFrom(
+            new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("db-password").name("mas-secrets")))
+    ));
+    if (addSecret) {
+      envList.add(
+          new V1EnvVar().name("GEOPICK_USER").valueFrom(
+              new V1EnvVarSource().secretKeyRef(
+                  new V1SecretKeySelector().key("geopick-user").name("mas-secrets")))
+      );
+      envList.add(
+          new V1EnvVar().name("GEOPICK_PASSWORD").valueFrom(
+              new V1EnvVarSource().secretKeyRef(
+                  new V1SecretKeySelector().key("geopick-password")
+                      .name("mas-secrets")))
+      );
+    }
+
     return new V1Deployment().metadata(new V1ObjectMeta().name("gw0-pop-xsl-deployment"))
         .spec(new V1DeploymentSpec().template(new V1PodTemplateSpec().spec(
             new V1PodSpec().containers(List.of(
                 new V1Container()
                     .name("gw0-pop-xsl")
                     .image(image)
-                    .env(List.of(
-                        new V1EnvVar().name("MAS_NAME").value("A Machine Annotation Service"),
-                        new V1EnvVar().name("MAS_ID").value("20.5000.1025/GW0-POP-XSL"),
-                        new V1EnvVar().name("RABBITMQ_HOST")
-                            .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
-                        new V1EnvVar().name("RABBITMQ_QUEUE").value("mas-fancy-topic-name-queue"),
-                        new V1EnvVar().name("RABBITMQ_USER")
-                            .valueFrom(new V1EnvVarSource().secretKeyRef(
-                                new V1SecretKeySelector().key("rabbitmq-username")
-                                    .name("aws-secrets"))),
-                        new V1EnvVar().name("RABBITMQ_PASSWORD")
-                            .valueFrom(new V1EnvVarSource().secretKeyRef(
-                                new V1SecretKeySelector().key("rabbitmq-password")
-                                    .name("aws-secrets"))),
-                        new V1EnvVar().name("RUNNING_ENDPOINT")
-                            .value("https://dev.dissco.tech/api/v1/mjr"),
-                        new V1EnvVar().name("GEOPICK_USER").valueFrom(
-                            new V1EnvVarSource().secretKeyRef(
-                                new V1SecretKeySelector().key("geopick-user").name("mas-secrets"))),
-                        new V1EnvVar().name("GEOPICK_PASSWORD").valueFrom(
-                            new V1EnvVarSource().secretKeyRef(
-                                new V1SecretKeySelector().key("geopick-password")
-                                    .name("mas-secrets"))),
-                        new V1EnvVar().name("server.port").value("8080"),
-                        new V1EnvVar().name("spring.datasource.password").valueFrom(
-                            new V1EnvVarSource().secretKeyRef(
-                                new V1SecretKeySelector().key("db-password").name("mas-secrets")))
-                    ))
+                    .env(envList)
                     .volumeMounts(List.of(
                         new V1VolumeMount().name("temp-volume").mountPath("/temp"),
                         new V1VolumeMount().name("mas-secrets")
@@ -1011,7 +1020,7 @@ class MachineAnnotationServiceServiceTest {
         eq(NAMESPACE), eq("queues"))).willReturn(customRabbitQueue);
     given(deployResponse.execute()).willReturn(
         new V1DeploymentList().addItemsItem(
-            givenMasDeployment("public.ecr.aws/dissco/fancy-mas:sha-54289")));
+            givenMasDeployment("public.ecr.aws/dissco/fancy-mas:sha-54289", true)));
     given(repository.getMachineAnnotationServices(anyInt(), anyInt())).willReturn(List.of());
     given(appsV1Api.deleteNamespacedDeployment(anyString(), eq(NAMESPACE))).willReturn(
         mock(APIdeleteNamespacedDeploymentRequest.class));
@@ -1052,7 +1061,7 @@ class MachineAnnotationServiceServiceTest {
     given(customObjectsApi.listNamespacedCustomObject(eq("rabbitmq.com"), anyString(),
         eq(NAMESPACE), eq("queues"))).willReturn(customRabbitQueue);
     given(deployResponse.execute()).willReturn(
-        new V1DeploymentList().addItemsItem(givenMasDeployment("anotherImage")));
+        new V1DeploymentList().addItemsItem(givenMasDeployment("anotherImage", true)));
     given(appsV1Api.replaceNamespacedDeployment(anyString(), eq(NAMESPACE), any(
         V1Deployment.class))).willReturn(
         mock(APIreplaceNamespacedDeploymentRequest.class));
@@ -1100,7 +1109,7 @@ class MachineAnnotationServiceServiceTest {
         eq(NAMESPACE), eq("queues"))).willReturn(customRabbitQueue);
     given(deployResponse.execute()).willReturn(
         new V1DeploymentList().addItemsItem(
-            givenMasDeployment("public.ecr.aws/dissco/fancy-mas:sha-54289")));
+            givenMasDeployment("public.ecr.aws/dissco/fancy-mas:sha-54289", false)));
 
     // When
     service.setup();
