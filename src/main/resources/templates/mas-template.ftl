@@ -41,16 +41,6 @@ spec:
               key: rabbitmq-password
         - name: RUNNING_ENDPOINT
           value: https://dev.dissco.tech/api/v1/mjr
-        - name: GEOPICK_USER
-          valueFrom:
-            secretKeyRef:
-              key: geopick-user
-              name: mas-secrets
-        - name: GEOPICK_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: geopick-password
-              name: mas-secrets
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
