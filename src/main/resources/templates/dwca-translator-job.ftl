@@ -60,6 +60,16 @@ spec:
               value: https://doi.org/21.T11148/894b1e6cad57e921764e
             - name: JAVA_TOOL_OPTIONS
               value: -XX:MaxRAMPercentage=85
+            - name: mas.force-mas-schedule
+              value: ${forceMasSchedule?c}
+          <#if additionalSpecimenMass??>
+            - name: mas.additional-specimen-mass
+              value: ${additionalSpecimenMass}
+          </#if>
+          <#if additionalMediaMass??>
+            - name: mas.additional-media-mass
+              value: ${additionalMediaMass}
+          </#if>
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false

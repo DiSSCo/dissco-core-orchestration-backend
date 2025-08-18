@@ -13,6 +13,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMapping;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasScheduleData;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemResponse;
@@ -37,6 +38,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import eu.dissco.orchestration.backend.domain.ExportType;
+import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -444,7 +446,20 @@ class SourceSystemServiceTest {
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
 
     // Then
-    assertDoesNotThrow(() -> service.runSourceSystemById(HANDLE));
+    assertDoesNotThrow(() -> service.runSourceSystemById(HANDLE, new MasScheduleData()));
+  }
+
+  @Test
+  void testRunSourceSystemByIdMasScheduleData() {
+    // Given
+    var sourceSystem = givenSourceSystem();
+    given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystem);
+    var createJob = mock(APIcreateNamespacedJobRequest.class);
+    given(
+        batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
+
+    // Then
+    assertDoesNotThrow(() -> service.runSourceSystemById(HANDLE, givenMasScheduleData()));
   }
 
   @Test
@@ -453,7 +468,8 @@ class SourceSystemServiceTest {
     given(repository.getSourceSystem(HANDLE)).willReturn(null);
 
     // When / Then
-    assertThrowsExactly(NotFoundException.class, () -> service.runSourceSystemById(HANDLE));
+    assertThrowsExactly(NotFoundException.class, () -> service.runSourceSystemById(HANDLE,
+        new MasScheduleData()));
   }
 
   @Test
@@ -463,7 +479,8 @@ class SourceSystemServiceTest {
     given(repository.getSourceSystem(HANDLE)).willReturn(sourceSystem);
 
     // When / Then
-    assertThrowsExactly(NotFoundException.class, () -> service.runSourceSystemById(HANDLE));
+    assertThrowsExactly(NotFoundException.class, () -> service.runSourceSystemById(HANDLE,
+        new MasScheduleData()));
   }
 
   @ParameterizedTest

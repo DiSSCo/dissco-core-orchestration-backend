@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.Enrichment;
 import eu.dissco.orchestration.backend.domain.ExportType;
+import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -276,7 +277,7 @@ public class SourceSystemService {
         Date.from(Instant.now()));
     repository.createSourceSystem(sourceSystem);
     createCronJob(sourceSystem);
-    createTranslatorJob(sourceSystem, true);
+    createTranslatorJob(sourceSystem, true, new MasScheduleData());
     createDwcaCronJob(sourceSystem);
     publishCreateEvent(sourceSystem, agent);
     return wrapSingleResponse(sourceSystem, path);
@@ -336,10 +337,10 @@ public class SourceSystemService {
     }
   }
 
-  private void createTranslatorJob(SourceSystem sourceSystem, boolean rollbackOnFailure)
+  private void createTranslatorJob(SourceSystem sourceSystem, boolean rollbackOnFailure, MasScheduleData masScheduleData)
       throws ProcessingFailedException {
     try {
-      triggerTranslatorJob(sourceSystem);
+      triggerTranslatorJob(sourceSystem, masScheduleData);
     } catch (IOException | TemplateException | ApiException e) {
       logException(sourceSystem, e);
       if (rollbackOnFailure) {
@@ -370,7 +371,7 @@ public class SourceSystemService {
 
   private V1CronJob setCronJobProperties(SourceSystem sourceSystem)
       throws IOException, TemplateException {
-    var jobProps = getTemplateProperties(sourceSystem, true);
+    var jobProps = getTemplateProperties(sourceSystem, true, new MasScheduleData());
     var job = fillTemplate(jobProps, sourceSystem.getOdsTranslatorType(), true);
     var k8sCron = yamlMapper.readValue(job.toString(), V1CronJob.class);
     addEnrichmentService(
@@ -450,7 +451,7 @@ public class SourceSystemService {
   private void triggerTranslatorForUpdatedSourceSystem(SourceSystem sourceSystem,
       SourceSystem currentSourceSystem) throws ProcessingFailedException {
     try {
-      triggerTranslatorJob(sourceSystem);
+      triggerTranslatorJob(sourceSystem, new MasScheduleData());
     } catch (IOException | TemplateException | ApiException e) {
       logException(sourceSystem, e);
       rollbackToPreviousVersion(currentSourceSystem, true);
@@ -591,7 +592,7 @@ public class SourceSystemService {
     return mapper.valueToTree(sourceSystem);
   }
 
-  public void runSourceSystemById(String id) throws ProcessingFailedException, NotFoundException {
+  public void runSourceSystemById(String id, MasScheduleData masScheduleData) throws ProcessingFailedException, NotFoundException {
     var sourceSystem = repository.getSourceSystem(id);
     if (sourceSystem == null || sourceSystem.getOdsHasTombstoneMetadata() != null) {
       var msg = sourceSystem == null ? "Source system {} does not exist"
@@ -599,12 +600,12 @@ public class SourceSystemService {
       log.error(msg, id);
       throw new NotFoundException("No active source system with ID " + id + " was found");
     }
-    createTranslatorJob(sourceSystem, false);
+    createTranslatorJob(sourceSystem, false, masScheduleData);
   }
 
-  private void triggerTranslatorJob(SourceSystem sourceSystem)
+  private void triggerTranslatorJob(SourceSystem sourceSystem, MasScheduleData masScheduleData)
       throws IOException, TemplateException, ApiException {
-    var jobProps = getTemplateProperties(sourceSystem, false);
+    var jobProps = getTemplateProperties(sourceSystem, false, masScheduleData);
     var job = fillTemplate(jobProps, sourceSystem.getOdsTranslatorType(), false);
     var k8sJob = yamlMapper.readValue(job.toString(), V1Job.class);
     addEnrichmentService(k8sJob.getSpec().getTemplate().getSpec().getContainers().get(0),
@@ -615,7 +616,7 @@ public class SourceSystemService {
   }
 
   private Map<String, Object> getTemplateProperties(SourceSystem sourceSystem,
-      boolean isCronJob) {
+      boolean isCronJob, MasScheduleData masScheduleData) {
     var map = new HashMap<String, Object>();
     var jobName = generateJobName(sourceSystem, isCronJob);
     map.put("image", jobProperties.getImage());
@@ -625,6 +626,13 @@ public class SourceSystemService {
     map.put("namespace", jobProperties.getNamespace());
     map.put("containerName", jobName);
     map.put("database_url", jobProperties.getDatabaseUrl());
+    map.put("forceMasSchedule", masScheduleData.isForceMasSchedule());
+    if (!masScheduleData.getAdditionalSpecimenMass().isEmpty()){
+      map.put("additionalSpecimenMass", String.join(",", masScheduleData.getAdditionalSpecimenMass()));
+    }
+    if (!masScheduleData.getAdditionalMediaMass().isEmpty()){
+      map.put("additionalMediaMass", String.join(",", masScheduleData.getAdditionalMediaMass()));
+    }
     if (isCronJob) {
       map.put("cron", generateCron());
     }

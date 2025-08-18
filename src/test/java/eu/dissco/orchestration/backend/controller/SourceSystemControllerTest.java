@@ -11,6 +11,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenClaims;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMappingRequestJson;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasScheduleData;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequestJson;
@@ -21,10 +22,12 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.orchestration.backend.domain.ExportType;
+import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
@@ -113,6 +116,28 @@ class SourceSystemControllerTest {
     // When / Then
     assertThrows(IllegalArgumentException.class,
         () -> controller.createSourceSystem(authentication, request, mockRequest));
+  }
+
+  @Test
+  void testScheduleRunSourceSystemById() throws Exception {
+    // Given
+
+    // When
+    controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, givenMasScheduleData());
+
+    // Then
+    then(service).should().runSourceSystemById(BARE_HANDLE, givenMasScheduleData());
+  }
+
+  @Test
+  void testScheduleRunSourceSystemByIdNoMasSchedule() throws Exception {
+    // Given
+
+    // When
+    controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, null);
+
+    // Then
+    then(service).should().runSourceSystemById(BARE_HANDLE, new MasScheduleData());
   }
 
   @Test
