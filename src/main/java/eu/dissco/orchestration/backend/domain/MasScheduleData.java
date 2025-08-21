@@ -1,6 +1,6 @@
 package eu.dissco.orchestration.backend.domain;
 
-import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
@@ -8,13 +8,13 @@ import lombok.Value;
 @RequiredArgsConstructor
 public class MasScheduleData {
   boolean forceMasSchedule;
-  List<String> additionalSpecimenMass;
-  List<String> additionalMediaMass;
+  Set<String> specimenMass;
+  Set<String> mediaMass;
 
   public MasScheduleData(){
     forceMasSchedule = false;
-    additionalSpecimenMass = List.of();
-    additionalMediaMass = List.of();
+    specimenMass = Set.of();
+    mediaMass = Set.of();
   }
 
 }

@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -176,18 +177,21 @@ public class SourceSystemService {
 
   private void synchronizeExportJob() throws ApiException, TemplateException, IOException {
     log.info("Synchronizing DWCA Export cron jobs for Source Systems");
-    var existingCronJobMap = batchV1Api.listNamespacedCronJob(jobProperties.getExport().getNamespace())
+    var existingCronJobMap = batchV1Api.listNamespacedCronJob(
+            jobProperties.getExport().getNamespace())
         .execute()
         .getItems().stream().filter(job -> job.getMetadata().getName().startsWith("dwca")).collect(
             Collectors.toMap(cj -> cj.getMetadata().getName(), cj -> cj));
     var existingSourceSystemList = repository.getSourceSystems(0, 5000);
     for (var sourceSystem : existingSourceSystemList) {
-      var expectedCronJob = setSourceSystemExportProperties(sourceSystem, generateDwcaExportJobName(sourceSystem));
+      var expectedCronJob = setSourceSystemExportProperties(sourceSystem,
+          generateDwcaExportJobName(sourceSystem));
       var existingCronJob = existingCronJobMap.get(generateDwcaExportJobName(sourceSystem));
       if (existingCronJob == null) {
         log.warn("Found a source system: {} without a DwCA cron Job, creating one",
             sourceSystem.getId());
-        batchV1Api.createNamespacedCronJob(jobProperties.getExport().getNamespace(), expectedCronJob).execute();
+        batchV1Api.createNamespacedCronJob(jobProperties.getExport().getNamespace(),
+            expectedCronJob).execute();
       } else if (equalsCheckCron(expectedCronJob, existingCronJob)) {
         log.debug("DwCA cron job: {} is in sync with the database", sourceSystem.getId());
       } else {
@@ -198,8 +202,9 @@ public class SourceSystemService {
       }
     }
     existingCronJobMap.keySet()
-        .removeAll(existingSourceSystemList.stream().map(ss -> generateDwcaExportJobName(ss)).collect(
-            Collectors.toSet()));
+        .removeAll(
+            existingSourceSystemList.stream().map(ss -> generateDwcaExportJobName(ss)).collect(
+                Collectors.toSet()));
     for (V1CronJob cronjob : existingCronJobMap.values()) {
       log.warn("Found a DwCA cron job: {} without a source system, deleting it",
           cronjob.getMetadata().getName());
@@ -313,7 +318,8 @@ public class SourceSystemService {
     return writer;
   }
 
-  private Map<String, String> getExportTemplateProperties(SourceSystem sourceSystem, String jobName) {
+  private Map<String, String> getExportTemplateProperties(SourceSystem sourceSystem,
+      String jobName) {
     var map = new HashMap<String, String>();
     map.put("cron", generateCron());
     map.put("namespace", jobProperties.getExport().getNamespace());
@@ -337,9 +343,11 @@ public class SourceSystemService {
     }
   }
 
-  private void createTranslatorJob(SourceSystem sourceSystem, boolean rollbackOnFailure, MasScheduleData masScheduleData)
+  private void createTranslatorJob(SourceSystem sourceSystem, boolean rollbackOnFailure,
+      MasScheduleData masScheduleDataRequest)
       throws ProcessingFailedException {
     try {
+      var masScheduleData = setMasScheduleData(masScheduleDataRequest, sourceSystem);
       triggerTranslatorJob(sourceSystem, masScheduleData);
     } catch (IOException | TemplateException | ApiException e) {
       logException(sourceSystem, e);
@@ -348,6 +356,16 @@ public class SourceSystemService {
       }
       throw new ProcessingFailedException("Failed to deploy job to cluster", e);
     }
+  }
+
+  private MasScheduleData setMasScheduleData(MasScheduleData masScheduleDataRequest,
+      SourceSystem sourceSystem) {
+    var specimenMass = Stream.concat(masScheduleDataRequest.getSpecimenMass().stream(),
+        sourceSystem.getOdsSpecimenMachineAnnotationServices().stream()).collect(
+        Collectors.toSet());
+    var mediaMass = Stream.concat(masScheduleDataRequest.getMediaMass().stream(), sourceSystem.getOdsMediaMachineAnnotationServices()
+        .stream()).collect(Collectors.toSet());
+    return new MasScheduleData(masScheduleDataRequest.isForceMasSchedule(), specimenMass, mediaMass);
   }
 
   private void createCronJob(SourceSystem sourceSystem)
@@ -592,7 +610,8 @@ public class SourceSystemService {
     return mapper.valueToTree(sourceSystem);
   }
 
-  public void runSourceSystemById(String id, MasScheduleData masScheduleData) throws ProcessingFailedException, NotFoundException {
+  public void runSourceSystemById(String id, MasScheduleData masScheduleDataRequest)
+      throws ProcessingFailedException, NotFoundException {
     var sourceSystem = repository.getSourceSystem(id);
     if (sourceSystem == null || sourceSystem.getOdsHasTombstoneMetadata() != null) {
       var msg = sourceSystem == null ? "Source system {} does not exist"
@@ -600,7 +619,7 @@ public class SourceSystemService {
       log.error(msg, id);
       throw new NotFoundException("No active source system with ID " + id + " was found");
     }
-    createTranslatorJob(sourceSystem, false, masScheduleData);
+    createTranslatorJob(sourceSystem, false, masScheduleDataRequest);
   }
 
   private void triggerTranslatorJob(SourceSystem sourceSystem, MasScheduleData masScheduleData)
@@ -627,11 +646,11 @@ public class SourceSystemService {
     map.put("containerName", jobName);
     map.put("database_url", jobProperties.getDatabaseUrl());
     map.put("forceMasSchedule", masScheduleData.isForceMasSchedule());
-    if (!masScheduleData.getAdditionalSpecimenMass().isEmpty()){
-      map.put("additionalSpecimenMass", String.join(",", masScheduleData.getAdditionalSpecimenMass()));
+    if (!masScheduleData.getSpecimenMass().isEmpty()) {
+      map.put("specimenMass", String.join(",", masScheduleData.getSpecimenMass()));
     }
-    if (!masScheduleData.getAdditionalMediaMass().isEmpty()){
-      map.put("additionalMediaMass", String.join(",", masScheduleData.getAdditionalMediaMass()));
+    if (!masScheduleData.getMediaMass().isEmpty()) {
+      map.put("mediaMass", String.join(",", masScheduleData.getMediaMass()));
     }
     if (isCronJob) {
       map.put("cron", generateCron());

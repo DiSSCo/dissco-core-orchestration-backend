@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TestUtils {
 
@@ -462,8 +463,8 @@ public class TestUtils {
   public static MasScheduleData givenMasScheduleData(){
     return new MasScheduleData(
         true,
-        List.of(HANDLE_ALT),
-        List.of(HANDLE_ALT)
+        Set.of(HANDLE_ALT),
+        Set.of(HANDLE_ALT)
     );
 
   }
