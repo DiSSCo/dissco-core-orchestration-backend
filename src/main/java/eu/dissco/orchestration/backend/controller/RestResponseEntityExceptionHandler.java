@@ -3,8 +3,6 @@ package eu.dissco.orchestration.backend.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
-import org.jooq.exception.IntegrityConstraintViolationException;
-import org.postgresql.util.PSQLException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
