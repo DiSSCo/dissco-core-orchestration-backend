@@ -146,6 +146,7 @@ public class SourceSystemService {
         .withSchemaDateModified(Date.from(timestamp))
         .withSchemaCreator(sourceSystem.getSchemaCreator())
         .withSchemaUrl(sourceSystem.getSchemaUrl())
+        .withOdsFilters(sourceSystem.getOdsFilters())
         .withLtcCollectionManagementSystem(sourceSystem.getLtcCollectionManagementSystem())
         .withOdsTranslatorType(sourceSystem.getOdsTranslatorType())
         .withOdsMaximumRecords(sourceSystem.getOdsMaximumRecords())

@@ -26,12 +26,13 @@ public class SourceSystemRepository {
   private final DSLContext context;
   private final ObjectMapper mapper;
 
-  public int createSourceSystem(SourceSystem sourceSystem) {
-    return context.insertInto(SOURCE_SYSTEM)
+  public void createSourceSystem(SourceSystem sourceSystem) {
+    context.insertInto(SOURCE_SYSTEM)
         .set(SOURCE_SYSTEM.ID, removeProxy(sourceSystem.getId()))
         .set(SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
         .set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
         .set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
+        .set(SOURCE_SYSTEM.FILTERS, sourceSystem.getOdsFilters().toArray(new String[0]))
         .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
         .set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
         .set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
@@ -50,11 +51,12 @@ public class SourceSystemRepository {
     }
   }
 
-  public int updateSourceSystem(SourceSystem sourceSystem) {
-    return context.update(SOURCE_SYSTEM)
+  public void updateSourceSystem(SourceSystem sourceSystem) {
+    context.update(SOURCE_SYSTEM)
         .set(SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
         .set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
         .set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
+        .set(SOURCE_SYSTEM.FILTERS, sourceSystem.getOdsFilters().toArray(new String[0]))
         .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
         .set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
         .set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
