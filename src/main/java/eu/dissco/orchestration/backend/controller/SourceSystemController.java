@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -141,12 +142,10 @@ public class SourceSystemController {
   @PostMapping(value = "/{prefix}/{suffix}/run", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> scheduleRunSourceSystemById(
       @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      @RequestBody(required = false) MasScheduleData masScheduleData)
+      @RequestBody Optional<MasScheduleData> masScheduleDataOptional)
       throws ProcessingFailedException, NotFoundException {
     var id = prefix + '/' + suffix;
-    if (masScheduleData == null) {
-      masScheduleData = new MasScheduleData();
-    }
+    MasScheduleData masScheduleData = masScheduleDataOptional.orElse(new MasScheduleData());
     log.info("Received a request to start a new run for Source System: {}", id);
     service.runSourceSystemById(id, masScheduleData);
     return ResponseEntity.accepted().build();

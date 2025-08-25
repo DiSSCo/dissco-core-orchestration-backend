@@ -360,12 +360,12 @@ public class SourceSystemService {
 
   private MasScheduleData setMasScheduleData(MasScheduleData masScheduleDataRequest,
       SourceSystem sourceSystem) {
-    var specimenMass = Stream.concat(masScheduleDataRequest.getSpecimenMass().stream(),
+    var specimenMass = Stream.concat(masScheduleDataRequest.specimenMass().stream(),
         sourceSystem.getOdsSpecimenMachineAnnotationServices().stream()).collect(
         Collectors.toSet());
-    var mediaMass = Stream.concat(masScheduleDataRequest.getMediaMass().stream(), sourceSystem.getOdsMediaMachineAnnotationServices()
+    var mediaMass = Stream.concat(masScheduleDataRequest.mediaMass().stream(), sourceSystem.getOdsMediaMachineAnnotationServices()
         .stream()).collect(Collectors.toSet());
-    return new MasScheduleData(masScheduleDataRequest.isForceMasSchedule(), specimenMass, mediaMass);
+    return new MasScheduleData(masScheduleDataRequest.forceMasSchedule(), specimenMass, mediaMass);
   }
 
   private void createCronJob(SourceSystem sourceSystem)
@@ -645,12 +645,12 @@ public class SourceSystemService {
     map.put("namespace", jobProperties.getNamespace());
     map.put("containerName", jobName);
     map.put("database_url", jobProperties.getDatabaseUrl());
-    map.put("forceMasSchedule", masScheduleData.isForceMasSchedule());
-    if (!masScheduleData.getSpecimenMass().isEmpty()) {
-      map.put("specimenMass", String.join(",", masScheduleData.getSpecimenMass()));
+    map.put("forceMasSchedule", masScheduleData.forceMasSchedule());
+    if (!masScheduleData.specimenMass().isEmpty()) {
+      map.put("specimenMass", String.join(",", masScheduleData.specimenMass()));
     }
-    if (!masScheduleData.getMediaMass().isEmpty()) {
-      map.put("mediaMass", String.join(",", masScheduleData.getMediaMass()));
+    if (!masScheduleData.mediaMass().isEmpty()) {
+      map.put("mediaMass", String.join(",", masScheduleData.mediaMass()));
     }
     if (isCronJob) {
       map.put("cron", generateCron());

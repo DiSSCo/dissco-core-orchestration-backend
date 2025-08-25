@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -123,7 +124,7 @@ class SourceSystemControllerTest {
     // Given
 
     // When
-    controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, givenMasScheduleData());
+    controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, Optional.of(givenMasScheduleData()));
 
     // Then
     then(service).should().runSourceSystemById(BARE_HANDLE, givenMasScheduleData());
@@ -134,7 +135,7 @@ class SourceSystemControllerTest {
     // Given
 
     // When
-    controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, null);
+    controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, Optional.empty());
 
     // Then
     then(service).should().runSourceSystemById(BARE_HANDLE, new MasScheduleData());
