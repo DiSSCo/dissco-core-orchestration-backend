@@ -35,6 +35,16 @@ spec:
                 secretKeyRef:
                   name: aws-secrets
                   key: rabbitmq-username
+            - name: mas.force-mas-schedule
+              value: ${forceMasSchedule?c}
+          <#if additionalSpecimenMass??>
+            - name: mas.additional-specimen-mass
+              value: ${additionalSpecimenMass}
+          </#if>
+          <#if additionalMediaMass??>
+            - name: mas.additional-media-mass
+              value: ${additionalMediaMass}
+          </#if>
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false

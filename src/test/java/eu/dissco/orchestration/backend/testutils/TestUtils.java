@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.AgentRoleType;
+import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TestUtils {
 
@@ -456,6 +458,15 @@ public class TestUtils {
     return Map.of(
         "orcid", OBJECT_CREATOR
     );
+  }
+
+  public static MasScheduleData givenMasScheduleData(){
+    return new MasScheduleData(
+        true,
+        Set.of(HANDLE_ALT),
+        Set.of(HANDLE_ALT)
+    );
+
   }
 
 

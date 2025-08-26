@@ -7,6 +7,7 @@ import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ExportType;
+import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
@@ -20,7 +21,9 @@ import eu.dissco.orchestration.backend.service.SourceSystemService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Set;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -138,11 +141,13 @@ public class SourceSystemController {
   @ResponseStatus(HttpStatus.OK)
   @PostMapping(value = "/{prefix}/{suffix}/run", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> scheduleRunSourceSystemById(
-      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
+      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
+      @RequestBody Optional<MasScheduleData> masScheduleDataOptional)
       throws ProcessingFailedException, NotFoundException {
     var id = prefix + '/' + suffix;
+    MasScheduleData masScheduleData = masScheduleDataOptional.orElse(new MasScheduleData());
     log.info("Received a request to start a new run for Source System: {}", id);
-    service.runSourceSystemById(id);
+    service.runSourceSystemById(id, masScheduleData);
     return ResponseEntity.accepted().build();
   }
 
