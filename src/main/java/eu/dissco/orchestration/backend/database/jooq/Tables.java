@@ -12,7 +12,7 @@ import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 /**
  * Convenience access to all tables in public.
  */
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Tables {
 
     /**

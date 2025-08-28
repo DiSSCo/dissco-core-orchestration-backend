@@ -55,6 +55,7 @@ public class TestUtils {
   public static final String BARE_HANDLE = PREFIX + "/" + SUFFIX;
   public static final String HANDLE_ALT = HANDLE_PROXY + PREFIX + "/EMK-X81-1QZ";
   public static final String SS_ENDPOINT = "https://api.biodiversitydata.nl/v2/specimen/dwca/getDataSet/tunicata";
+  public static final List<String> SS_FILTERS = List.of("{<like path='/DataSets/DataSet/Metadata/Description/Representation/Title'>Collection Crustacea SMF</like>}");
   public static final String OBJECT_DESCRIPTION = "Source system for the DWCA of the Tunicate specimen";
   public static final Instant CREATED = Instant.parse("2022-11-01T09:59:24.00Z");
   public static final Instant UPDATED = Instant.parse("2024-11-01T09:59:24.00Z");
@@ -134,19 +135,19 @@ public class TestUtils {
   }
 
   public static SourceSystem givenSourceSystem() {
-    return givenSourceSystem(HANDLE, 1, SourceSystem.OdsTranslatorType.BIOCASE);
+    return givenSourceSystem(HANDLE, 1, SourceSystem.OdsTranslatorType.BIOCASE, OBJECT_NAME, SS_ENDPOINT);
   }
 
   public static SourceSystem givenSourceSystem(int version) {
-    return givenSourceSystem(HANDLE, version, SourceSystem.OdsTranslatorType.BIOCASE);
+    return givenSourceSystem(HANDLE, version, SourceSystem.OdsTranslatorType.BIOCASE, OBJECT_NAME, SS_ENDPOINT);
   }
 
   public static SourceSystem givenSourceSystem(SourceSystem.OdsTranslatorType translatorType) {
-    return givenSourceSystem(HANDLE, 1, translatorType);
+    return givenSourceSystem(HANDLE, 1, translatorType, OBJECT_NAME, SS_ENDPOINT);
   }
 
   public static SourceSystem givenSourceSystem(String id, int version,
-      SourceSystem.OdsTranslatorType translatorType) {
+      SourceSystem.OdsTranslatorType translatorType, String name, String endpoint) {
     return new SourceSystem()
         .withId(id)
         .withSchemaIdentifier(id)
@@ -157,8 +158,9 @@ public class TestUtils {
         .withSchemaDateCreated(Date.from(CREATED))
         .withSchemaDateModified(Date.from(CREATED))
         .withSchemaCreator(givenAgent())
-        .withSchemaName(OBJECT_NAME)
-        .withSchemaUrl(URI.create(SS_ENDPOINT))
+        .withSchemaName(name)
+        .withSchemaUrl(URI.create(endpoint))
+        .withOdsFilters(SS_FILTERS)
         .withSchemaDescription(OBJECT_DESCRIPTION)
         .withOdsTranslatorType(translatorType)
         .withOdsDataMappingID(HANDLE_ALT);
@@ -181,6 +183,7 @@ public class TestUtils {
         .withSchemaName(OBJECT_NAME)
         .withSchemaUrl(URI.create(SS_ENDPOINT))
         .withSchemaDescription(OBJECT_DESCRIPTION)
+        .withOdsFilters(SS_FILTERS)
         .withOdsTranslatorType(translatorType)
         .withOdsDataMappingID(HANDLE_ALT);
   }

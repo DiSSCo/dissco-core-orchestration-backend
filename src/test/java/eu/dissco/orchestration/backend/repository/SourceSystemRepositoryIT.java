@@ -7,9 +7,12 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.DWC_DP_S3_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_NAME;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.SS_ENDPOINT;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
@@ -25,6 +28,7 @@ import java.util.stream.IntStream;
 import org.jooq.JSONB;
 import org.jooq.Query;
 import org.jooq.Record1;
+import org.jooq.exception.IntegrityConstraintViolationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +63,17 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     // Then
     assertThat(result).hasSize(1);
     assertThat(result.get(0)).isEqualTo(sourceSystem);
+  }
+
+  @Test
+  void testUniqueConstraintSourceSystem() throws JsonProcessingException {
+    // Given
+    var sourceSystem = givenSourceSystem();
+    postSourceSystem(List.of(sourceSystem));
+
+    // When
+    assertThrows(IntegrityConstraintViolationException.class,
+        () -> repository.createSourceSystem(sourceSystem));
   }
 
   @Test
@@ -194,7 +209,8 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   private SourceSystem givenSourceSystemWithId(int id) {
-    return givenSourceSystem(String.valueOf(id), 1, OdsTranslatorType.DWCA);
+    return givenSourceSystem(String.valueOf(id), 1, OdsTranslatorType.DWCA, OBJECT_NAME + id,
+        SS_ENDPOINT + id);
   }
 
   private List<SourceSystem> getAllSourceSystems() {
@@ -226,6 +242,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
           .set(SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
           .set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
           .set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
+          .set(SOURCE_SYSTEM.FILTERS, sourceSystem.getOdsFilters().toArray(new String[0]))
           .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
           .set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
           .set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
