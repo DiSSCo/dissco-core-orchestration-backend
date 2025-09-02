@@ -6,9 +6,7 @@ package eu.dissco.orchestration.backend.database.jooq.tables.records;
 
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
-
 import java.time.Instant;
-
 import org.jooq.JSONB;
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
