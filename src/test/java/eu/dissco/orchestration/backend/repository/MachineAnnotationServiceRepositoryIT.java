@@ -16,6 +16,7 @@ import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,6 +86,19 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
 
     // When
     var result = repository.getMachineAnnotationService(HANDLE);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetMassById() {
+    // Given
+    var expected = List.of(givenMas());
+    postMass(expected);
+
+    // When
+    var result = repository.getActiveMachineAnnotationServices(Set.of(HANDLE));
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -166,7 +180,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     postMass(List.of(expected));
 
     // When
-    var result = repository.getActiveMachineAnnotationService(HANDLE);
+    var result = repository.getActiveMachineAnnotationServices(HANDLE);
 
     // Then
     assertThat(result).hasValue(expected);
@@ -180,7 +194,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     repository.tombstoneMachineAnnotationService(expected, CREATED);
 
     // When
-    var result = repository.getActiveMachineAnnotationService(HANDLE);
+    var result = repository.getActiveMachineAnnotationServices(HANDLE);
 
     // Then
     assertThat(result).isEmpty();

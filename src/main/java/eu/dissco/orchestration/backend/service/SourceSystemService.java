@@ -44,6 +44,7 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,6 +68,7 @@ public class SourceSystemService {
   private final HandleComponent handleComponent;
   private final SourceSystemRepository repository;
   private final DataMappingService dataMappingService;
+  private final MachineAnnotationServiceService machineAnnotationService;
   private final RabbitMqPublisherService rabbitMqPublisherService;
   private final ObjectMapper mapper;
   @Qualifier("yamlMapper")
@@ -120,7 +122,14 @@ public class SourceSystemService {
             currentSourceSystem.getLtcCollectionManagementSystem()) &&
         Objects.equals(sourceSystem.getOdsMaximumRecords(),
             currentSourceSystem.getOdsMaximumRecords()) &&
+        listsAreEqual(sourceSystem.getOdsSpecimenMachineAnnotationServices(), currentSourceSystem.getOdsSpecimenMachineAnnotationServices()) &&
+        listsAreEqual(sourceSystem.getOdsMediaMachineAnnotationServices(), currentSourceSystem.getOdsMediaMachineAnnotationServices()) &&
         filtersAreEqual(sourceSystem, currentSourceSystem);
+  }
+
+  private static boolean listsAreEqual(List<String> list, List<String> currentList){
+    return (list == null && currentList == null) ||
+        list!= null && (list.size() == currentList.size() && new HashSet<>(list).containsAll(currentList));
   }
 
   private static boolean filtersAreEqual(SourceSystem sourceSystem,
@@ -270,12 +279,15 @@ public class SourceSystemService {
             OdsTranslatorType.fromValue(sourceSystemRequest.getOdsTranslatorType().value()))
         .withOdsMaximumRecords(sourceSystemRequest.getOdsMaximumRecords())
         .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem())
-        .withOdsFilters(sourceSystemRequest.getOdsFilters());
+        .withOdsFilters(sourceSystemRequest.getOdsFilters())
+        .withOdsSpecimenMachineAnnotationServices(sourceSystemRequest.getOdsSpecimenMachineAnnotationServices())
+        .withOdsMediaMachineAnnotationServices(sourceSystemRequest.getOdsMediaMachineAnnotationServices());
   }
 
   public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent agent,
       String path)
       throws NotFoundException, ProcessingFailedException {
+    validiateMasExists(sourceSystemRequest);
     validateMappingExists(sourceSystemRequest.getOdsDataMappingID());
     String handle = createHandle(sourceSystemRequest);
     var sourceSystem = buildSourceSystem(sourceSystemRequest, 1, agent, handle,
@@ -430,6 +442,21 @@ public class SourceSystemService {
     }
   }
 
+  private void validiateMasExists(SourceSystemRequest sourceSystemRequest) throws NotFoundException {
+    var masIds = Stream.concat(
+        sourceSystemRequest.getOdsSpecimenMachineAnnotationServices()
+            .stream(), sourceSystemRequest.getOdsMediaMachineAnnotationServices().stream()).collect(
+        Collectors.toSet());
+    if (masIds.isEmpty()) {
+      return;
+    }
+    var mass = machineAnnotationService.getMachineAnnotationServices(masIds);
+    if (masIds.size() > mass.size()){
+      log.error("Unable to locate all MASs: {}", masIds);
+      throw new NotFoundException("Unable to locate all MASs: " + masIds);
+    }
+  }
+
   private void validateMappingExists(String mappingId) throws NotFoundException {
     var dataMapping = dataMappingService.getActiveDataMapping(mappingId);
     if (dataMapping.isEmpty()) {
@@ -445,6 +472,7 @@ public class SourceSystemService {
       throw new NotFoundException(
           "Could not update Source System " + id + ". Verify resource exists.");
     }
+    validiateMasExists(sourceSystemRequest);
     validateMappingExists(sourceSystemRequest.getOdsDataMappingID());
     var currentSourceSystem = currentSourceSystemOptional.get();
     var sourceSystem = buildSourceSystem(sourceSystemRequest,

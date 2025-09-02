@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -735,7 +736,7 @@ public class MachineAnnotationServiceService {
   public JsonApiWrapper updateMachineAnnotationService(String id,
       MachineAnnotationServiceRequest masRequest, Agent agent, String path)
       throws NotFoundException, ProcessingFailedException {
-    var currentMasOptional = repository.getActiveMachineAnnotationService(id);
+    var currentMasOptional = repository.getActiveMachineAnnotationServices(id);
     if (currentMasOptional.isPresent()) {
       var currentMas = currentMasOptional.get();
       setDefaultMas(masRequest, id);
@@ -870,7 +871,7 @@ public class MachineAnnotationServiceService {
 
   public void tombstoneMachineAnnotationService(String id, Agent agent)
       throws NotFoundException, ProcessingFailedException {
-    var currentMasOptional = repository.getActiveMachineAnnotationService(id);
+    var currentMasOptional = repository.getActiveMachineAnnotationServices(id);
     if (currentMasOptional.isPresent()) {
       var mas = currentMasOptional.get();
       deleteDeployment(mas);
@@ -955,7 +956,10 @@ public class MachineAnnotationServiceService {
     }
     log.warn("Unable to find MAS {}", id);
     throw new NotFoundException("Unable to find MAS " + id);
+  }
 
+  public List<MachineAnnotationService> getMachineAnnotationServices(Set<String> ids) {
+    return repository.getActiveMachineAnnotationServices(ids);
   }
 
   public JsonApiListWrapper getMachineAnnotationServices(int pageNum, int pageSize, String path) {

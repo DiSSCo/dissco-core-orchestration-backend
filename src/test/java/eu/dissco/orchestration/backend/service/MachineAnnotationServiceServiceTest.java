@@ -614,7 +614,7 @@ class MachineAnnotationServiceServiceTest {
     var prevMas = buildOptionalPrev();
     var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
+    given(repository.getActiveMachineAnnotationServices(BARE_HANDLE)).willReturn(prevMas);
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq(NAMESPACE), any(V1Deployment.class))).willReturn(replaceDeploy);
@@ -651,7 +651,7 @@ class MachineAnnotationServiceServiceTest {
     var prevMas = buildOptionalPrev();
     var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
+    given(repository.getActiveMachineAnnotationServices(BARE_HANDLE)).willReturn(prevMas);
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq(NAMESPACE), any(V1Deployment.class))).willReturn(replaceDeploy);
@@ -688,7 +688,7 @@ class MachineAnnotationServiceServiceTest {
     var prevMas = buildOptionalPrev();
     var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
+    given(repository.getActiveMachineAnnotationServices(BARE_HANDLE)).willReturn(prevMas);
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq(NAMESPACE), any(V1Deployment.class))).willReturn(replaceDeploy);
@@ -714,7 +714,7 @@ class MachineAnnotationServiceServiceTest {
     var prevMas = buildOptionalPrev();
     var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
+    given(repository.getActiveMachineAnnotationServices(BARE_HANDLE)).willReturn(prevMas);
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
         .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()),
             givenAgent());
@@ -750,7 +750,7 @@ class MachineAnnotationServiceServiceTest {
   void testUpdateMasEqual() throws Exception {
     // Given
     var mas = givenMasRequest();
-    given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(
+    given(repository.getActiveMachineAnnotationServices(HANDLE)).willReturn(
         Optional.of(givenMas()));
 
     // When
@@ -764,7 +764,7 @@ class MachineAnnotationServiceServiceTest {
   void testUpdateMasNotFound() {
     // Given
     var mas = givenMasRequest();
-    given(repository.getActiveMachineAnnotationService(HANDLE)).willReturn(Optional.empty());
+    given(repository.getActiveMachineAnnotationServices(HANDLE)).willReturn(Optional.empty());
 
     // When/Then
     assertThrowsExactly(NotFoundException.class,
@@ -832,7 +832,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testDeletedMasNotFound() {
     // Given
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(Optional.empty());
+    given(repository.getActiveMachineAnnotationServices(BARE_HANDLE)).willReturn(Optional.empty());
 
     // Then
     assertThrowsExactly(NotFoundException.class,
@@ -843,7 +843,7 @@ class MachineAnnotationServiceServiceTest {
   void testTombstoneMas()
       throws Exception {
     // Given
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(
+    given(repository.getActiveMachineAnnotationServices(BARE_HANDLE)).willReturn(
         Optional.of(givenMas()));
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
@@ -883,7 +883,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testTombstoneMasEventFailed() throws Exception {
     // Given
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(
+    given(repository.getActiveMachineAnnotationServices(BARE_HANDLE)).willReturn(
         Optional.of(givenMas()));
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
@@ -914,7 +914,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testDeleteDeployFails() throws Exception {
     // Given
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(
+    given(repository.getActiveMachineAnnotationServices(BARE_HANDLE)).willReturn(
         Optional.of(givenMas()));
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
@@ -928,7 +928,7 @@ class MachineAnnotationServiceServiceTest {
         () -> service.tombstoneMachineAnnotationService(BARE_HANDLE, givenAgent()));
 
     // Then
-    then(repository).should().getActiveMachineAnnotationService(BARE_HANDLE);
+    then(repository).should().getActiveMachineAnnotationServices(BARE_HANDLE);
     then(repository).shouldHaveNoMoreInteractions();
     then(customObjectsApi).shouldHaveNoInteractions();
     then(rabbitMqPublisherService).shouldHaveNoInteractions();
@@ -937,7 +937,7 @@ class MachineAnnotationServiceServiceTest {
   @Test
   void testDeleteKedaFails() throws ApiException {
     // Given
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(
+    given(repository.getActiveMachineAnnotationServices(BARE_HANDLE)).willReturn(
         Optional.of(givenMas()));
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq(NAMESPACE), any(V1Deployment.class)))
@@ -957,7 +957,7 @@ class MachineAnnotationServiceServiceTest {
         () -> service.tombstoneMachineAnnotationService(BARE_HANDLE, givenAgent()));
 
     // Then
-    then(repository).should().getActiveMachineAnnotationService(BARE_HANDLE);
+    then(repository).should().getActiveMachineAnnotationServices(BARE_HANDLE);
     then(repository).shouldHaveNoMoreInteractions();
     then(appsV1Api).should().deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq(NAMESPACE));
