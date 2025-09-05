@@ -180,7 +180,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     postMass(List.of(expected));
 
     // When
-    var result = repository.getActiveMachineAnnotationServices(HANDLE);
+    var result = repository.getActiveMachineAnnotationService(HANDLE);
 
     // Then
     assertThat(result).hasValue(expected);
@@ -194,7 +194,7 @@ class MachineAnnotationServiceRepositoryIT extends BaseRepositoryIT {
     repository.tombstoneMachineAnnotationService(expected, CREATED);
 
     // When
-    var result = repository.getActiveMachineAnnotationServices(HANDLE);
+    var result = repository.getActiveMachineAnnotationService(HANDLE);
 
     // Then
     assertThat(result).isEmpty();

@@ -60,7 +60,7 @@ public class MachineAnnotationServiceRepository {
     }
   }
 
-  public Optional<MachineAnnotationService> getActiveMachineAnnotationServices(String id) {
+  public Optional<MachineAnnotationService> getActiveMachineAnnotationService(String id) {
     return context.select(MACHINE_ANNOTATION_SERVICE.DATA)
         .from(MACHINE_ANNOTATION_SERVICE)
         .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(id)))

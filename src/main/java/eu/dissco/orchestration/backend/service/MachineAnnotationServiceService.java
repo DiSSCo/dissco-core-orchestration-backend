@@ -736,7 +736,7 @@ public class MachineAnnotationServiceService {
   public JsonApiWrapper updateMachineAnnotationService(String id,
       MachineAnnotationServiceRequest masRequest, Agent agent, String path)
       throws NotFoundException, ProcessingFailedException {
-    var currentMasOptional = repository.getActiveMachineAnnotationServices(id);
+    var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var currentMas = currentMasOptional.get();
       setDefaultMas(masRequest, id);
@@ -871,7 +871,7 @@ public class MachineAnnotationServiceService {
 
   public void tombstoneMachineAnnotationService(String id, Agent agent)
       throws NotFoundException, ProcessingFailedException {
-    var currentMasOptional = repository.getActiveMachineAnnotationServices(id);
+    var currentMasOptional = repository.getActiveMachineAnnotationService(id);
     if (currentMasOptional.isPresent()) {
       var mas = currentMasOptional.get();
       deleteDeployment(mas);

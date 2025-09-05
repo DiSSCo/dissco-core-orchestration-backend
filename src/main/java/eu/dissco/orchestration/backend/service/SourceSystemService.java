@@ -22,6 +22,7 @@ import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import eu.dissco.orchestration.backend.schema.Agent;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
@@ -42,6 +43,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -122,14 +124,14 @@ public class SourceSystemService {
             currentSourceSystem.getLtcCollectionManagementSystem()) &&
         Objects.equals(sourceSystem.getOdsMaximumRecords(),
             currentSourceSystem.getOdsMaximumRecords()) &&
-        listsAreEqual(sourceSystem.getOdsSpecimenMachineAnnotationServices(), currentSourceSystem.getOdsSpecimenMachineAnnotationServices()) &&
-        listsAreEqual(sourceSystem.getOdsMediaMachineAnnotationServices(), currentSourceSystem.getOdsMediaMachineAnnotationServices()) &&
+        listsHaveSameElements(sourceSystem.getOdsSpecimenMachineAnnotationServices(), currentSourceSystem.getOdsSpecimenMachineAnnotationServices()) &&
+        listsHaveSameElements(sourceSystem.getOdsMediaMachineAnnotationServices(), currentSourceSystem.getOdsMediaMachineAnnotationServices()) &&
         filtersAreEqual(sourceSystem, currentSourceSystem);
   }
 
-  private static boolean listsAreEqual(List<String> list, List<String> currentList){
+  private static boolean listsHaveSameElements(List<String> list, List<String> currentList){
     return (list == null && currentList == null) ||
-        list!= null && (list.size() == currentList.size() && new HashSet<>(list).containsAll(currentList));
+        list!= null && new HashSet<>(list).containsAll(currentList);
   }
 
   private static boolean filtersAreEqual(SourceSystem sourceSystem,
@@ -162,9 +164,15 @@ public class SourceSystemService {
         .withOdsTranslatorType(sourceSystem.getOdsTranslatorType())
         .withOdsMaximumRecords(sourceSystem.getOdsMaximumRecords())
         .withOdsDataMappingID(sourceSystem.getOdsDataMappingID())
+        .withOdsSpecimenMachineAnnotationServices(removeDuplicates(sourceSystem.getOdsSpecimenMachineAnnotationServices()))
+        .withOdsMediaMachineAnnotationServices(removeDuplicates(sourceSystem.getOdsMediaMachineAnnotationServices()))
         .withOdsHasTombstoneMetadata(
             buildTombstoneMetadata(tombstoningAgent,
                 "Source System tombstoned by agent through the orchestration backend", timestamp));
+  }
+
+  private static List<String> removeDuplicates(List<String> list){
+    return new ArrayList<>(new HashSet<>(list));
   }
 
   private static boolean equalsCheckCron(V1CronJob cronJob, V1CronJob existingCronJob) {
@@ -281,8 +289,8 @@ public class SourceSystemService {
         .withOdsMaximumRecords(sourceSystemRequest.getOdsMaximumRecords())
         .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem())
         .withOdsFilters(sourceSystemRequest.getOdsFilters())
-        .withOdsSpecimenMachineAnnotationServices(sourceSystemRequest.getOdsSpecimenMachineAnnotationServices())
-        .withOdsMediaMachineAnnotationServices(sourceSystemRequest.getOdsMediaMachineAnnotationServices());
+        .withOdsSpecimenMachineAnnotationServices(removeDuplicates(sourceSystemRequest.getOdsSpecimenMachineAnnotationServices()))
+        .withOdsMediaMachineAnnotationServices(removeDuplicates(sourceSystemRequest.getOdsMediaMachineAnnotationServices()));
   }
 
   public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent agent,
@@ -453,8 +461,10 @@ public class SourceSystemService {
     }
     var mass = machineAnnotationService.getMachineAnnotationServices(masIds);
     if (masIds.size() > mass.size()){
-      log.error("Unable to locate all MASs: {}", masIds);
-      throw new NotFoundException("Unable to locate all MASs: " + masIds);
+      var foundIds = mass.stream().map(MachineAnnotationService::getId).collect(Collectors.toSet());
+      var missingMass = masIds.stream().filter(masId ->  !foundIds.contains(masId)).toList();
+      log.error("Unable to locate the following MASs: {}", missingMass);
+      throw new NotFoundException("Unable to locate all MASs: " + missingMass);
     }
   }
 
