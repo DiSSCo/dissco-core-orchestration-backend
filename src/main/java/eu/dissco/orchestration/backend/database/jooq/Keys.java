@@ -10,7 +10,6 @@ import eu.dissco.orchestration.backend.database.jooq.tables.SourceSystem;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.DataMappingRecord;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.MachineAnnotationServiceRecord;
 import eu.dissco.orchestration.backend.database.jooq.tables.records.SourceSystemRecord;
-
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;

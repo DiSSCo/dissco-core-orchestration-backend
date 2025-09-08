@@ -9,9 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
+import eu.dissco.orchestration.backend.utils.HandleUtils;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -64,6 +66,14 @@ public class MachineAnnotationServiceRepository {
         .where(MACHINE_ANNOTATION_SERVICE.ID.eq(removeProxy(id)))
         .and(MACHINE_ANNOTATION_SERVICE.TOMBSTONED.isNull())
         .fetchOptional(this::mapToMas);
+  }
+
+  public List<MachineAnnotationService> getActiveMachineAnnotationServices(Set<String> ids) {
+    return context.select(MACHINE_ANNOTATION_SERVICE.DATA)
+        .from(MACHINE_ANNOTATION_SERVICE)
+        .where(MACHINE_ANNOTATION_SERVICE.ID.in(ids.stream().map(HandleUtils::removeProxy).toList()))
+        .and(MACHINE_ANNOTATION_SERVICE.TOMBSTONED.isNull())
+        .fetch(this::mapToMas);
   }
 
   private MachineAnnotationService mapToMas(Record1<JSONB> record1) {

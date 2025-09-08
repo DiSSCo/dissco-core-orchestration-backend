@@ -13,6 +13,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMapping;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasScheduleData;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
@@ -30,6 +31,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -88,6 +90,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -135,6 +138,8 @@ class SourceSystemServiceTest {
   private FdoProperties fdoProperties;
   @Mock
   private S3Client s3Client;
+  @Mock
+  private MachineAnnotationServiceService machineAnnotationService;
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
 
@@ -195,8 +200,12 @@ class SourceSystemServiceTest {
         Arguments.of(
             givenSourceSystemRequest().withOdsFilters(List.of("filter")),
             givenSourceSystem().withOdsFilters(List.of("filter"))
-        )
-    );
+        ),
+        Arguments.of(
+            givenSourceSystemRequest().withOdsMediaMachineAnnotationServices(List.of(HANDLE)),
+            givenSourceSystem().withOdsMediaMachineAnnotationServices(List.of(HANDLE))),
+        Arguments.of(givenSourceSystemRequest().withOdsSpecimenMachineAnnotationServices(List.of(HANDLE)),
+            givenSourceSystem().withOdsSpecimenMachineAnnotationServices(List.of(HANDLE))));
   }
 
   private static Export givenExport() {
@@ -220,7 +229,8 @@ class SourceSystemServiceTest {
             new V1EnvVar().name("CLIENT_SECRET")
                 .valueFrom(new V1EnvVarSource().secretKeyRef(
                     new V1SecretKeySelector().key("export-client-secret").name("aws-secrets"))),
-            new V1EnvVar().name("SOURCE_SYSTEM_ID").value("https://hdl.handle.net/20.5000.1025/GW0-POP-XSL"),
+            new V1EnvVar().name("SOURCE_SYSTEM_ID")
+                .value("https://hdl.handle.net/20.5000.1025/GW0-POP-XSL"),
             new V1EnvVar().name("DISSCO_DOMAIN").value("dev.dissco.tech"),
             new V1EnvVar().name("EXPORT_TYPE").value("DWCA")
         )
@@ -248,7 +258,7 @@ class SourceSystemServiceTest {
     jobProperties.setDatabaseUrl("jdbc:postgresql://localhost:5432/translator");
     jobProperties.setExport(givenExport());
     service = new SourceSystemService(fdoRecordService, handleComponent, repository,
-        dataMappingService, rabbitMqPublisherService, MAPPER, yamlMapper, jobProperties,
+        dataMappingService, machineAnnotationService, rabbitMqPublisherService, MAPPER, yamlMapper, jobProperties,
         configuration, batchV1Api, random, fdoProperties, s3Client);
     initTime();
     initFreeMaker();
@@ -299,6 +309,16 @@ class SourceSystemServiceTest {
     var sourceSystem = givenSourceSystemRequest();
     given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
         Optional.empty());
+
+    assertThrowsExactly(NotFoundException.class,
+        () -> service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH));
+  }
+
+  @Test
+  void testCreateSourceSystemMasNotFound() {
+    // Given
+    var sourceSystem = givenSourceSystemRequest().withOdsSpecimenMachineAnnotationServices(List.of(HANDLE));
+    given(machineAnnotationService.getMachineAnnotationServices(Set.of(HANDLE))).willReturn(List.of());
 
     assertThrowsExactly(NotFoundException.class,
         () -> service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH));
@@ -616,6 +636,7 @@ class SourceSystemServiceTest {
         Optional.of(sourceSystem));
     given(dataMappingService.getActiveDataMapping(any())).willReturn(
         Optional.of(givenDataMapping()));
+    lenient().when(machineAnnotationService.getMachineAnnotationServices(Set.of(HANDLE))).thenReturn(List.of(givenMas()));
 
     // When
     var result = service.updateSourceSystem(BARE_HANDLE, request, givenAgent(), SYSTEM_PATH,
@@ -664,7 +685,8 @@ class SourceSystemServiceTest {
     given(repository.getExportLink(HANDLE, exportType)).willReturn(null);
 
     // When / Then
-    assertThrows(NotFoundException.class, () -> service.getSourceSystemDownload(HANDLE, exportType));
+    assertThrows(NotFoundException.class,
+        () -> service.getSourceSystemDownload(HANDLE, exportType));
   }
 
   @Test
@@ -686,7 +708,7 @@ class SourceSystemServiceTest {
   }
 
   @Test
-  void testGetSourceSystemNotFound(){
+  void testGetSourceSystemNotFound() {
     // Given
 
     // When / Then
@@ -841,7 +863,8 @@ class SourceSystemServiceTest {
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
     given(batchV1Api.listNamespacedCronJob(EXPORT_NAMESPACE)).willReturn(dwcaCronResponse);
     given(cronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedCron));
-    given(dwcaCronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedDwcaCron));
+    given(dwcaCronResponse.execute()).willReturn(
+        new V1CronJobList().addItemsItem(expectedDwcaCron));
     given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of(givenSourceSystem()));
     given(batchV1Api.replaceNamespacedCronJob(eq(cronName), eq(NAMESPACE),
         any(V1CronJob.class))).willReturn(mock(APIreplaceNamespacedCronJobRequest.class));
@@ -870,7 +893,8 @@ class SourceSystemServiceTest {
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
     given(batchV1Api.listNamespacedCronJob(EXPORT_NAMESPACE)).willReturn(dwcaCronResponse);
     given(cronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedCron));
-    given(dwcaCronResponse.execute()).willReturn(new V1CronJobList().addItemsItem(expectedDwcaCron));
+    given(dwcaCronResponse.execute()).willReturn(
+        new V1CronJobList().addItemsItem(expectedDwcaCron));
     given(repository.getSourceSystems(anyInt(), anyInt())).willReturn(List.of(givenSourceSystem()));
 
     // When

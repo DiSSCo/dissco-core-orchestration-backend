@@ -5,7 +5,6 @@ package eu.dissco.orchestration.backend.database.jooq.enums;
 
 
 import eu.dissco.orchestration.backend.database.jooq.Public;
-
 import org.jooq.Catalog;
 import org.jooq.EnumType;
 import org.jooq.Schema;

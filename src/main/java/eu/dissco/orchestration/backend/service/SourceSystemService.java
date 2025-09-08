@@ -22,6 +22,7 @@ import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import eu.dissco.orchestration.backend.schema.Agent;
+import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
@@ -42,8 +43,10 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,6 +70,7 @@ public class SourceSystemService {
   private final HandleComponent handleComponent;
   private final SourceSystemRepository repository;
   private final DataMappingService dataMappingService;
+  private final MachineAnnotationServiceService machineAnnotationService;
   private final RabbitMqPublisherService rabbitMqPublisherService;
   private final ObjectMapper mapper;
   @Qualifier("yamlMapper")
@@ -120,7 +124,14 @@ public class SourceSystemService {
             currentSourceSystem.getLtcCollectionManagementSystem()) &&
         Objects.equals(sourceSystem.getOdsMaximumRecords(),
             currentSourceSystem.getOdsMaximumRecords()) &&
+        listsHaveSameElements(sourceSystem.getOdsSpecimenMachineAnnotationServices(), currentSourceSystem.getOdsSpecimenMachineAnnotationServices()) &&
+        listsHaveSameElements(sourceSystem.getOdsMediaMachineAnnotationServices(), currentSourceSystem.getOdsMediaMachineAnnotationServices()) &&
         filtersAreEqual(sourceSystem, currentSourceSystem);
+  }
+
+  private static boolean listsHaveSameElements(List<String> list, List<String> currentList){
+    return (list == null && currentList == null) ||
+        list!= null && new HashSet<>(list).containsAll(currentList);
   }
 
   private static boolean filtersAreEqual(SourceSystem sourceSystem,
@@ -153,9 +164,15 @@ public class SourceSystemService {
         .withOdsTranslatorType(sourceSystem.getOdsTranslatorType())
         .withOdsMaximumRecords(sourceSystem.getOdsMaximumRecords())
         .withOdsDataMappingID(sourceSystem.getOdsDataMappingID())
+        .withOdsSpecimenMachineAnnotationServices(removeDuplicates(sourceSystem.getOdsSpecimenMachineAnnotationServices()))
+        .withOdsMediaMachineAnnotationServices(removeDuplicates(sourceSystem.getOdsMediaMachineAnnotationServices()))
         .withOdsHasTombstoneMetadata(
             buildTombstoneMetadata(tombstoningAgent,
                 "Source System tombstoned by agent through the orchestration backend", timestamp));
+  }
+
+  private static List<String> removeDuplicates(List<String> list){
+    return new ArrayList<>(new HashSet<>(list));
   }
 
   private static boolean equalsCheckCron(V1CronJob cronJob, V1CronJob existingCronJob) {
@@ -271,12 +288,15 @@ public class SourceSystemService {
             OdsTranslatorType.fromValue(sourceSystemRequest.getOdsTranslatorType().value()))
         .withOdsMaximumRecords(sourceSystemRequest.getOdsMaximumRecords())
         .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem())
-        .withOdsFilters(sourceSystemRequest.getOdsFilters());
+        .withOdsFilters(sourceSystemRequest.getOdsFilters())
+        .withOdsSpecimenMachineAnnotationServices(removeDuplicates(sourceSystemRequest.getOdsSpecimenMachineAnnotationServices()))
+        .withOdsMediaMachineAnnotationServices(removeDuplicates(sourceSystemRequest.getOdsMediaMachineAnnotationServices()));
   }
 
   public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent agent,
       String path)
       throws NotFoundException, ProcessingFailedException {
+    validiateMasExists(sourceSystemRequest);
     validateMappingExists(sourceSystemRequest.getOdsDataMappingID());
     String handle = createHandle(sourceSystemRequest);
     var sourceSystem = buildSourceSystem(sourceSystemRequest, 1, agent, handle,
@@ -431,6 +451,23 @@ public class SourceSystemService {
     }
   }
 
+  private void validiateMasExists(SourceSystemRequest sourceSystemRequest) throws NotFoundException {
+    var masIds = Stream.concat(
+        sourceSystemRequest.getOdsSpecimenMachineAnnotationServices()
+            .stream(), sourceSystemRequest.getOdsMediaMachineAnnotationServices().stream()).collect(
+        Collectors.toSet());
+    if (masIds.isEmpty()) {
+      return;
+    }
+    var mass = machineAnnotationService.getMachineAnnotationServices(masIds);
+    if (masIds.size() > mass.size()){
+      var foundIds = mass.stream().map(MachineAnnotationService::getId).collect(Collectors.toSet());
+      var missingMass = masIds.stream().filter(masId ->  !foundIds.contains(masId)).toList();
+      log.error("Unable to locate the following MASs: {}", missingMass);
+      throw new NotFoundException("Unable to locate all MASs: " + missingMass);
+    }
+  }
+
   private void validateMappingExists(String mappingId) throws NotFoundException {
     var dataMapping = dataMappingService.getActiveDataMapping(mappingId);
     if (dataMapping.isEmpty()) {
@@ -446,6 +483,7 @@ public class SourceSystemService {
       throw new NotFoundException(
           "Could not update Source System " + id + ". Verify resource exists.");
     }
+    validiateMasExists(sourceSystemRequest);
     validateMappingExists(sourceSystemRequest.getOdsDataMappingID());
     var currentSourceSystem = currentSourceSystemOptional.get();
     var sourceSystem = buildSourceSystem(sourceSystemRequest,
