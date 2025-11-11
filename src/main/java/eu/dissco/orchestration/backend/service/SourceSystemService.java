@@ -124,14 +124,16 @@ public class SourceSystemService {
             currentSourceSystem.getLtcCollectionManagementSystem()) &&
         Objects.equals(sourceSystem.getOdsMaximumRecords(),
             currentSourceSystem.getOdsMaximumRecords()) &&
-        listsHaveSameElements(sourceSystem.getOdsSpecimenMachineAnnotationServices(), currentSourceSystem.getOdsSpecimenMachineAnnotationServices()) &&
-        listsHaveSameElements(sourceSystem.getOdsMediaMachineAnnotationServices(), currentSourceSystem.getOdsMediaMachineAnnotationServices()) &&
+        listsHaveSameElements(sourceSystem.getOdsSpecimenMachineAnnotationServices(),
+            currentSourceSystem.getOdsSpecimenMachineAnnotationServices()) &&
+        listsHaveSameElements(sourceSystem.getOdsMediaMachineAnnotationServices(),
+            currentSourceSystem.getOdsMediaMachineAnnotationServices()) &&
         filtersAreEqual(sourceSystem, currentSourceSystem);
   }
 
-  private static boolean listsHaveSameElements(List<String> list, List<String> currentList){
-    return (list == null && currentList == null) ||
-        list!= null && new HashSet<>(list).containsAll(currentList);
+  private static boolean listsHaveSameElements(List<String> list, List<String> currentList) {
+    return new HashSet<>(list).containsAll(currentList) &&
+        new HashSet<>(currentList).containsAll(list);
   }
 
   private static boolean filtersAreEqual(SourceSystem sourceSystem,
@@ -164,14 +166,16 @@ public class SourceSystemService {
         .withOdsTranslatorType(sourceSystem.getOdsTranslatorType())
         .withOdsMaximumRecords(sourceSystem.getOdsMaximumRecords())
         .withOdsDataMappingID(sourceSystem.getOdsDataMappingID())
-        .withOdsSpecimenMachineAnnotationServices(removeDuplicates(sourceSystem.getOdsSpecimenMachineAnnotationServices()))
-        .withOdsMediaMachineAnnotationServices(removeDuplicates(sourceSystem.getOdsMediaMachineAnnotationServices()))
+        .withOdsSpecimenMachineAnnotationServices(
+            removeDuplicates(sourceSystem.getOdsSpecimenMachineAnnotationServices()))
+        .withOdsMediaMachineAnnotationServices(
+            removeDuplicates(sourceSystem.getOdsMediaMachineAnnotationServices()))
         .withOdsHasTombstoneMetadata(
             buildTombstoneMetadata(tombstoningAgent,
                 "Source System tombstoned by agent through the orchestration backend", timestamp));
   }
 
-  private static List<String> removeDuplicates(List<String> list){
+  private static List<String> removeDuplicates(List<String> list) {
     return new ArrayList<>(new HashSet<>(list));
   }
 
@@ -289,8 +293,10 @@ public class SourceSystemService {
         .withOdsMaximumRecords(sourceSystemRequest.getOdsMaximumRecords())
         .withLtcCollectionManagementSystem(sourceSystemRequest.getLtcCollectionManagementSystem())
         .withOdsFilters(sourceSystemRequest.getOdsFilters())
-        .withOdsSpecimenMachineAnnotationServices(removeDuplicates(sourceSystemRequest.getOdsSpecimenMachineAnnotationServices()))
-        .withOdsMediaMachineAnnotationServices(removeDuplicates(sourceSystemRequest.getOdsMediaMachineAnnotationServices()));
+        .withOdsSpecimenMachineAnnotationServices(
+            removeDuplicates(sourceSystemRequest.getOdsSpecimenMachineAnnotationServices()))
+        .withOdsMediaMachineAnnotationServices(
+            removeDuplicates(sourceSystemRequest.getOdsMediaMachineAnnotationServices()));
   }
 
   public JsonApiWrapper createSourceSystem(SourceSystemRequest sourceSystemRequest, Agent agent,
@@ -384,8 +390,9 @@ public class SourceSystemService {
     var specimenMass = Stream.concat(masScheduleDataRequest.specimenMass().stream(),
         sourceSystem.getOdsSpecimenMachineAnnotationServices().stream()).collect(
         Collectors.toSet());
-    var mediaMass = Stream.concat(masScheduleDataRequest.mediaMass().stream(), sourceSystem.getOdsMediaMachineAnnotationServices()
-        .stream()).collect(Collectors.toSet());
+    var mediaMass = Stream.concat(masScheduleDataRequest.mediaMass().stream(),
+        sourceSystem.getOdsMediaMachineAnnotationServices()
+            .stream()).collect(Collectors.toSet());
     return new MasScheduleData(masScheduleDataRequest.forceMasSchedule(), specimenMass, mediaMass);
   }
 
@@ -451,7 +458,8 @@ public class SourceSystemService {
     }
   }
 
-  private void validiateMasExists(SourceSystemRequest sourceSystemRequest) throws NotFoundException {
+  private void validiateMasExists(SourceSystemRequest sourceSystemRequest)
+      throws NotFoundException {
     var masIds = Stream.concat(
         sourceSystemRequest.getOdsSpecimenMachineAnnotationServices()
             .stream(), sourceSystemRequest.getOdsMediaMachineAnnotationServices().stream()).collect(
@@ -460,9 +468,9 @@ public class SourceSystemService {
       return;
     }
     var mass = machineAnnotationService.getMachineAnnotationServices(masIds);
-    if (masIds.size() > mass.size()){
+    if (masIds.size() > mass.size()) {
       var foundIds = mass.stream().map(MachineAnnotationService::getId).collect(Collectors.toSet());
-      var missingMass = masIds.stream().filter(masId ->  !foundIds.contains(masId)).toList();
+      var missingMass = masIds.stream().filter(masId -> !foundIds.contains(masId)).toList();
       log.error("Unable to locate the following MASs: {}", missingMass);
       throw new NotFoundException("Unable to locate all MASs: " + missingMass);
     }
