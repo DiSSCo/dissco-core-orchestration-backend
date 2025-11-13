@@ -1,5 +1,6 @@
 package eu.dissco.orchestration.backend.service;
 
+import static eu.dissco.orchestration.backend.testutils.TestUtils.APP_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.DWC_DP_S3_URI;
@@ -204,8 +205,21 @@ class SourceSystemServiceTest {
         Arguments.of(
             givenSourceSystemRequest().withOdsMediaMachineAnnotationServices(List.of(HANDLE)),
             givenSourceSystem().withOdsMediaMachineAnnotationServices(List.of(HANDLE))),
-        Arguments.of(givenSourceSystemRequest().withOdsSpecimenMachineAnnotationServices(List.of(HANDLE)),
+        Arguments.of(
+            givenSourceSystemRequest().withOdsSpecimenMachineAnnotationServices(List.of(HANDLE)),
             givenSourceSystem().withOdsSpecimenMachineAnnotationServices(List.of(HANDLE))));
+  }
+
+  static Stream<Arguments> updateMasSourceSystems() {
+    return Stream.of(
+        Arguments.of(givenSourceSystemRequest()
+                .withOdsSpecimenMachineAnnotationServices(List.of(APP_HANDLE)), givenSourceSystem(),
+            true),
+        Arguments.of(givenSourceSystemRequest(),
+            givenSourceSystem().withOdsSpecimenMachineAnnotationServices(List.of(APP_HANDLE)),
+            false)
+    );
+
   }
 
   private static Export givenExport() {
@@ -258,7 +272,8 @@ class SourceSystemServiceTest {
     jobProperties.setDatabaseUrl("jdbc:postgresql://localhost:5432/translator");
     jobProperties.setExport(givenExport());
     service = new SourceSystemService(fdoRecordService, handleComponent, repository,
-        dataMappingService, machineAnnotationService, rabbitMqPublisherService, MAPPER, yamlMapper, jobProperties,
+        dataMappingService, machineAnnotationService, rabbitMqPublisherService, MAPPER, yamlMapper,
+        jobProperties,
         configuration, batchV1Api, random, fdoProperties, s3Client);
     initTime();
     initFreeMaker();
@@ -317,8 +332,10 @@ class SourceSystemServiceTest {
   @Test
   void testCreateSourceSystemMasNotFound() {
     // Given
-    var sourceSystem = givenSourceSystemRequest().withOdsSpecimenMachineAnnotationServices(List.of(HANDLE));
-    given(machineAnnotationService.getMachineAnnotationServices(Set.of(HANDLE))).willReturn(List.of());
+    var sourceSystem = givenSourceSystemRequest().withOdsSpecimenMachineAnnotationServices(
+        List.of(HANDLE));
+    given(machineAnnotationService.getMachineAnnotationServices(Set.of(HANDLE))).willReturn(
+        List.of());
 
     assertThrowsExactly(NotFoundException.class,
         () -> service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH));
@@ -540,6 +557,34 @@ class SourceSystemServiceTest {
             MAPPER.valueToTree(prevSourceSystem.get()), givenAgent());
   }
 
+  @ParameterizedTest
+  @MethodSource("updateMasSourceSystems")
+  void testUpdateSourceSystemUpdateMas(SourceSystemRequest sourceSystemRequest,
+      SourceSystem sourceSystem, boolean checkDb) throws Exception {
+    var prevSourceSystem = Optional.of(sourceSystem);
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
+    var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
+    given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
+        .willReturn(updateCron);
+    given(dataMappingService.getActiveDataMapping(any())).willReturn(
+        Optional.of(givenDataMapping()));
+    if (checkDb){
+      given(machineAnnotationService.getMachineAnnotationServices(Set.of(APP_HANDLE))).willReturn(
+          List.of(givenMas()));
+    }
+
+    // When
+    service.updateSourceSystem(BARE_HANDLE, sourceSystemRequest, givenAgent(), SYSTEM_PATH,
+        false);
+
+    // Then
+    then(repository).should().updateSourceSystem(any());
+    then(batchV1Api).shouldHaveNoMoreInteractions();
+    then(rabbitMqPublisherService).should()
+        .publishUpdateEvent(any(), any(), any());
+  }
+
   @Test
   void testUpdateSourceSystemCronJobFails() throws Exception {
     var sourceSystem = givenSourceSystemRequest();
@@ -636,7 +681,8 @@ class SourceSystemServiceTest {
         Optional.of(sourceSystem));
     given(dataMappingService.getActiveDataMapping(any())).willReturn(
         Optional.of(givenDataMapping()));
-    lenient().when(machineAnnotationService.getMachineAnnotationServices(Set.of(HANDLE))).thenReturn(List.of(givenMas()));
+    lenient().when(machineAnnotationService.getMachineAnnotationServices(Set.of(HANDLE)))
+        .thenReturn(List.of(givenMas()));
 
     // When
     var result = service.updateSourceSystem(BARE_HANDLE, request, givenAgent(), SYSTEM_PATH,
