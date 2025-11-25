@@ -2,20 +2,31 @@ package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
 import static eu.dissco.orchestration.backend.domain.AgentRoleType.TOMBSTONER;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.DEFAULT_PAGE_NUM;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.DEFAULT_PAGE_SIZE;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.PAGE_NUM_OAS;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.PAGE_SIZE_OAS;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.PREFIX_OAS;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.SUFFIX_OAS;
 import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.domain.openapi.datamapping.DataMappingRequestSchema;
+import eu.dissco.orchestration.backend.domain.openapi.datamapping.DataMappingResponseList;
+import eu.dissco.orchestration.backend.domain.openapi.datamapping.DataMappingResponseSingle;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
-import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.service.DataMappingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,11 +55,29 @@ public class DataMappingController {
   private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
 
-  @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> createDataMapping(Authentication authentication,
-      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, ProcessingFailedException, ForbiddenException {
-    var dataMapping = getDataMappingRequestFromRequest(requestBody);
+  @Operation(
+      summary = "Create a data mapping",
+      description = """
+          Create a data mapping to map source data to openDS.
+          User must have orchestration admin rights. 
+          """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "201", description = "Data mapping successfully created", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = DataMappingResponseSingle.class))
+      })
+  })
+  @ResponseStatus(HttpStatus.CREATED)
+  @PostMapping(value = "", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<JsonApiWrapper> createDataMapping(
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "Data mapping request adhering to JSON:API standard",
+          content = @Content(mediaType = "application/json",
+              schema = @Schema(implementation = DataMappingRequestSchema.class)))
+      Authentication authentication,
+      @RequestBody DataMappingRequestSchema requestBody, HttpServletRequest servletRequest)
+      throws ProcessingFailedException, ForbiddenException {
+    var dataMapping = requestBody.data().attributes();
     var agent = getAgent(authentication, CREATOR);
     log.info("Received create request for data mapping: {} from agent: {}", dataMapping,
         agent.getId());
@@ -57,12 +86,32 @@ public class DataMappingController {
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
+  @Operation(
+      summary = "Update a data mapping",
+      description = """
+          Update an existing data mapping.
+          User must have orchestration admin rights.
+          """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Data mapping successfully updated", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = DataMappingResponseSingle.class))
+      })
+  })
+  @ResponseStatus(HttpStatus.OK)
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> updateDataMapping(Authentication authentication,
-      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws JsonProcessingException, NotFoundException, ProcessingFailedException, ForbiddenException {
-    var dataMapping = getDataMappingRequestFromRequest(requestBody);
+  public ResponseEntity<JsonApiWrapper> updateDataMapping(
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "Data mapping request adhering to JSON:API standard",
+          content = @Content(mediaType = "application/json",
+              schema = @Schema(implementation = DataMappingRequestSchema.class)))
+      Authentication authentication,
+      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix,
+      @RequestBody DataMappingRequestSchema requestBody,
+      HttpServletRequest servletRequest)
+      throws NotFoundException, ProcessingFailedException, ForbiddenException {
+    var dataMapping = requestBody.data().attributes();
     var id = prefix + '/' + suffix;
     var agent = getAgent(authentication, CREATOR);
     log.info("Received update request for data mapping: {} from agent: {}", dataMapping,
@@ -76,10 +125,20 @@ public class DataMappingController {
     }
   }
 
+  @Operation(
+      summary = "Tombstone a data mapping",
+      description = """
+          Tombstone an existing data mapping.
+          Data mapping will no longer be able to be used in new source systems.
+          Existing source systems are unaffected.
+          User must have orchestration admin rights.
+          """
+  )
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> tombstoneDataMapping(Authentication authentication,
-      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
+      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix)
       throws NotFoundException, ProcessingFailedException, ForbiddenException {
     String id = prefix + "/" + suffix;
     var agent = getAgent(authentication, TOMBSTONER);
@@ -88,10 +147,24 @@ public class DataMappingController {
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
+  @Operation(
+      summary = "Retrieve a data mapping",
+      description = """
+          Retrieve an existing data mapping, based on ID.
+          """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Data mapping successfully retrieved", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = DataMappingResponseList.class))
+      })
+  })
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> getDataMappingById(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest) throws NotFoundException {
+  public ResponseEntity<JsonApiWrapper> getDataMappingById(
+      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix,
+      HttpServletRequest servletRequest)
+      throws NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received get request for mapping with id: {}", id);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
@@ -99,30 +172,27 @@ public class DataMappingController {
     return ResponseEntity.ok(mapping);
   }
 
+  @Operation(
+      summary = "Retrieve data mappings",
+      description = """
+          Retrieve a paginated list of data mappings.
+          """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Annotations retrieved", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = DataMappingResponseList.class))
+      })
+  })
   @GetMapping(value = "")
   public ResponseEntity<JsonApiListWrapper> getDataMappings(
-      @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
-      @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+      @Parameter(description = PAGE_NUM_OAS) @RequestParam(value = "pageNumber", defaultValue = DEFAULT_PAGE_NUM) int pageNum,
+      @Parameter(description = PAGE_SIZE_OAS) @RequestParam(value = "pageSize", defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
       HttpServletRequest servletRequest) {
     log.info("Received get request for mappings with pageNumber: {} and pageSzie: {}: ", pageNum,
         pageSize);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK)
         .body(service.getDataMappings(pageNum, pageSize, path));
-  }
-
-  private DataMappingRequest getDataMappingRequestFromRequest(JsonApiRequestWrapper requestBody)
-      throws JsonProcessingException, IllegalArgumentException {
-    if (!requestBody.data().type().equals(ObjectType.DATA_MAPPING)) {
-      log.warn("Incorrect type for this endpoint: {}", requestBody.data().type());
-      throw new IllegalArgumentException();
-    }
-    var request =  mapper.treeToValue(requestBody.data().attributes(), DataMappingRequest.class);
-    if (request.getOdsMappingDataStandard() == null || request.getSchemaName() == null) {
-      log.warn("Missing required field for data mapping creation");
-      throw new IllegalArgumentException("Missing required field for data mapping creation");
-    }
-    return request;
   }
 
 }

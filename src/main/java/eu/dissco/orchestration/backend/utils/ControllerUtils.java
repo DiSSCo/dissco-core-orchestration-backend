@@ -14,6 +14,13 @@ import org.springframework.security.oauth2.jwt.Jwt;
 public class ControllerUtils {
 
   public static final String ORCID = "orcid";
+  public static final String PREFIX_OAS = "Prefix of target ID";
+  public static final String SUFFIX_OAS = "Suffix of target ID";
+  public static final String PAGE_NUM_OAS = "Desired page number";
+  public static final String PAGE_SIZE_OAS = "Desired page size";
+  public static final String DEFAULT_PAGE_NUM = "1";
+  public static final String DEFAULT_PAGE_SIZE = "10";
+
 
   private ControllerUtils() {
   }
@@ -32,7 +39,7 @@ public class ControllerUtils {
         }
         fullName.append(claims.get("family_name"));
       }
-      var nameString = fullName.toString().isEmpty() ? null : fullName.toString();
+      var nameString = fullName.isEmpty() ? null : fullName.toString();
       return createAgent(nameString, (String) claims.get(ORCID), roleType, ORCID,
           Type.SCHEMA_PERSON);
     } else {
