@@ -9,9 +9,13 @@ import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequest;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.domain.openapi.datamapping.DataMappingRequestSchema;
+import eu.dissco.orchestration.backend.domain.openapi.datamapping.DataMappingRequestSchema.DataMappingRequestData;
+import eu.dissco.orchestration.backend.domain.openapi.mas.MasRequestSchema;
+import eu.dissco.orchestration.backend.domain.openapi.mas.MasRequestSchema.MasRequestData;
+import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemRequestSchema;
+import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemRequestSchema.SourceSystemRequestData;
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.Agent.Type;
 import eu.dissco.orchestration.backend.schema.DataMapping;
@@ -116,21 +120,15 @@ public class TestUtils {
     ), new JsonApiLinks(MAPPING_PATH));
   }
 
-  public static JsonApiRequestWrapper givenSourceSystemRequestJson() {
-    return new JsonApiRequestWrapper(
-        new JsonApiRequest(
-            ObjectType.SOURCE_SYSTEM,
-            MAPPER.valueToTree(givenSourceSystemRequest())
-        )
+  public static SourceSystemRequestSchema givenSourceSystemRequestJson() {
+    return new SourceSystemRequestSchema(
+        new SourceSystemRequestData(ObjectType.SOURCE_SYSTEM, givenSourceSystemRequest())
     );
   }
 
-  public static JsonApiRequestWrapper givenDataMappingRequestJson() {
-    return new JsonApiRequestWrapper(
-        new JsonApiRequest(
-            ObjectType.DATA_MAPPING,
-            MAPPER.valueToTree(givenDataMappingRequest())
-        )
+  public static DataMappingRequestSchema givenDataMappingRequestJson() {
+    return new DataMappingRequestSchema(
+        new DataMappingRequestData(ObjectType.DATA_MAPPING, givenDataMappingRequest())
     );
   }
 
@@ -277,11 +275,8 @@ public class TestUtils {
     return MAPPER.valueToTree(dataMapping);
   }
 
-  public static JsonApiRequestWrapper givenMasRequestJson() {
-    return new JsonApiRequestWrapper(new JsonApiRequest(
-        ObjectType.MAS,
-        MAPPER.valueToTree(givenMasRequest())
-    ));
+  public static MasRequestSchema givenMasRequestJson() {
+    return new MasRequestSchema(new MasRequestData(ObjectType.MAS, givenMasRequest()));
   }
 
   public static MachineAnnotationServiceRequest givenMasRequest() {

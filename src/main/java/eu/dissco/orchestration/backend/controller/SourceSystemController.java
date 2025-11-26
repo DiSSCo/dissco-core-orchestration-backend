@@ -2,24 +2,34 @@ package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
 import static eu.dissco.orchestration.backend.domain.AgentRoleType.TOMBSTONER;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.DEFAULT_PAGE_NUM;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.DEFAULT_PAGE_SIZE;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.PAGE_NUM_OAS;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.PAGE_SIZE_OAS;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.PREFIX_OAS;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.SUFFIX_OAS;
 import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.MasScheduleData;
-import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
-import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiRequestWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
+import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemRequestSchema;
+import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemResponseList;
+import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemResponseSingle;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
-import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -64,11 +74,29 @@ public class SourceSystemController {
     }
   }
 
+  @Operation(
+      summary = "Create a source system",
+      description = """
+          Create a source system from which to ingest data.
+          User must have orchestration admin rights.
+          """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "201", description = "Source system successfully created", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = SourceSystemResponseSingle.class))
+      })
+  })
+  @ResponseStatus(HttpStatus.CREATED)
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> createSourceSystem(Authentication authentication,
-      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws IOException, NotFoundException, ProcessingFailedException, ForbiddenException {
-    var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
+  public ResponseEntity<JsonApiWrapper> createSourceSystem(
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "Data mapping request adhering to JSON:API standard",
+          content = @Content(mediaType = "application/json",
+              schema = @Schema(implementation = SourceSystemRequestSchema.class)))
+      Authentication authentication,
+      @RequestBody SourceSystemRequestSchema requestBody, HttpServletRequest servletRequest)
+      throws NotFoundException, ProcessingFailedException, ForbiddenException {
+    var sourceSystemRequest = requestBody.data().attributes();
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     var agent = getAgent(authentication, CREATOR);
     log.info("Received create request for source system: {} from agent: {}", sourceSystemRequest,
@@ -77,13 +105,27 @@ public class SourceSystemController {
     return ResponseEntity.status(HttpStatus.CREATED).body(result);
   }
 
+  @Operation(
+      summary = "Update a source system",
+      description = """
+          Update an existing source system.
+          User must have orchestration admin rights.
+          """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Source system successfully updated", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = SourceSystemResponseSingle.class))
+      })
+  })
+  @ResponseStatus(HttpStatus.OK)
   @PatchMapping(value = "/{prefix}/{suffix}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<JsonApiWrapper> updateSourceSystem(Authentication authentication,
-      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
-      @RequestParam(name = "trigger", defaultValue = "false") boolean trigger,
-      @RequestBody JsonApiRequestWrapper requestBody, HttpServletRequest servletRequest)
-      throws IOException, NotFoundException, ProcessingFailedException, ForbiddenException {
-    var sourceSystemRequest = getSourceSystemFromRequest(requestBody);
+      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix,
+      @Parameter(description = "Trigger ingestion immediately") @RequestParam(name = "trigger", defaultValue = "false") boolean trigger,
+      @RequestBody SourceSystemRequestSchema requestBody, HttpServletRequest servletRequest)
+      throws NotFoundException, ProcessingFailedException, ForbiddenException {
+    var sourceSystemRequest = requestBody.data().attributes();
     var id = prefix + '/' + suffix;
     var agent = getAgent(authentication, CREATOR);
     log.info("Received update request for source system: {} from agent: {}", id, agent.getId());
@@ -96,10 +138,19 @@ public class SourceSystemController {
     }
   }
 
+  @Operation(
+      summary = "Tombstone a source system",
+      description = """
+          Tombstone an existing source system.
+          Source system will no longer ingest new/update existing data. Existing data will remain unchanged. 
+          User must have orchestration admin rights.
+          """
+  )
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> tombstoneSourceSystem(Authentication authentication,
-      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix)
+      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix)
       throws NotFoundException, ProcessingFailedException, ForbiddenException {
     String id = prefix + "/" + suffix;
     var agent = getAgent(authentication, TOMBSTONER);
@@ -108,10 +159,23 @@ public class SourceSystemController {
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
+  @Operation(
+      summary = "Retrieve a source system",
+      description = """
+          Retrieve an existing source system, based on ID.
+          """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Source system successfully retrieved", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = SourceSystemResponseSingle.class))
+      })
+  })
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> getSourceSystemById(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, HttpServletRequest servletRequest)
+  public ResponseEntity<JsonApiWrapper> getSourceSystemById(
+      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix,
+      HttpServletRequest servletRequest)
       throws NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received get request for source system with id: {}", id);
@@ -120,10 +184,22 @@ public class SourceSystemController {
     return ResponseEntity.ok(sourceSystem);
   }
 
+  @Operation(
+      summary = "Retrieve an export of data a given source system",
+      description = """
+          Retrieve data from a given source system. Exports are downloadable from an AWS S3 bucket.
+          """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Source system download successfully retrieved", content = {
+      })
+  })
   @ResponseStatus(HttpStatus.OK)
   @GetMapping(value = "/{prefix}/{suffix}/download/{export-type}")
-  public ResponseEntity<Resource> getSourceSystemDownload(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, @PathVariable("export-type") ExportType exportType)
+  public ResponseEntity<Resource> getSourceSystemDownload(
+      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix,
+      @PathVariable("export-type") ExportType exportType)
       throws URISyntaxException, NotFoundException {
     var id = prefix + '/' + suffix;
     log.info("Received {} for source system with id: {}", exportType, id);
@@ -136,44 +212,49 @@ public class SourceSystemController {
         .body(resource);
   }
 
+  @Operation(
+      summary = "Run a source system ingestion",
+      description = """
+          Run a source system ingestion. Data will be retrieved from source system endpoint.
+          Optional: May choose to apply additional MASs on objects in source system.
+          """
+  )
   @ResponseStatus(HttpStatus.OK)
   @PostMapping(value = "/{prefix}/{suffix}/run", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<JsonApiWrapper> scheduleRunSourceSystemById(
-      @PathVariable("prefix") String prefix, @PathVariable("suffix") String suffix,
+  public ResponseEntity<Void> scheduleRunSourceSystemById(
+      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix,
       @RequestBody Optional<MasScheduleData> masScheduleDataOptional)
       throws ProcessingFailedException, NotFoundException {
     var id = prefix + '/' + suffix;
-    MasScheduleData masScheduleData = masScheduleDataOptional.orElse(new MasScheduleData());
+    var masScheduleData = masScheduleDataOptional.orElse(new MasScheduleData());
     log.info("Received a request to start a new run for Source System: {}", id);
     service.runSourceSystemById(id, masScheduleData);
     return ResponseEntity.accepted().build();
   }
 
+  @Operation(
+      summary = "Retrieve source systems",
+      description = """
+          Retrieve a paginated list of source systems.
+          """
+  )
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Source systems successfully retrieved", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = SourceSystemResponseList.class))
+      })
+  })
+  @ResponseStatus(HttpStatus.OK)
   @GetMapping("")
   public ResponseEntity<JsonApiListWrapper> getSourceSystems(
-      @RequestParam(value = "pageNumber", defaultValue = "1") int pageNum,
-      @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+      @Parameter(description = PAGE_NUM_OAS) @RequestParam(value = "pageNumber", defaultValue = DEFAULT_PAGE_NUM) int pageNum,
+      @Parameter(description = PAGE_SIZE_OAS) @RequestParam(value = "pageSize", defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
       HttpServletRequest servletRequest) {
     log.info("Received get request for source system with pageNumber: {} and pageSzie: {}: ",
-        pageNum,
-        pageSize);
+        pageNum, pageSize);
     String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
     return ResponseEntity.status(HttpStatus.OK)
         .body(service.getSourceSystems(pageNum, pageSize, path));
   }
 
-  private SourceSystemRequest getSourceSystemFromRequest(JsonApiRequestWrapper requestBody)
-      throws JsonProcessingException, IllegalArgumentException {
-    if (!requestBody.data().type().equals(ObjectType.SOURCE_SYSTEM)) {
-      log.warn("Incorrect type for this endpoint: {}", requestBody.data().type());
-      throw new IllegalArgumentException();
-    }
-    var request = mapper.treeToValue(requestBody.data().attributes(), SourceSystemRequest.class);
-    if (request.getSchemaName() == null || request.getSchemaUrl() == null
-        || request.getOdsTranslatorType() == null || request.getOdsDataMappingID() == null) {
-      log.warn("Missing required field for source system creation");
-      throw new IllegalArgumentException("Missing required field for source system creation");
-    }
-    return request;
-  }
 }
