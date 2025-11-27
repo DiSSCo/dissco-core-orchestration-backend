@@ -429,7 +429,7 @@ public class SourceSystemService {
   private void publishCreateEvent(SourceSystem sourceSystem, Agent agent)
       throws ProcessingFailedException {
     try {
-      rabbitMqPublisherService.publishCreateEvent(mapper.valueToTree(sourceSystem), agent);
+      rabbitMqPublisherService.publishCreateEvent(sourceSystem, agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackSourceSystemCreation(sourceSystem, true);
@@ -540,8 +540,7 @@ public class SourceSystemService {
   private void publishUpdateEvent(SourceSystem newSourceSystem,
       SourceSystem currentSourceSystem, Agent agent) throws ProcessingFailedException {
     try {
-      rabbitMqPublisherService.publishUpdateEvent(mapper.valueToTree(newSourceSystem),
-          mapper.valueToTree(currentSourceSystem), agent);
+      rabbitMqPublisherService.publishUpdateEvent(newSourceSystem, currentSourceSystem, agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentSourceSystem, true);
@@ -603,8 +602,7 @@ public class SourceSystemService {
       var tombstoneSourceSystem = buildTombstoneSourceSystem(sourceSystem, agent, timestamp);
       repository.tombstoneSourceSystem(tombstoneSourceSystem, timestamp);
       try {
-        rabbitMqPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneSourceSystem),
-            mapper.valueToTree(sourceSystem), agent);
+        rabbitMqPublisherService.publishTombstoneEvent(tombstoneSourceSystem, sourceSystem, agent);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
         throw new ProcessingFailedException(

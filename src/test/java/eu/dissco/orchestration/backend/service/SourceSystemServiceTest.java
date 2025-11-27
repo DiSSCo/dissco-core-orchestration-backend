@@ -315,7 +315,7 @@ class SourceSystemServiceTest {
     assertThat(result).isEqualTo(expected);
     then(repository).should().createSourceSystem(givenSourceSystem());
     then(rabbitMqPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem()), givenAgent());
+        .publishCreateEvent(givenSourceSystem(), givenAgent());
   }
 
   @Test
@@ -413,7 +413,7 @@ class SourceSystemServiceTest {
     given(
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem()), givenAgent());
+        .publishCreateEvent(givenSourceSystem(), givenAgent());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -448,8 +448,7 @@ class SourceSystemServiceTest {
     given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
         Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenSourceSystem(OdsTranslatorType.DWCA)),
-            givenAgent());
+        .publishCreateEvent(givenSourceSystem(OdsTranslatorType.DWCA), givenAgent());
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
@@ -553,8 +552,7 @@ class SourceSystemServiceTest {
       then(batchV1Api).should().createNamespacedJob(eq(NAMESPACE), any(V1Job.class));
     }
     then(rabbitMqPublisherService).should()
-        .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
-            MAPPER.valueToTree(prevSourceSystem.get()), givenAgent());
+        .publishUpdateEvent(givenSourceSystem(2), prevSourceSystem.get(), givenAgent());
   }
 
   @ParameterizedTest
@@ -615,8 +613,7 @@ class SourceSystemServiceTest {
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
     given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishUpdateEvent(MAPPER.valueToTree(givenSourceSystem(2)),
-            MAPPER.valueToTree(prevSourceSystem.get()), givenAgent());
+        .publishUpdateEvent(givenSourceSystem(2), prevSourceSystem.get(), givenAgent());
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(updateCron);
