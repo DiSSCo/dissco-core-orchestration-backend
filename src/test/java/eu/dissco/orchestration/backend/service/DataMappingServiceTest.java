@@ -6,7 +6,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.DATA_MAPPING_T
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_ORCID;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenDataMapping;
@@ -222,7 +222,7 @@ class DataMappingServiceTest {
     // Then
     assertThrows(NotFoundException.class,
         () -> service.updateDataMapping(BARE_HANDLE, givenDataMappingRequest(), givenAgent(),
-            OBJECT_CREATOR));
+            BARE_ORCID));
   }
 
 

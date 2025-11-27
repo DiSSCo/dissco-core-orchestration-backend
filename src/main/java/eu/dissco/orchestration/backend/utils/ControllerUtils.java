@@ -6,6 +6,7 @@ import eu.dissco.orchestration.backend.domain.AgentRoleType;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.Agent.Type;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -40,11 +41,20 @@ public class ControllerUtils {
         fullName.append(claims.get("family_name"));
       }
       var nameString = fullName.isEmpty() ? null : fullName.toString();
-      return createAgent(nameString, (String) claims.get(ORCID), roleType, ORCID,
+      return createAgent(nameString, retrieveOrcid(claims), roleType, ORCID,
           Type.SCHEMA_PERSON);
     } else {
       log.error("Missing ORCID in token");
       throw new ForbiddenException("No ORCID provided");
+    }
+  }
+
+  private static String retrieveOrcid(Map<String, Object> claims) {
+    var orcid = (String) claims.get(ORCID);
+    if (!orcid.startsWith("https://orcid.org/")) {
+      return "https://orcid.org/" + orcid;
+    } else {
+      return orcid;
     }
   }
 

@@ -1,7 +1,8 @@
 package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_ORCID;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.ORCID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -35,22 +36,22 @@ class ControllerUtilsTest {
     return Stream.of(
         Arguments.of(
             new HashMap<String, Object>(Map.of(
-                "orcid", OBJECT_CREATOR,
+                "orcid", BARE_ORCID,
                 "family_name", "Attenborough",
                 "given_name", "David")),
-            AgentUtils.createAgent("David Attenborough", OBJECT_CREATOR, CREATOR, "orcid",
+            AgentUtils.createAgent("David Attenborough", ORCID, CREATOR, "orcid",
                 Type.SCHEMA_PERSON)
         ),
         Arguments.of(new HashMap<String, Object>(Map.of(
-                "orcid", OBJECT_CREATOR,
+                "orcid", ORCID,
                 "given_name", "David")),
-            AgentUtils.createAgent("David", OBJECT_CREATOR, CREATOR, "orcid",
+            AgentUtils.createAgent("David", ORCID, CREATOR, "orcid",
                 Type.SCHEMA_PERSON)
         ),
         Arguments.of(new HashMap<String, Object>(Map.of(
-                "orcid", OBJECT_CREATOR,
+                "orcid", BARE_ORCID,
                 "family_name", "Attenborough")),
-            AgentUtils.createAgent("Attenborough", OBJECT_CREATOR, CREATOR, "orcid",
+            AgentUtils.createAgent("Attenborough", ORCID, CREATOR, "orcid",
                 Type.SCHEMA_PERSON)
         ));
   }
