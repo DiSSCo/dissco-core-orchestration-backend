@@ -3,12 +3,13 @@ package eu.dissco.orchestration.backend.service;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneMas;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.schema.CreateUpdateTombstoneEvent;
-import eu.dissco.orchestration.backend.testutils.TestUtils;
+import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
 import java.io.IOException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,8 +42,8 @@ class RabbitMqPublisherServiceTest {
     container.start();
 
     // Declare create update tombstone exchange, queue and binding
-    declareRabbitResources("create-update-tombstone-exchange", "create-update-tombstone-queue",
-        "create-update-tombstone");
+    declareRabbitResources("provenance-exchange", "provenance-queue",
+        "provenance.#");
 
     CachingConnectionFactory factory = new CachingConnectionFactory(container.getHost());
     factory.setPort(container.getAmqpPort());
@@ -57,7 +58,7 @@ class RabbitMqPublisherServiceTest {
       String routingKey)
       throws IOException, InterruptedException {
     container.execInContainer("rabbitmqadmin", "declare", "exchange", "name=" + exchangeName,
-        "type=direct", "durable=true");
+        "type=topic", "durable=true");
     container.execInContainer("rabbitmqadmin", "declare", "queue", "name=" + queueName,
         "queue_type=quorum", "durable=true");
     container.execInContainer("rabbitmqadmin", "declare", "binding", "source=" + exchangeName,
@@ -74,38 +75,39 @@ class RabbitMqPublisherServiceTest {
     rabbitMqPublisherService = new RabbitMqPublisherService(rabbitTemplate, MAPPER,
         provenanceService);
     ReflectionTestUtils.setField(rabbitMqPublisherService, "exchange",
-        "create-update-tombstone-exchange");
-    ReflectionTestUtils.setField(rabbitMqPublisherService, "routingKey", "create-update-tombstone");
+        "provenance-exchange");
+    ReflectionTestUtils.setField(rabbitMqPublisherService, "routingKey", "provenance");
   }
 
   @Test
-  void testPublishCreateEvent() throws JsonProcessingException {
+  void testPublishCreateEvent() throws Exception {
     // Given
     given(provenanceService.generateCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent()))
         .willReturn(new CreateUpdateTombstoneEvent().withId(ID));
 
     // When
-    rabbitMqPublisherService.publishCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent());
+    rabbitMqPublisherService.publishCreateEvent(givenMas(), givenAgent());
 
     // Then
-    var result = rabbitTemplate.receive("create-update-tombstone-queue");
+    var result = rabbitTemplate.receive("provenance-queue");
     assertThat(MAPPER.readValue(new String(result.getBody()),
         CreateUpdateTombstoneEvent.class).getId()).isEqualTo(ID);
   }
 
   @Test
-  void testPublishUpdateEvent() throws JsonProcessingException {
+  void testPublishUpdateEvent() throws Exception {
     // Given
-    var annotation = MAPPER.valueToTree(givenMas());
-    var unequalAnnotation = MAPPER.createObjectNode();
-    given(provenanceService.generateUpdateEvent(annotation, unequalAnnotation, givenAgent()))
+    var unequalSourceSystem = givenSourceSystem().withOdsTranslatorType(OdsTranslatorType.BIOCASE);
+    given(provenanceService.generateUpdateEvent(MAPPER.valueToTree(givenSourceSystem()),
+        MAPPER.valueToTree(unequalSourceSystem), givenAgent()))
         .willReturn(new CreateUpdateTombstoneEvent().withId(ID));
 
     // When
-    rabbitMqPublisherService.publishUpdateEvent(annotation, unequalAnnotation, givenAgent());
+    rabbitMqPublisherService.publishUpdateEvent(givenSourceSystem(), unequalSourceSystem,
+        givenAgent());
 
     // Then
-    var result = rabbitTemplate.receive("create-update-tombstone-queue");
+    var result = rabbitTemplate.receive("provenance-queue");
     assertThat(MAPPER.readValue(new String(result.getBody()),
         CreateUpdateTombstoneEvent.class).getId()).isEqualTo(ID);
   }
@@ -113,16 +115,15 @@ class RabbitMqPublisherServiceTest {
   @Test
   void testPublishTombstoneEvent() throws Exception {
     // Given
-    var tombstoneMas = MAPPER.valueToTree(TestUtils.givenTombstoneMas());
-    var mas = MAPPER.valueToTree(givenMas());
-    given(provenanceService.generateTombstoneEvent(tombstoneMas, mas, givenAgent())).willReturn(new
+    given(provenanceService.generateTombstoneEvent(MAPPER.valueToTree(givenTombstoneMas()),
+        MAPPER.valueToTree(givenMas()), givenAgent())).willReturn(new
         CreateUpdateTombstoneEvent().withId(ID));
 
     // When
-    rabbitMqPublisherService.publishTombstoneEvent(tombstoneMas, mas, givenAgent());
+    rabbitMqPublisherService.publishTombstoneEvent(givenTombstoneMas(), givenMas(), givenAgent());
 
     // Then
-    var result = rabbitTemplate.receive("create-update-tombstone-queue");
+    var result = rabbitTemplate.receive("provenance-queue");
     assertThat(MAPPER.readValue(new String(result.getBody()),
         CreateUpdateTombstoneEvent.class).getId()).isEqualTo(ID);
   }

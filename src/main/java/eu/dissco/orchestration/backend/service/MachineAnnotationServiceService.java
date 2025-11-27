@@ -667,7 +667,7 @@ public class MachineAnnotationServiceService {
   private void publishCreateEvent(MachineAnnotationService mas, Agent agent)
       throws ProcessingFailedException {
     try {
-      rabbitMqPublisherService.publishCreateEvent(mapper.valueToTree(mas), agent);
+      rabbitMqPublisherService.publishCreateEvent(mas, agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackMasCreation(mas, true, true, true, true);
@@ -834,8 +834,7 @@ public class MachineAnnotationServiceService {
       MachineAnnotationService currentMas, Agent agent)
       throws ProcessingFailedException {
     try {
-      rabbitMqPublisherService.publishUpdateEvent(mapper.valueToTree(mas),
-          mapper.valueToTree(currentMas), agent);
+      rabbitMqPublisherService.publishUpdateEvent(mas, currentMas, agent);
     } catch (JsonProcessingException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentMas, true, true);
@@ -880,8 +879,7 @@ public class MachineAnnotationServiceService {
       var tombstoneMas = buildTombstoneMachineAnnotationService(mas, agent, timestamp);
       repository.tombstoneMachineAnnotationService(tombstoneMas, timestamp);
       try {
-        rabbitMqPublisherService.publishTombstoneEvent(mapper.valueToTree(tombstoneMas),
-            mapper.valueToTree(mas), agent);
+        rabbitMqPublisherService.publishTombstoneEvent(tombstoneMas, mas, agent);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
         throw new ProcessingFailedException(
