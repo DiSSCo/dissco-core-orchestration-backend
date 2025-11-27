@@ -6,7 +6,7 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.APP_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.APP_NAME;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.ORCID;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.TTL;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
@@ -46,7 +46,7 @@ class ProvenanceServiceTest {
 
   private static List<Agent> givenExpectedAgents() {
     return List.of(
-        AgentUtils.createAgent(null, OBJECT_CREATOR, CREATOR,
+        AgentUtils.createAgent(null, ORCID, CREATOR,
             "orcid", Type.PROV_PERSON),
         AgentUtils.createAgent(APP_NAME, APP_HANDLE, PROCESSING_SERVICE,
             DctermsType.DOI.value(), Type.PROV_SOFTWARE_AGENT)

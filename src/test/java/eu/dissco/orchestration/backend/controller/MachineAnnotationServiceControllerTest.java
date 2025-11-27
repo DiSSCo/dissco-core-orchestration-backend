@@ -3,7 +3,7 @@ package eu.dissco.orchestration.backend.controller;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_URI;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.OBJECT_CREATOR;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_ORCID;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
@@ -88,7 +88,7 @@ class MachineAnnotationServiceControllerTest {
     var principal = mock(Jwt.class);
     given(authentication.getPrincipal()).willReturn(principal);
     given(principal.getClaims()).willReturn(Map.of(
-        "orcid", OBJECT_CREATOR,
+        "orcid", BARE_ORCID,
         "given_name", "Carl"
     ));
     var expectedAgent = givenAgent()

@@ -51,7 +51,8 @@ public class TestUtils {
   public static final String APP_HANDLE = "https://hdl.handle.net/TEST/123-123-123";
   public static final String OBJECT_NAME = "Naturalis Tunicate DWCA endpoint";
   public static final String MAS_NAME = "A Machine Annotation Service";
-  public static final String OBJECT_CREATOR = "e2befba6-9324-4bb4-9f41-d7dfae4a44b0";
+  public static final String ORCID = "https://orcid.org/0000-0002-5669-2769";
+  public static final String BARE_ORCID = "0000-0002-5669-2769";
   public static final String PREFIX = "20.5000.1025";
   public static final String SUFFIX = "GW0-POP-XSL";
   public static final String HANDLE_PROXY = "https://hdl.handle.net/";
@@ -447,14 +448,14 @@ public class TestUtils {
   }
 
   public static Agent givenAgent() {
-    return AgentUtils.createAgent(null, OBJECT_CREATOR, AgentRoleType.CREATOR,
+    return AgentUtils.createAgent(null, ORCID, AgentRoleType.CREATOR,
         "orcid", Type.SCHEMA_PERSON);
   }
 
   // Token
   public static Map<String, Object> givenClaims() {
     return Map.of(
-        "orcid", OBJECT_CREATOR
+        "orcid", BARE_ORCID
     );
   }
 
