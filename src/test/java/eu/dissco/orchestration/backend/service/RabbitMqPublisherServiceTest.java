@@ -2,25 +2,31 @@ package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenDataMapping;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMas;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneMas;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
+import eu.dissco.orchestration.backend.properties.RabbitMqProperties;
 import eu.dissco.orchestration.backend.schema.CreateUpdateTombstoneEvent;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
 import java.io.IOException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -73,25 +79,34 @@ class RabbitMqPublisherServiceTest {
   @BeforeEach
   void setup() {
     rabbitMqPublisherService = new RabbitMqPublisherService(rabbitTemplate, MAPPER,
-        provenanceService);
-    ReflectionTestUtils.setField(rabbitMqPublisherService, "exchange",
-        "provenance-exchange");
-    ReflectionTestUtils.setField(rabbitMqPublisherService, "routingKey", "provenance");
+        provenanceService, new RabbitMqProperties());
   }
 
-  @Test
-  void testPublishCreateEvent() throws Exception {
+  @ParameterizedTest
+  @MethodSource("createEventProvider")
+  void testPublishCreateEvent(Object createObject) throws Exception {
     // Given
-    given(provenanceService.generateCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent()))
+    given(provenanceService.generateCreateEvent(MAPPER.valueToTree(createObject), givenAgent()))
         .willReturn(new CreateUpdateTombstoneEvent().withId(ID));
 
     // When
-    rabbitMqPublisherService.publishCreateEvent(givenMas(), givenAgent());
+    rabbitMqPublisherService.publishCreateEvent(createObject, givenAgent());
 
     // Then
     var result = rabbitTemplate.receive("provenance-queue");
     assertThat(MAPPER.readValue(new String(result.getBody()),
         CreateUpdateTombstoneEvent.class).getId()).isEqualTo(ID);
+  }
+
+  @Test
+  void testPublishCreateEventInvalidType() {
+    // Given
+    given(provenanceService.generateCreateEvent(MAPPER.createObjectNode(), givenAgent()))
+        .willReturn(new CreateUpdateTombstoneEvent().withId(ID));
+
+    // When / Then
+    assertThrows(ProcessingFailedException.class,
+        () -> rabbitMqPublisherService.publishCreateEvent(MAPPER.createObjectNode(), givenAgent()));
   }
 
   @Test
@@ -126,5 +141,13 @@ class RabbitMqPublisherServiceTest {
     var result = rabbitTemplate.receive("provenance-queue");
     assertThat(MAPPER.readValue(new String(result.getBody()),
         CreateUpdateTombstoneEvent.class).getId()).isEqualTo(ID);
+  }
+
+  private static Stream<Object> createEventProvider() {
+    return Stream.of(
+        givenDataMapping(),
+        givenSourceSystem(),
+        givenMas()
+    );
   }
 }
