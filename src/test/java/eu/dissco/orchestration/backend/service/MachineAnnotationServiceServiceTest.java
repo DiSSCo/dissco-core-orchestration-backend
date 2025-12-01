@@ -281,7 +281,7 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
             any(Object.class));
     then(rabbitMqPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(expectedMas), givenAgent());
+        .publishCreateEvent(expectedMas, givenAgent());
   }
 
   @ParameterizedTest
@@ -326,7 +326,7 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
             any(Object.class));
     then(rabbitMqPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(mas), givenAgent());
+        .publishCreateEvent(mas, givenAgent());
   }
 
   @Test
@@ -497,7 +497,7 @@ class MachineAnnotationServiceServiceTest {
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent());
+        .publishCreateEvent(givenMas(), givenAgent());
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq(NAMESPACE), any(V1Deployment.class)))
         .willReturn(createDeploy);
@@ -555,7 +555,7 @@ class MachineAnnotationServiceServiceTest {
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenMas()), givenAgent());
+        .publishCreateEvent(givenMas(), givenAgent());
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq(NAMESPACE), any(V1Deployment.class)))
@@ -641,8 +641,7 @@ class MachineAnnotationServiceServiceTest {
         .createNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
             any(Object.class));
     then(rabbitMqPublisherService).should()
-        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()),
-            givenAgent());
+        .publishUpdateEvent(givenMas(2), prevMas.get(), givenAgent());
   }
 
   @Test
@@ -716,8 +715,7 @@ class MachineAnnotationServiceServiceTest {
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishUpdateEvent(MAPPER.valueToTree(givenMas(2)), MAPPER.valueToTree(prevMas.get()),
-            givenAgent());
+        .publishUpdateEvent(givenMas(2), prevMas.get(), givenAgent());
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
         eq(NAMESPACE), any(V1Deployment.class))).willReturn(replaceDeploy);

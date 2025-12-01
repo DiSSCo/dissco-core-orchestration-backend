@@ -101,7 +101,7 @@ class DataMappingServiceTest {
     then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
     then(repository).should().createDataMapping(givenDataMapping(HANDLE, 1));
     then(rabbitMqPublisherService).should()
-        .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)), givenAgent());
+        .publishCreateEvent(givenDataMapping(HANDLE, 1), givenAgent());
   }
 
   @Test
@@ -111,7 +111,7 @@ class DataMappingServiceTest {
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)), givenAgent());
+        .publishCreateEvent(givenDataMapping(HANDLE, 1), givenAgent());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
@@ -143,7 +143,7 @@ class DataMappingServiceTest {
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 1)), givenAgent());
+        .publishCreateEvent(givenDataMapping(HANDLE, 1), givenAgent());
     willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
 
     // When
@@ -175,8 +175,7 @@ class DataMappingServiceTest {
     assertThat(result).isEqualTo(expected);
     then(repository).should().updateDataMapping(givenDataMapping(HANDLE, 2));
     then(rabbitMqPublisherService).should()
-        .publishUpdateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 2)),
-            MAPPER.valueToTree(prevDataMapping), givenAgent());
+        .publishUpdateEvent(givenDataMapping(HANDLE, 2), prevDataMapping, givenAgent());
   }
 
   @Test
@@ -187,8 +186,7 @@ class DataMappingServiceTest {
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(Optional.of(prevDataMapping));
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishUpdateEvent(MAPPER.valueToTree(givenDataMapping(HANDLE, 2)),
-            MAPPER.valueToTree(prevDataMapping), givenAgent());
+        .publishUpdateEvent(givenDataMapping(HANDLE, 2), prevDataMapping, givenAgent());
 
     // When
     assertThrowsExactly(ProcessingFailedException.class,
