@@ -364,7 +364,7 @@ public class SourceSystemService {
     var request = fdoRecordService.buildCreateRequest(sourceSystemRequest, ObjectType.SOURCE_SYSTEM
     );
     try {
-      return handleComponent.postHandle(request);
+      return handleComponent.postHandle2(request);
     } catch (PidException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.client.HandleClient;
 import eu.dissco.orchestration.backend.exception.PidException;
-import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -33,11 +32,15 @@ public class HandleComponent {
   private final ObjectMapper mapper;
 
   public String postHandle2(JsonNode request) throws PidException {
-    var result = handleClient.postHandle(mapper.convertValue(request, Map.class));
-    var resultNode = mapper.valueToTree(result);
-    return parseResponse(resultNode);
+    try {
+      var result = handleClient.postHandle(List.of(mapper.convertValue(request, Map.class)));
+      var resultNode = mapper.valueToTree(result);
+      return parseResponse(resultNode);
+    } catch (RuntimeException e){
+      log.error("An error has occurred while posting the Handle", e);
+      throw new PidException("Unable to create a PID for requested resource");
+    }
   }
-
 
   public String postHandle(JsonNode request)
       throws PidException {
@@ -56,11 +59,29 @@ public class HandleComponent {
     validateResponse(response);
   }
 
+  public void tombstoneHandle2(JsonNode request, String id) throws  PidException {
+    try {
+      handleClient.tombstoneHandle(id, mapper.convertValue(request, Map.class));
+    } catch (RuntimeException e){
+      log.error("An error has occurred while tombstoning handle {} ", id, e);
+      throw new PidException("Unable to create a PID for requested resource");
+    }
+  }
+
   public void rollbackHandleCreation(JsonNode request)
       throws PidException {
     var requestBody = BodyInserters.fromValue(request);
     var response = sendRequest(HttpMethod.DELETE, requestBody, "rollback/create");
     validateResponse(response);
+  }
+
+  public void rollbackHandleCreation2(JsonNode request) throws PidException {
+    try {
+      handleClient.rollbackHandle(mapper.convertValue(request, Map.class));
+    } catch (RuntimeException e) {
+      log.error("An error has occurred while rolling back PID. Manually remove pid {}", request.get("data").get("id").asText());
+      throw new PidException("Unable to rollback PID");
+    }
   }
 
   private <T> Mono<JsonNode> sendRequest(HttpMethod httpMethod,

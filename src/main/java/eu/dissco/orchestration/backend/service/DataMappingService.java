@@ -114,7 +114,7 @@ public class DataMappingService {
     var requestBody = fdoRecordService.buildCreateRequest(mappingRequest, ObjectType.DATA_MAPPING);
     String handle = null;
     try {
-      handle = handleComponent.postHandle(requestBody);
+      handle = handleComponent.postHandle2(requestBody);
     } catch (PidException e) {
       throw new ProcessingFailedException(e.getMessage(), e);
     }
@@ -227,7 +227,8 @@ public class DataMappingService {
   private void tombstoneHandle(String handle) throws ProcessingFailedException {
     var request = fdoRecordService.buildTombstoneRequest(ObjectType.DATA_MAPPING, handle);
     try {
-      handleComponent.tombstoneHandle(request, handle);
+      var tmp = fdoRecordService.buildRollbackCreateRequest(handle);
+      handleComponent.rollbackHandleCreation2(tmp);
     } catch (PidException e) {
       log.error("Unable to tombstone handle {}", handle, e);
       throw new ProcessingFailedException("Unable to tombstone handle", e);

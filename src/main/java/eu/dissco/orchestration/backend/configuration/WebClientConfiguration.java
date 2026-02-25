@@ -3,22 +3,17 @@ package eu.dissco.orchestration.backend.configuration;
 import eu.dissco.orchestration.backend.client.HandleClient;
 import eu.dissco.orchestration.backend.properties.WebConnectionProperties;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServletOAuth2AuthorizedClientExchangeFilterFunction;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.support.WebClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -44,30 +39,6 @@ public class WebClientConfiguration {
     );
     authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
     return authorizedClientManager;
-  }
-
-  @Bean
-  OAuth2AuthorizedClientService authorizedClientService(
-      ClientRegistrationRepository repository) {
-
-    return new InMemoryOAuth2AuthorizedClientService(repository);
-  }
-
-  @Bean
-  ClientRegistrationRepository getClientRegistrationRepository(
-      @Value("${keycloak.client-id}") String clientId,
-      @Value("${keycloak.client-secret}") String clientSecret,
-      @Value("${keycloak.token-uri}") String tokenUri
-  ) {
-    ClientRegistration registration =
-        ClientRegistration.withRegistrationId("dissco")
-            .clientId(clientId)
-            .clientSecret(clientSecret)
-            .tokenUri(tokenUri)
-            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-            .build();
-
-    return new InMemoryClientRegistrationRepository(registration);
   }
 
   @Bean

@@ -10,12 +10,12 @@ import org.springframework.web.service.annotation.PutExchange;
 
 public interface HandleClient {
 
-  @PostExchange("/batch")
-  List<Map<String, Map<String, ?>>> postHandle(@RequestBody Map<String, ?> handleRequest);
+  @PostExchange("batch")
+  Map<String, Object> postHandle(@RequestBody List<Map<String, Object>> handleRequest);
 
-  @PutExchange("/{pid}")
-  Map<String, ?> tombstoneHandle(@PathVariable String pid, @RequestBody Map<String, ?> handleRequest);
+  @PutExchange("{pid}")
+  void tombstoneHandle(@PathVariable String pid, @RequestBody Map<String, Object> handleRequest);
 
-  @DeleteExchange("/{pid}")
-  void rollbackHandle(@RequestBody Map<String, ?> handleRequest);
+  @DeleteExchange("rollback/create")
+  void rollbackHandle(@RequestBody Map<String, Object> handleRequest);
 }
