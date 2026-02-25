@@ -1,14 +1,17 @@
 package eu.dissco.orchestration.backend.web;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.orchestration.backend.client.HandleClient;
 import eu.dissco.orchestration.backend.exception.PidException;
+import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -25,7 +28,16 @@ import reactor.util.retry.Retry;
 @Slf4j
 public class HandleComponent {
 
-  private final WebClient handleClient;
+  private final WebClient webClient;
+  private final HandleClient handleClient;
+  private final ObjectMapper mapper;
+
+  public String postHandle2(JsonNode request) throws PidException {
+    var result = handleClient.postHandle(mapper.convertValue(request, Map.class));
+    var resultNode = mapper.valueToTree(result);
+    return parseResponse(resultNode);
+  }
+
 
   public String postHandle(JsonNode request)
       throws PidException {
@@ -53,7 +65,7 @@ public class HandleComponent {
 
   private <T> Mono<JsonNode> sendRequest(HttpMethod httpMethod,
       BodyInserter<T, ReactiveHttpOutputMessage> requestBody, String endpoint) {
-    return handleClient
+    return webClient
         .method(httpMethod)
         .uri(uriBuilder -> uriBuilder.path(endpoint).build())
         .body(requestBody)

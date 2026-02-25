@@ -2,6 +2,7 @@ package eu.dissco.orchestration.backend.properties;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -27,6 +28,9 @@ public class TranslatorJobProperties {
   @Valid
   private Export export = new Export();
 
+  @Valid
+  private RabbitMq rabbitMq = new RabbitMq();
+
   @Data
   @Validated
   public static class Export {
@@ -39,5 +43,14 @@ public class TranslatorJobProperties {
     private String disscoDomain;
     @NotBlank
     private String namespace = "data-export-job";
+  }
+
+  @Data
+  @Validated
+  public static class RabbitMq {
+
+    private String exchangeName;
+
+    private String routingKeyName;
   }
 }

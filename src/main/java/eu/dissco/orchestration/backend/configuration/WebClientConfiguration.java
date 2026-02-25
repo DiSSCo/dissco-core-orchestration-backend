@@ -1,19 +1,27 @@
 package eu.dissco.orchestration.backend.configuration;
 
+import eu.dissco.orchestration.backend.client.HandleClient;
 import eu.dissco.orchestration.backend.properties.WebConnectionProperties;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServletOAuth2AuthorizedClientExchangeFilterFunction;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.support.WebClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import reactor.netty.http.client.HttpClient;
 
 @Configuration
@@ -39,7 +47,31 @@ public class WebClientConfiguration {
   }
 
   @Bean
-  public WebClient handleClient(OAuth2AuthorizedClientManager authorizedClientManager) {
+  OAuth2AuthorizedClientService authorizedClientService(
+      ClientRegistrationRepository repository) {
+
+    return new InMemoryOAuth2AuthorizedClientService(repository);
+  }
+
+  @Bean
+  ClientRegistrationRepository getClientRegistrationRepository(
+      @Value("${keycloak.client-id}") String clientId,
+      @Value("${keycloak.client-secret}") String clientSecret,
+      @Value("${keycloak.token-uri}") String tokenUri
+  ) {
+    ClientRegistration registration =
+        ClientRegistration.withRegistrationId("dissco")
+            .clientId(clientId)
+            .clientSecret(clientSecret)
+            .tokenUri(tokenUri)
+            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+            .build();
+
+    return new InMemoryClientRegistrationRepository(registration);
+  }
+
+  @Bean
+  public WebClient webClient(OAuth2AuthorizedClientManager authorizedClientManager) {
     var oauth2Client = new ServletOAuth2AuthorizedClientExchangeFilterFunction(
         authorizedClientManager);
     oauth2Client.setDefaultClientRegistrationId("dissco");
@@ -49,6 +81,27 @@ public class WebClientConfiguration {
         .baseUrl(properties.getHandleEndpoint())
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build();
+  }
+
+  @Bean
+  public HandleClient handleClient(OAuth2AuthorizedClientManager authorizedClientManager) {
+    // Set up Oauth2
+    var oauth2Client = new ServletOAuth2AuthorizedClientExchangeFilterFunction(
+        authorizedClientManager);
+    oauth2Client.setDefaultClientRegistrationId("dissco");
+    // Build web client
+    var webClient = WebClient.builder()
+        .apply(oauth2Client.oauth2Configuration())
+        .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
+        .baseUrl(properties.getHandleEndpoint())
+        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        .build();
+    // Create factory for client proxies
+    var proxyFactory = HttpServiceProxyFactory.builder()
+        .exchangeAdapter(WebClientAdapter.create(webClient))
+        .build();
+    // Create client proxy
+    return proxyFactory.createClient(HandleClient.class);
   }
 
 }
