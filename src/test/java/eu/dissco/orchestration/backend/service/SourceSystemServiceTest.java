@@ -88,7 +88,6 @@ import java.net.URISyntaxException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -146,42 +145,33 @@ class SourceSystemServiceTest {
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
 
-  private static V1CronJob getV1CronJob(String image, String name, boolean addRabbitMq) {
+  private static V1CronJob getV1CronJob(String image, String name) {
     var container = new V1Container();
     container.setImage(image);
     container.setName(name);
-    var envArray = new ArrayList<>(List.of(
-            new V1EnvVar().name("spring.profiles.active").value("biocase"),
-            new V1EnvVar().name("spring.rabbitmq.host")
-                .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
-            new V1EnvVar().name("spring.rabbitmq.username").valueFrom(new V1EnvVarSource().secretKeyRef(
-                new V1SecretKeySelector().key("rabbitmq-username").name("aws-secrets"))),
-            new V1EnvVar().name("spring.rabbitmq.password").valueFrom(new V1EnvVarSource().secretKeyRef(
-                new V1SecretKeySelector().key("rabbitmq-password").name("aws-secrets"))),
-            new V1EnvVar().name("application.sourceSystemId").value("20.5000.1025/GW0-POP-XSL"),
-            new V1EnvVar().name("spring.datasource.url")
-                .value("jdbc:postgresql://localhost:5432/translator"),
-            new V1EnvVar().name("spring.datasource.username")
-                .valueFrom(new V1EnvVarSource().secretKeyRef(
-                    new V1SecretKeySelector().key("db-username").name("db-secrets"))),
-            new V1EnvVar().name("spring.datasource.password")
-                .valueFrom(new V1EnvVarSource().secretKeyRef(
-                    new V1SecretKeySelector().key("db-password").name("db-secrets"))),
-            new V1EnvVar().name("fdo.digital-media-type")
-                .value("https://doi.org/21.T11148/bbad8c4e101e8af01115"),
-            new V1EnvVar().name("fdo.digital-specimen-type")
-                .value("https://doi.org/21.T11148/894b1e6cad57e921764e"),
-            new V1EnvVar().name("JAVA_TOOL_OPTIONS").value("-XX:MaxRAMPercentage=85")
-        ));
-    if (addRabbitMq){
-      envArray.add(
-          new V1EnvVar().name("rabbitmq.exchangeName").value("source-system-data-checker-exchange")
-      );
-      envArray.add(
-          new V1EnvVar().name("rabbitmq.routingKeyName").value("source-system-data-checker")
-      );
-    }
-    container.setEnv(envArray);
+    container.setEnv(List.of(
+        new V1EnvVar().name("spring.profiles.active").value("biocase"),
+        new V1EnvVar().name("spring.rabbitmq.host")
+            .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
+        new V1EnvVar().name("spring.rabbitmq.username").valueFrom(new V1EnvVarSource().secretKeyRef(
+            new V1SecretKeySelector().key("rabbitmq-username").name("aws-secrets"))),
+        new V1EnvVar().name("spring.rabbitmq.password").valueFrom(new V1EnvVarSource().secretKeyRef(
+            new V1SecretKeySelector().key("rabbitmq-password").name("aws-secrets"))),
+        new V1EnvVar().name("application.sourceSystemId").value("20.5000.1025/GW0-POP-XSL"),
+        new V1EnvVar().name("spring.datasource.url")
+            .value("jdbc:postgresql://localhost:5432/translator"),
+        new V1EnvVar().name("spring.datasource.username")
+            .valueFrom(new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("db-username").name("db-secrets"))),
+        new V1EnvVar().name("spring.datasource.password")
+            .valueFrom(new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("db-password").name("db-secrets"))),
+        new V1EnvVar().name("fdo.digital-media-type")
+            .value("https://doi.org/21.T11148/bbad8c4e101e8af01115"),
+        new V1EnvVar().name("fdo.digital-specimen-type")
+            .value("https://doi.org/21.T11148/894b1e6cad57e921764e"),
+        new V1EnvVar().name("JAVA_TOOL_OPTIONS").value("-XX:MaxRAMPercentage=85")
+    ));
     container.setVolumeMounts(List.of(
         new V1VolumeMount().name("db-secrets").mountPath("/mnt/secrets-store/db-secrets")
             .readOnly(true),
@@ -611,7 +601,7 @@ class SourceSystemServiceTest {
         .willReturn(updateCron);
     given(dataMappingService.getActiveDataMapping(any())).willReturn(
         Optional.of(givenDataMapping()));
-    if (checkDb){
+    if (checkDb) {
       given(machineAnnotationService.getMachineAnnotationServices(Set.of(APP_HANDLE))).willReturn(
           List.of(givenMas()));
     }
@@ -914,7 +904,7 @@ class SourceSystemServiceTest {
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var dwcaCronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
-    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName, false);
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
     var dwcaCronName = "dwca-gw0-pop-xsl";
     var expectedDwcaCron = getV1DwcaCronJob(dwcaCronName);
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
@@ -940,7 +930,7 @@ class SourceSystemServiceTest {
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var dwcaCronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
-    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName, false);
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
     expectedCron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0)
         .setEnv(List.of());
     var dwcaCronName = "dwca-gw0-pop-xsl";
@@ -974,7 +964,7 @@ class SourceSystemServiceTest {
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var dwcaCronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
-    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName, false);
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
     var dwcaCronName = "dwca-gw0-pop-xsl";
     var expectedDwcaCron = getV1DwcaCronJob(dwcaCronName);
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
