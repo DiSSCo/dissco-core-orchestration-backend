@@ -27,6 +27,8 @@ public class TranslatorJobProperties {
   @Valid
   private Export export = new Export();
 
+  private RabbitMq rabbitMq = new RabbitMq();
+
   @Data
   @Validated
   public static class Export {
@@ -39,5 +41,12 @@ public class TranslatorJobProperties {
     private String disscoDomain;
     @NotBlank
     private String namespace = "data-export-job";
+  }
+
+  @Data
+  public static class RabbitMq{
+    private String exchangeName;
+
+    private String routingKeyName;
   }
 }

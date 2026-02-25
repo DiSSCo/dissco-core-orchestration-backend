@@ -52,6 +52,7 @@ import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties.Export;
+import eu.dissco.orchestration.backend.properties.TranslatorJobProperties.RabbitMq;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
@@ -87,6 +88,7 @@ import java.net.URISyntaxException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -144,11 +146,11 @@ class SourceSystemServiceTest {
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
 
-  private static V1CronJob getV1CronJob(String image, String name) {
+  private static V1CronJob getV1CronJob(String image, String name, boolean addRabbitMq) {
     var container = new V1Container();
     container.setImage(image);
     container.setName(name);
-    container.setEnv(List.of(
+    var envArray = new ArrayList<>(List.of(
             new V1EnvVar().name("spring.profiles.active").value("biocase"),
             new V1EnvVar().name("spring.rabbitmq.host")
                 .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
@@ -170,8 +172,16 @@ class SourceSystemServiceTest {
             new V1EnvVar().name("fdo.digital-specimen-type")
                 .value("https://doi.org/21.T11148/894b1e6cad57e921764e"),
             new V1EnvVar().name("JAVA_TOOL_OPTIONS").value("-XX:MaxRAMPercentage=85")
-        )
-    );
+        ));
+    if (addRabbitMq){
+      envArray.add(
+          new V1EnvVar().name("rabbitmq.exchangeName").value("source-system-data-checker-exchange")
+      );
+      envArray.add(
+          new V1EnvVar().name("rabbitmq.routingKeyName").value("source-system-data-checker")
+      );
+    }
+    container.setEnv(envArray);
     container.setVolumeMounts(List.of(
         new V1VolumeMount().name("db-secrets").mountPath("/mnt/secrets-store/db-secrets")
             .readOnly(true),
@@ -316,6 +326,40 @@ class SourceSystemServiceTest {
     then(repository).should().createSourceSystem(givenSourceSystem());
     then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenSourceSystem(), givenAgent());
+  }
+
+  @Test
+  void testCreateSourceSystemRabbitMq() throws Exception {
+    // Given
+    var expected = givenSourceSystemSingleJsonApiWrapper();
+    var sourceSystem = givenSourceSystemRequest();
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
+        Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
+    var createCron = mock(APIcreateNamespacedCronJobRequest.class);
+    given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
+        .willReturn(createCron);
+    given(batchV1Api.createNamespacedCronJob(eq(EXPORT_NAMESPACE), any(V1CronJob.class)))
+        .willReturn(createCron);
+    var rabbitMq = new RabbitMq();
+    rabbitMq.setExchangeName("source-system-data-checker-exchange");
+    rabbitMq.setRoutingKeyName("source-system-data-checker");
+    jobProperties.setRabbitMq(rabbitMq);
+
+    var createJob = mock(APIcreateNamespacedJobRequest.class);
+    given(
+        batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
+
+    // When
+    var result = service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+    then(repository).should().createSourceSystem(givenSourceSystem());
+    then(rabbitMqPublisherService).should()
+        .publishCreateEvent(givenSourceSystem(), givenAgent());
+    jobProperties.setRabbitMq(null);
   }
 
   @Test
@@ -870,7 +914,7 @@ class SourceSystemServiceTest {
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var dwcaCronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
-    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName, false);
     var dwcaCronName = "dwca-gw0-pop-xsl";
     var expectedDwcaCron = getV1DwcaCronJob(dwcaCronName);
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);
@@ -896,7 +940,7 @@ class SourceSystemServiceTest {
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var dwcaCronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
-    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName, false);
     expectedCron.getSpec().getJobTemplate().getSpec().getTemplate().getSpec().getContainers().get(0)
         .setEnv(List.of());
     var dwcaCronName = "dwca-gw0-pop-xsl";
@@ -930,7 +974,7 @@ class SourceSystemServiceTest {
     var cronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var dwcaCronResponse = mock(APIlistNamespacedCronJobRequest.class);
     var cronName = "biocase-gw0-pop-xsl-translator-service";
-    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName);
+    var expectedCron = getV1CronJob(jobProperties.getImage(), cronName, false);
     var dwcaCronName = "dwca-gw0-pop-xsl";
     var expectedDwcaCron = getV1DwcaCronJob(dwcaCronName);
     given(batchV1Api.listNamespacedCronJob(NAMESPACE)).willReturn(cronResponse);

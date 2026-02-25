@@ -697,6 +697,12 @@ public class SourceSystemService {
     if (!masScheduleData.mediaMass().isEmpty()) {
       map.put("mediaMass", String.join(",", masScheduleData.mediaMass()));
     }
+    if (jobProperties.getRabbitMq().getExchangeName() != null){
+      map.put("exchangeName", jobProperties.getRabbitMq().getExchangeName());
+    }
+    if (jobProperties.getRabbitMq().getRoutingKeyName() != null){
+      map.put("routingKeyName", jobProperties.getRabbitMq().getRoutingKeyName());
+    }
     if (isCronJob) {
       map.put("cron", generateCron());
     }
