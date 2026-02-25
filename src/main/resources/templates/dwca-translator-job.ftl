@@ -70,6 +70,14 @@ spec:
             - name: mas.media-mass
               value: ${mediaMass}
           </#if>
+          <#if routingKeyName??>
+            - name: rabbitmq.routingKeyName
+              value: ${routingKeyName}
+          </#if>
+          <#if exchangeName??>
+            - name: rabbitmq.exchangeName
+              value: ${exchangeName}
+          </#if>
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
