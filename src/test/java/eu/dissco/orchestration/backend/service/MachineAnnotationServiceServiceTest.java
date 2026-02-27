@@ -548,65 +548,6 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
-  void testCreateMasEventAndPidFails() throws Exception {
-    // Given
-    var mas = givenMasRequest();
-    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
-    given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
-    willThrow(JacksonException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(givenMas(), givenAgent());
-    willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
-    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
-    given(appsV1Api.createNamespacedDeployment(eq(NAMESPACE), any(V1Deployment.class)))
-        .willReturn(createDeploy);
-    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
-    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(),
-        eq(NAMESPACE), anyString(), any(Object.class))).willReturn(createCustom);
-    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
-    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
-        NAMESPACE)).willReturn(deleteDeploy);
-    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE),
-        anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
-        eq(NAMESPACE),
-        anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-binding"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
-        eq(NAMESPACE),
-        anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-queue"))).willReturn(deleteCustom);
-
-    // When
-    assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createMachineAnnotationService(mas, givenAgent(), MAS_PATH));
-
-    // Then
-    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
-    then(repository).should().createMachineAnnotationService(givenMas());
-    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
-    then(handleComponent).should().rollbackHandleCreation(any());
-
-    then(appsV1Api).should()
-        .createNamespacedDeployment(eq(NAMESPACE), any(V1Deployment.class));
-    then(customObjectsApi).should(times(3))
-        .createNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
-            any(Object.class));
-    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
-    then(handleComponent).should().rollbackHandleCreation(any());
-    then(repository).should().rollbackMasCreation(HANDLE);
-    then(appsV1Api).should()
-        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq(NAMESPACE));
-    then(customObjectsApi).should()
-        .deleteNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
-            eq(SUFFIX.toLowerCase() + "-scaled-object"));
-    then(customObjectsApi).should()
-        .deleteNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
-            eq("mas-" + SUFFIX.toLowerCase() + "-binding"));
-    then(customObjectsApi).should()
-        .deleteNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
-            eq("mas-" + SUFFIX.toLowerCase() + "-queue"));
-  }
-
-  @Test
   void testUpdateMas() throws Exception {
     // Given
     var expected = givenMasSingleJsonApiWrapper(2);

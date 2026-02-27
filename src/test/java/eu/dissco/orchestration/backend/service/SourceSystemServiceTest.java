@@ -451,7 +451,6 @@ class SourceSystemServiceTest {
         Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
     willThrow(JacksonException.class).given(rabbitMqPublisherService)
         .publishCreateEvent(givenSourceSystem(OdsTranslatorType.DWCA), givenAgent());
-    willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);

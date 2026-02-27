@@ -646,12 +646,13 @@ public class MachineAnnotationServiceService {
       });
     }
     if (mas.getOdsHasSecretVariables() != null) {
-      mas.getOdsHasSecretVariables().forEach(secret -> keyNode.add(yamlMapperHelper.createObjectNode()
-          .put(NAME, secret.getSchemaName())
-          .set("valueFrom", yamlMapperHelper.createObjectNode()
-              .set("secretKeyRef", yamlMapperHelper.createObjectNode()
-                  .put(NAME, properties.getMasSecretStore())
-                  .put("key", secret.getOdsSecretKeyRef())))));
+      mas.getOdsHasSecretVariables()
+          .forEach(secret -> keyNode.add(yamlMapperHelper.createObjectNode()
+              .put(NAME, secret.getSchemaName())
+              .set("valueFrom", yamlMapperHelper.createObjectNode()
+                  .set("secretKeyRef", yamlMapperHelper.createObjectNode()
+                      .put(NAME, properties.getMasSecretStore())
+                      .put("key", secret.getOdsSecretKeyRef())))));
     }
     return keyNode;
   }
@@ -683,13 +684,7 @@ public class MachineAnnotationServiceService {
       boolean rollbackDeployment, boolean rollbackKeda, boolean rollbackRabbitBinding,
       boolean rollbackRabbitQueue) {
     var request = fdoRecordService.buildRollbackCreateRequest(mas.getId());
-    try {
-      handleComponent.rollbackHandleCreation(request);
-    } catch (PidException e) {
-      log.error(
-          "Unable to rollback handle creation for MAS. Manually delete the following handle: {}. Cause of error: ",
-          mas.getId(), e);
-    }
+    handleComponent.rollbackHandleCreation(request);
     repository.rollbackMasCreation(mas.getId());
     var name = getName(mas.getId());
     if (rollbackDeployment) {

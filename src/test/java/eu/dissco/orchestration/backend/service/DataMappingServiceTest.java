@@ -136,28 +136,6 @@ class DataMappingServiceTest {
         service.createDataMapping(dataMapping, givenAgent(), MAPPING_PATH));
   }
 
-  @Test
-  void testCreateDataMappingEventAndRollbackFails() throws Exception {
-    // Given
-    var dataMapping = givenDataMappingRequest();
-    given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
-    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
-    willThrow(JacksonException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(givenDataMapping(HANDLE, 1), givenAgent());
-    willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
-
-    // When
-    assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createDataMapping(dataMapping, givenAgent(), MAPPING_PATH));
-
-    // Then
-    then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
-    then(repository).should().createDataMapping(givenDataMapping(HANDLE, 1));
-    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
-    then(handleComponent).should().rollbackHandleCreation(any());
-    then(repository).should().rollbackDataMappingCreation(HANDLE);
-  }
-
 
   @Test
   void testUpdateDataMapping() throws Exception {

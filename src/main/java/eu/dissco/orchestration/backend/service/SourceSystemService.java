@@ -441,13 +441,7 @@ public class SourceSystemService {
   private void rollbackSourceSystemCreation(SourceSystem sourceSystem,
       boolean removeCron) {
     var request = fdoRecordService.buildRollbackCreateRequest(sourceSystem.getId());
-    try {
-      handleComponent.rollbackHandleCreation(request);
-    } catch (PidException e) {
-      log.error(
-          "Unable to rollback handle creation for source system. Manually delete the following handle: {}. Cause of error: ",
-          sourceSystem.getId(), e);
-    }
+    handleComponent.rollbackHandleCreation(request);
     repository.rollbackSourceSystemCreation(sourceSystem.getId());
     if (removeCron) {
       try {

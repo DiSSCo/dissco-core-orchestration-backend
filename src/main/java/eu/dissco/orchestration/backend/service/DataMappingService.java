@@ -159,13 +159,7 @@ public class DataMappingService {
 
   private void rollbackMappingCreation(DataMapping dataMapping) {
     var request = fdoRecordService.buildRollbackCreateRequest(dataMapping.getId());
-    try {
-      handleComponent.rollbackHandleCreation(request);
-    } catch (PidException e) {
-      log.error(
-          "Unable to rollback handle creation for data mapping. Manually delete the following handle: {}. Cause of error: ",
-          dataMapping.getId(), e);
-    }
+    handleComponent.rollbackHandleCreation(request);
     repository.rollbackDataMappingCreation(dataMapping.getId());
   }
 
