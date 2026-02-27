@@ -33,7 +33,7 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testCreateRequestSourceSystem() throws Exception {
+  void testCreateRequestSourceSystem() {
     // When
     var result = builder.buildCreateRequest(givenSourceSystemRequest(), ObjectType.SOURCE_SYSTEM);
 
@@ -42,7 +42,7 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testCreateRequestMapping() throws Exception {
+  void testCreateRequestMapping() {
     // When
     var result = builder.buildCreateRequest(givenDataMappingRequest(), ObjectType.DATA_MAPPING);
 
@@ -51,7 +51,7 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testCreateRequestMas() throws Exception {
+  void testCreateRequestMas() {
     // When
     var result = builder.buildCreateRequest(givenMasRequest(), ObjectType.MAS);
 
@@ -60,7 +60,7 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testRollbackHandleCreation() throws Exception {
+  void testRollbackHandleCreation() {
     // Given
     var expected = givenRollbackCreationRequest();
 
@@ -72,7 +72,7 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testTombstonePid() throws Exception {
+  void testTombstonePid() {
     // given
     var expected = givenTombstoneRequestMas();
 

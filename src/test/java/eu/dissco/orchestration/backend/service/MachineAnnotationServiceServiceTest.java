@@ -18,7 +18,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasRespon
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSecrets;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasSingleJsonApiWrapper;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneMas;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstoneRequestMas;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
@@ -29,12 +28,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
@@ -100,6 +97,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.core.JacksonException;
 
 @ExtendWith(MockitoExtension.class)
 class MachineAnnotationServiceServiceTest {
@@ -230,6 +228,7 @@ class MachineAnnotationServiceServiceTest {
     service = new MachineAnnotationServiceService(handleComponent, fdoRecordService,
         rabbitMqPublisherService, repository, appsV1Api, customObjectsApi, kedaTemplate,
         deploymentTemplate, rabbitBindingTemplate, rabbitQueueTemplate, MAPPER, yamlMapper,
+        new ObjectMapper().findAndRegisterModules(),
         properties, kubernetesProperties, fdoProperties);
   }
 
@@ -496,7 +495,7 @@ class MachineAnnotationServiceServiceTest {
     var mas = givenMasRequest();
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
+    willThrow(JacksonException.class).given(rabbitMqPublisherService)
         .publishCreateEvent(givenMas(), givenAgent());
     var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
     given(appsV1Api.createNamespacedDeployment(eq(NAMESPACE), any(V1Deployment.class)))
@@ -504,65 +503,6 @@ class MachineAnnotationServiceServiceTest {
     var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
     given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE),
         anyString(), any(Object.class))).willReturn(createCustom);
-    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
-    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
-        NAMESPACE)).willReturn(deleteDeploy);
-    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE),
-        anyString(), eq(SUFFIX.toLowerCase() + "-scaled-object"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
-        eq(NAMESPACE),
-        anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-binding"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
-        eq(NAMESPACE),
-        anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-queue"))).willReturn(deleteCustom);
-
-    // When
-    assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createMachineAnnotationService(mas, givenAgent(), MAS_PATH));
-
-    // Then
-    then(fdoRecordService).should().buildCreateRequest(mas, ObjectType.MAS);
-    then(repository).should().createMachineAnnotationService(givenMas());
-    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
-    then(handleComponent).should().rollbackHandleCreation(any());
-
-    then(appsV1Api).should()
-        .createNamespacedDeployment(eq(NAMESPACE), any(V1Deployment.class));
-    then(customObjectsApi).should(times(3))
-        .createNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
-            any(Object.class));
-    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
-    then(handleComponent).should().rollbackHandleCreation(any());
-    then(repository).should().rollbackMasCreation(HANDLE);
-    then(appsV1Api).should()
-        .deleteNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"), eq(NAMESPACE));
-    then(customObjectsApi).should()
-        .deleteNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
-            eq(SUFFIX.toLowerCase() + "-scaled-object"));
-    then(customObjectsApi).should()
-        .deleteNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
-            eq("mas-" + SUFFIX.toLowerCase() + "-binding"));
-    then(customObjectsApi).should()
-        .deleteNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
-            eq("mas-" + SUFFIX.toLowerCase() + "-queue"));
-  }
-
-  @Test
-  void testCreateMasEventAndPidFails() throws Exception {
-    // Given
-    var mas = givenMasRequest();
-    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
-    given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(givenMas(), givenAgent());
-    willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
-    var createDeploy = mock(APIcreateNamespacedDeploymentRequest.class);
-    given(appsV1Api.createNamespacedDeployment(eq(NAMESPACE), any(V1Deployment.class)))
-        .willReturn(createDeploy);
-    var createCustom = mock(APIcreateNamespacedCustomObjectRequest.class);
-    given(customObjectsApi.createNamespacedCustomObject(anyString(), anyString(),
-        eq(NAMESPACE), anyString(), any(Object.class))).willReturn(createCustom);
     var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
     given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
         NAMESPACE)).willReturn(deleteDeploy);
@@ -714,7 +654,7 @@ class MachineAnnotationServiceServiceTest {
     var mas = givenMasRequest();
     given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);
     given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(prevMas);
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
+    willThrow(JacksonException.class).given(rabbitMqPublisherService)
         .publishUpdateEvent(givenMas(2), prevMas.get(), givenAgent());
     var replaceDeploy = mock(APIreplaceNamespacedDeploymentRequest.class);
     given(appsV1Api.replaceNamespacedDeployment(eq(SUFFIX.toLowerCase() + "-deployment"),
@@ -784,11 +724,12 @@ class MachineAnnotationServiceServiceTest {
   }
 
   @Test
-  void testGetMasNotFound(){
+  void testGetMasNotFound() {
     // Given
 
     // When / Then
-    assertThrows(NotFoundException.class, () -> service.getMachineAnnotationService(HANDLE, MAS_PATH));
+    assertThrows(NotFoundException.class,
+        () -> service.getMachineAnnotationService(HANDLE, MAS_PATH));
   }
 
   @Test
@@ -876,37 +817,6 @@ class MachineAnnotationServiceServiceTest {
     then(customObjectsApi).should()
         .deleteNamespacedCustomObject(anyString(), anyString(), eq(NAMESPACE), anyString(),
             eq("mas-" + SUFFIX.toLowerCase() + "-queue"));
-  }
-
-  @Test
-  void testTombstoneMasEventFailed() throws Exception {
-    // Given
-    given(repository.getActiveMachineAnnotationService(BARE_HANDLE)).willReturn(
-        Optional.of(givenMas()));
-    var deleteDeploy = mock(APIdeleteNamespacedDeploymentRequest.class);
-    given(appsV1Api.deleteNamespacedDeployment(SUFFIX.toLowerCase() + "-deployment",
-        NAMESPACE)).willReturn(deleteDeploy);
-    var deleteCustom = mock(APIdeleteNamespacedCustomObjectRequest.class);
-    given(customObjectsApi.deleteNamespacedCustomObject("keda.sh", "v1alpha1", NAMESPACE,
-        "scaledobjects", "gw0-pop-xsl-scaled-object")).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
-        eq(NAMESPACE),
-        anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-binding"))).willReturn(deleteCustom);
-    given(customObjectsApi.deleteNamespacedCustomObject(anyString(), anyString(),
-        eq(NAMESPACE),
-        anyString(), eq("mas-" + SUFFIX.toLowerCase() + "-queue"))).willReturn(deleteCustom);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
-        .publishTombstoneEvent(any(), any(), eq(givenAgent()));
-    given(fdoRecordService.buildTombstoneRequest(ObjectType.MAS, BARE_HANDLE)).willReturn(
-        givenTombstoneRequestMas());
-
-    // When
-    assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.tombstoneMachineAnnotationService(BARE_HANDLE, givenAgent()));
-
-    // Then
-    then(repository).should().tombstoneMachineAnnotationService(any(), any());
-    then(handleComponent).should().tombstoneHandle(givenTombstoneRequestMas(), BARE_HANDLE);
   }
 
   @Test

@@ -1,6 +1,5 @@
 package eu.dissco.orchestration.backend.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import org.springframework.dao.DuplicateKeyException;
@@ -10,6 +9,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import tools.jackson.core.JacksonException;
 
 @ControllerAdvice
 public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
@@ -20,10 +20,10 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
   }
 
-  @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-  @ExceptionHandler(JsonProcessingException.class)
-  public ResponseEntity<String> jsonProcessingException(JsonProcessingException e) {
-    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(e.getMessage());
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+  @ExceptionHandler(JacksonException.class)
+  public ResponseEntity<String> jacksonException(JacksonException e) {
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(e.getMessage());
   }
 
   @ResponseStatus(HttpStatus.CONFLICT)

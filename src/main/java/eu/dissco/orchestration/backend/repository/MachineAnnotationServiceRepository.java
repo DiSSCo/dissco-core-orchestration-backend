@@ -4,9 +4,6 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOT
 import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
 import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.utils.HandleUtils;
@@ -19,13 +16,14 @@ import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
+import tools.jackson.databind.json.JsonMapper;
 
 @Repository
 @RequiredArgsConstructor
 public class MachineAnnotationServiceRepository {
 
   private final DSLContext context;
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
 
   public void createMachineAnnotationService(MachineAnnotationService mas) {
     mas.setOdsTimeToLive(getTTL(mas));
@@ -44,7 +42,8 @@ public class MachineAnnotationServiceRepository {
             mas.getOdsServiceAvailability())
         .set(MACHINE_ANNOTATION_SERVICE.SOURCE_CODE_REPOSITORY,
             mas.getSchemaCodeRepository())
-        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER, getSchemaMaintainerId(mas.getSchemaMaintainer()))
+        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER,
+            getSchemaMaintainerId(mas.getSchemaMaintainer()))
         .set(MACHINE_ANNOTATION_SERVICE.CODE_LICENSE, mas.getSchemaLicense())
         .set(MACHINE_ANNOTATION_SERVICE.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
         .set(MACHINE_ANNOTATION_SERVICE.TIME_TO_LIVE, mas.getOdsTimeToLive())
@@ -53,11 +52,7 @@ public class MachineAnnotationServiceRepository {
   }
 
   private JSONB mapToJSONB(MachineAnnotationService mas) {
-    try {
-      return JSONB.valueOf(mapper.writeValueAsString(mas));
-    } catch (JsonProcessingException e) {
-      throw new DisscoJsonBMappingException("Unable to map data mapping to jsonb", e);
-    }
+    return JSONB.valueOf(mapper.writeValueAsString(mas));
   }
 
   public Optional<MachineAnnotationService> getActiveMachineAnnotationService(String id) {
@@ -71,22 +66,19 @@ public class MachineAnnotationServiceRepository {
   public List<MachineAnnotationService> getActiveMachineAnnotationServices(Set<String> ids) {
     return context.select(MACHINE_ANNOTATION_SERVICE.DATA)
         .from(MACHINE_ANNOTATION_SERVICE)
-        .where(MACHINE_ANNOTATION_SERVICE.ID.in(ids.stream().map(HandleUtils::removeProxy).toList()))
+        .where(
+            MACHINE_ANNOTATION_SERVICE.ID.in(ids.stream().map(HandleUtils::removeProxy).toList()))
         .and(MACHINE_ANNOTATION_SERVICE.TOMBSTONED.isNull())
         .fetch(this::mapToMas);
   }
 
   private MachineAnnotationService mapToMas(Record1<JSONB> record1) {
-    try {
       return mapper.readValue(record1.get(MACHINE_ANNOTATION_SERVICE.DATA).data(),
           MachineAnnotationService.class);
-    } catch (JsonProcessingException e) {
-      throw new DisscoJsonBMappingException("Unable to convert jsonb to machine annotation service",
-          e);
-    }
   }
 
-  public void tombstoneMachineAnnotationService(MachineAnnotationService tombstoneMas, Instant timestamp) {
+  public void tombstoneMachineAnnotationService(MachineAnnotationService tombstoneMas,
+      Instant timestamp) {
     context.update(MACHINE_ANNOTATION_SERVICE)
         .set(MACHINE_ANNOTATION_SERVICE.TOMBSTONED, timestamp)
         .set(MACHINE_ANNOTATION_SERVICE.MODIFIED, timestamp)
@@ -130,7 +122,8 @@ public class MachineAnnotationServiceRepository {
             mas.getOdsServiceAvailability())
         .set(MACHINE_ANNOTATION_SERVICE.SOURCE_CODE_REPOSITORY,
             mas.getSchemaCodeRepository())
-        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER, getSchemaMaintainerId(mas.getSchemaMaintainer()))
+        .set(MACHINE_ANNOTATION_SERVICE.CODE_MAINTAINER,
+            getSchemaMaintainerId(mas.getSchemaMaintainer()))
         .set(MACHINE_ANNOTATION_SERVICE.CODE_LICENSE, mas.getSchemaLicense())
         .set(MACHINE_ANNOTATION_SERVICE.BATCHING_PERMITTED, mas.getOdsBatchingPermitted())
         .set(MACHINE_ANNOTATION_SERVICE.TIME_TO_LIVE, mas.getOdsTimeToLive())
@@ -150,10 +143,11 @@ public class MachineAnnotationServiceRepository {
   }
 
   private static String getSchemaMaintainerId(Agent schemaMaintainer) {
-    if (schemaMaintainer == null){
+    if (schemaMaintainer == null) {
       return null;
+    } else {
+      return schemaMaintainer.getId();
     }
-    else return schemaMaintainer.getId();
   }
 
 }

@@ -5,8 +5,6 @@ import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
 import static java.util.stream.Collectors.toMap;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -57,6 +55,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @Service
@@ -87,9 +88,11 @@ public class MachineAnnotationServiceService {
   private final Template rabbitBindingTemplate;
   @Qualifier("masRabbitQueueTemplate")
   private final Template rabbitQueueTemplate;
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   @Qualifier("yamlMapper")
   private final ObjectMapper yamlMapper;
+  @Qualifier("objectMapper")
+  private final ObjectMapper yamlMapperHelper;
   private final MachineAnnotationServiceProperties properties;
   private final KubernetesProperties kubernetesProperties;
   private final FdoProperties fdoProperties;
@@ -620,20 +623,21 @@ public class MachineAnnotationServiceService {
     return map;
   }
 
-  private List<JsonNode> addMasKeys(MachineAnnotationService mas) {
-    var keyNode = new ArrayList<JsonNode>();
+  // Uses the Jackson2 module as the yaml mapper hasn't been updated yet
+  private List<com.fasterxml.jackson.databind.JsonNode> addMasKeys(MachineAnnotationService mas) {
+    var keyNode = new ArrayList<com.fasterxml.jackson.databind.JsonNode>();
     if (mas.getOdsHasEnvironmentalVariables() != null) {
       mas.getOdsHasEnvironmentalVariables().forEach(env -> {
         if (env.getSchemaValue() instanceof String stringVal) {
-          keyNode.add(mapper.createObjectNode()
+          keyNode.add(yamlMapperHelper.createObjectNode()
               .put(NAME, env.getSchemaName())
               .put(VALUE, stringVal));
         } else if (env.getSchemaValue() instanceof Integer intVal) {
-          keyNode.add(mapper.createObjectNode()
+          keyNode.add(yamlMapperHelper.createObjectNode()
               .put(NAME, env.getSchemaName())
               .put(VALUE, intVal));
         } else if (env.getSchemaValue() instanceof Boolean boolValue) {
-          keyNode.add(mapper.createObjectNode()
+          keyNode.add(yamlMapperHelper.createObjectNode()
               .put(NAME, env.getSchemaName())
               .put(VALUE, boolValue));
         } else {
@@ -642,12 +646,13 @@ public class MachineAnnotationServiceService {
       });
     }
     if (mas.getOdsHasSecretVariables() != null) {
-      mas.getOdsHasSecretVariables().forEach(secret -> keyNode.add(mapper.createObjectNode()
-          .put(NAME, secret.getSchemaName())
-          .set("valueFrom", mapper.createObjectNode()
-              .set("secretKeyRef", mapper.createObjectNode()
-                  .put(NAME, properties.getMasSecretStore())
-                  .put("key", secret.getOdsSecretKeyRef())))));
+      mas.getOdsHasSecretVariables()
+          .forEach(secret -> keyNode.add(yamlMapperHelper.createObjectNode()
+              .put(NAME, secret.getSchemaName())
+              .set("valueFrom", yamlMapperHelper.createObjectNode()
+                  .set("secretKeyRef", yamlMapperHelper.createObjectNode()
+                      .put(NAME, properties.getMasSecretStore())
+                      .put("key", secret.getOdsSecretKeyRef())))));
     }
     return keyNode;
   }
@@ -661,14 +666,14 @@ public class MachineAnnotationServiceService {
     var defaultKeyNode = (ArrayNode) templateAsNode.get("spec").get("template").get("spec")
         .get("containers").get(0).get("env");
     defaultKeyNode.addAll(addMasKeys(mas));
-    return mapper.writeValueAsString(templateAsNode);
+    return yamlMapperHelper.writeValueAsString(templateAsNode);
   }
 
   private void publishCreateEvent(MachineAnnotationService mas, Agent agent)
       throws ProcessingFailedException {
     try {
       rabbitMqPublisherService.publishCreateEvent(mas, agent);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackMasCreation(mas, true, true, true, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
@@ -679,13 +684,7 @@ public class MachineAnnotationServiceService {
       boolean rollbackDeployment, boolean rollbackKeda, boolean rollbackRabbitBinding,
       boolean rollbackRabbitQueue) {
     var request = fdoRecordService.buildRollbackCreateRequest(mas.getId());
-    try {
-      handleComponent.rollbackHandleCreation(request);
-    } catch (PidException e) {
-      log.error(
-          "Unable to rollback handle creation for MAS. Manually delete the following handle: {}. Cause of error: ",
-          mas.getId(), e);
-    }
+    handleComponent.rollbackHandleCreation(request);
     repository.rollbackMasCreation(mas.getId());
     var name = getName(mas.getId());
     if (rollbackDeployment) {
@@ -835,7 +834,7 @@ public class MachineAnnotationServiceService {
       throws ProcessingFailedException {
     try {
       rabbitMqPublisherService.publishUpdateEvent(mas, currentMas, agent);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentMas, true, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
@@ -878,13 +877,7 @@ public class MachineAnnotationServiceService {
       var timestamp = Instant.now();
       var tombstoneMas = buildTombstoneMachineAnnotationService(mas, agent, timestamp);
       repository.tombstoneMachineAnnotationService(tombstoneMas, timestamp);
-      try {
-        rabbitMqPublisherService.publishTombstoneEvent(tombstoneMas, mas, agent);
-      } catch (JsonProcessingException e) {
-        log.error("Unable to publish tombstone event to provenance service", e);
-        throw new ProcessingFailedException(
-            "Unable to publish tombstone event to provenance service", e);
-      }
+      rabbitMqPublisherService.publishTombstoneEvent(tombstoneMas, mas, agent);
     } else {
       throw new NotFoundException("Requested machine annotation service: " + id + "does not exist");
     }

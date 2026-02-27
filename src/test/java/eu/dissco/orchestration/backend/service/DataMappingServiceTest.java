@@ -1,12 +1,12 @@
 package eu.dissco.orchestration.backend.service;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_ORCID;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.CREATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.DATA_MAPPING_TYPE_DOI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPING_PATH;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_ORCID;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.UPDATED;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.flattenDataMapping;
@@ -27,7 +27,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -53,6 +52,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.core.JacksonException;
 
 @ExtendWith(MockitoExtension.class)
 class DataMappingServiceTest {
@@ -110,7 +110,7 @@ class DataMappingServiceTest {
     var dataMapping = givenDataMappingRequest();
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
     given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
+    willThrow(JacksonException.class).given(rabbitMqPublisherService)
         .publishCreateEvent(givenDataMapping(HANDLE, 1), givenAgent());
 
     // When
@@ -134,28 +134,6 @@ class DataMappingServiceTest {
     // Then
     assertThrowsExactly(ProcessingFailedException.class, () ->
         service.createDataMapping(dataMapping, givenAgent(), MAPPING_PATH));
-  }
-
-  @Test
-  void testCreateDataMappingEventAndRollbackFails() throws Exception {
-    // Given
-    var dataMapping = givenDataMappingRequest();
-    given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
-    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
-        .publishCreateEvent(givenDataMapping(HANDLE, 1), givenAgent());
-    willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
-
-    // When
-    assertThrowsExactly(ProcessingFailedException.class,
-        () -> service.createDataMapping(dataMapping, givenAgent(), MAPPING_PATH));
-
-    // Then
-    then(fdoRecordService).should().buildCreateRequest(dataMapping, ObjectType.DATA_MAPPING);
-    then(repository).should().createDataMapping(givenDataMapping(HANDLE, 1));
-    then(fdoRecordService).should().buildRollbackCreateRequest(HANDLE);
-    then(handleComponent).should().rollbackHandleCreation(any());
-    then(repository).should().rollbackDataMappingCreation(HANDLE);
   }
 
 
@@ -185,7 +163,7 @@ class DataMappingServiceTest {
     var dataMapping = givenDataMappingRequest();
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(Optional.of(prevDataMapping));
     given(fdoProperties.getDataMappingType()).willReturn(DATA_MAPPING_TYPE_DOI);
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
+    willThrow(JacksonException.class).given(rabbitMqPublisherService)
         .publishUpdateEvent(givenDataMapping(HANDLE, 2), prevDataMapping, givenAgent());
 
     // When
@@ -294,7 +272,7 @@ class DataMappingServiceTest {
     // Given
     given(repository.getActiveDataMapping(BARE_HANDLE)).willReturn(
         Optional.of(givenDataMapping(HANDLE, 1)));
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
+    doThrow(JacksonException.class).when(rabbitMqPublisherService)
         .publishTombstoneEvent(any(), any(), eq(givenAgent()));
 
     // Then

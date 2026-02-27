@@ -152,9 +152,9 @@ class SourceSystemControllerTest {
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(new String(result.getBody().getContentAsByteArray())).isEqualTo("test");
-    assertTrue(result.getHeaders().containsValue(List.of("application/zip")));
-    assertTrue(result.getHeaders().containsValue(
-        List.of("attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\"")));
+    assertTrue(result.getHeaders().containsHeaderValue("Content-Type", "application/zip"));
+    assertTrue(result.getHeaders().containsHeaderValue("Content-Disposition",
+        "attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\""));
   }
 
   @Test
