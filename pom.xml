@@ -17,7 +17,7 @@
   <properties>
     <java.version>21</java.version>
     <k8s-client-java.version>24.0.0</k8s-client-java.version>
-    <json-patch.version>1.13</json-patch.version>
+    <json-patch.version>0.6.2</json-patch.version>
     <testcontainers.version>1.21.1</testcontainers.version>
     <ok-http.version>4.12.0</ok-http.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
@@ -129,8 +129,8 @@
       <artifactId>spring-boot-starter-webflux</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.github.java-json-tools</groupId>
-      <artifactId>json-patch</artifactId>
+      <groupId>io.github.vishwakarma</groupId>
+      <artifactId>zjsonpatch</artifactId>
       <version>${json-patch.version}</version>
     </dependency>
     <dependency>

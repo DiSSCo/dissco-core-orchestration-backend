@@ -1,7 +1,5 @@
 package eu.dissco.orchestration.backend.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.RabbitMqProperties;
 import eu.dissco.orchestration.backend.schema.Agent;
@@ -12,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @Service
@@ -19,13 +19,13 @@ import org.springframework.stereotype.Service;
 public class RabbitMqPublisherService {
 
   private final RabbitTemplate rabbitTemplate;
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   private final ProvenanceService provenanceService;
   private final RabbitMqProperties rabbitMqProperties;
 
 
   public void publishCreateEvent(Object object, Agent agent)
-      throws JsonProcessingException, ProcessingFailedException {
+      throws JacksonException, ProcessingFailedException {
     var event = provenanceService.generateCreateEvent(mapper.valueToTree(object), agent);
     log.info("Publishing new create message to queue: {}", event);
     rabbitTemplate.convertAndSend(rabbitMqProperties.getProvenanceExchangeName(),
@@ -33,7 +33,7 @@ public class RabbitMqPublisherService {
   }
 
   public void publishUpdateEvent(Object object, Object currentObject, Agent agent)
-      throws JsonProcessingException, ProcessingFailedException {
+      throws JacksonException, ProcessingFailedException {
     var event = provenanceService.generateUpdateEvent(mapper.valueToTree(object),
         mapper.valueToTree(currentObject), agent);
     log.info("Publishing new update message to queue: {}", event);
@@ -42,7 +42,7 @@ public class RabbitMqPublisherService {
   }
 
   public void publishTombstoneEvent(Object tombstoneObject, Object currentObject, Agent agent)
-      throws JsonProcessingException, ProcessingFailedException {
+      throws JacksonException, ProcessingFailedException {
     var event = provenanceService.generateTombstoneEvent(mapper.valueToTree(tombstoneObject),
         mapper.valueToTree(currentObject), agent);
     log.info("Publishing new tombstone message to queue: {}", event);

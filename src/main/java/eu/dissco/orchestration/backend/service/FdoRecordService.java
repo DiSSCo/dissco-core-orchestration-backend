@@ -5,9 +5,6 @@ import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE
 import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_SYSTEM_NAME;
 import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
@@ -16,12 +13,15 @@ import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 @Service
 @RequiredArgsConstructor
 public class FdoRecordService {
 
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   private final FdoProperties fdoProperties;
 
   public JsonNode buildCreateRequest(Object object, ObjectType type) {

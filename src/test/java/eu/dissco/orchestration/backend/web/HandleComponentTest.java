@@ -1,16 +1,21 @@
 package eu.dissco.orchestration.backend.web;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.HANDLE;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasHandleRequest;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasHandleRequestMap;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import eu.dissco.orchestration.backend.client.HandleClient;
 import eu.dissco.orchestration.backend.exception.PidException;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
@@ -18,15 +23,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.WebClient;
+import tools.jackson.databind.JsonNode;
 
 @ExtendWith(MockitoExtension.class)
 class HandleComponentTest {
 
   private static MockWebServer mockHandleServer;
   private HandleComponent handleComponent;
+  @Mock
+  HandleClient handleClient;
 
   @BeforeAll
   static void init() throws IOException {
@@ -41,14 +49,12 @@ class HandleComponentTest {
 
   @BeforeEach
   void setup() {
-    WebClient webClient = WebClient.create(
-        String.format("http://%s:%s", mockHandleServer.getHostName(), mockHandleServer.getPort()));
-    handleComponent = new HandleComponent(webClient);
+    handleComponent = new HandleComponent(handleClient, MAPPER);
 
   }
 
   @Test
-  void testPostHandle() throws Exception {
+  void testPostHandle1() throws Exception {
     // Given
     var requestBody = givenMasHandleRequest();
     var responseBody = givenHandleApiResponse();
@@ -64,7 +70,20 @@ class HandleComponentTest {
   }
 
   @Test
-  void testRollbackHandleCreation() throws Exception {
+  void testPostHandle() throws PidException {
+    // Given
+    var requestBody = List.of(givenMasHandleRequestMap());
+    given(handleClient.postHandle(List.of(givenMasHandleRequest()))).willReturn(givenHandleApiResponseMap());
+
+    // When
+    var result = handleComponent.postHandle(givenMasHandleRequest());
+
+    // Then
+    assertThat(result).isEqualTo(HANDLE);
+  }
+
+  @Test
+  void testRollbackHandleCreation() {
     // Given
     var requestbody = givenRollbackCreationRequest();
 
@@ -76,7 +95,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testUnauthorized() throws Exception {
+  void testUnauthorized() {
     // Given
     var requestBody = givenMasHandleRequest();
 
@@ -141,7 +160,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testRetriesFail() throws Exception {
+  void testRetriesFail() {
     // Given
     var requestBody = givenMasHandleRequest();
     int requestCount = mockHandleServer.getRequestCount();
@@ -191,7 +210,7 @@ class HandleComponentTest {
     assertThrows(PidException.class, () -> handleComponent.postHandle(requestBody));
   }
 
-  private JsonNode givenHandleApiResponse() throws Exception {
+  private JsonNode givenHandleApiResponse() {
     return MAPPER.readTree("""
         {
           "data":
@@ -204,6 +223,19 @@ class HandleComponentTest {
             }
           ]
         }""");
+  }
+
+  private Map<String, Object> givenHandleApiResponseMap(){
+    return Map.of(
+        "data", List.of(
+            Map.of(
+                "type", "machineAnnotationService",
+                "id", HANDLE,
+                "attributes", Map.of()
+            )
+        )
+    );
 
   }
+
 }

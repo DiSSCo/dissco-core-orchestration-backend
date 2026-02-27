@@ -14,11 +14,9 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstone
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.ObjectType;
-import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
@@ -62,11 +60,11 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(sourceSystem);
+    assertThat(result.getFirst()).isEqualTo(sourceSystem);
   }
 
   @Test
-  void testUniqueConstraintSourceSystem() throws JsonProcessingException {
+  void testUniqueConstraintSourceSystem() {
     // Given
     var sourceSystem = givenSourceSystem();
     postSourceSystem(List.of(sourceSystem));
@@ -77,7 +75,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testUpdateSourceSystem() throws JsonProcessingException {
+  void testUpdateSourceSystem() {
     // Given
     var orginalSourceSystem = givenSourceSystem();
     postSourceSystem(List.of(orginalSourceSystem));
@@ -93,7 +91,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetSourceSystemById() throws JsonProcessingException {
+  void testGetSourceSystemById() {
     // Given
     var expected = givenSourceSystem();
     postSourceSystem(List.of(expected));
@@ -106,7 +104,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetDownloadLink() throws JsonProcessingException {
+  void testGetDownloadLink() {
     // Given
     var exportType = ExportType.DWC_DP;
     postSourceSystem(List.of(givenSourceSystem()));
@@ -119,7 +117,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetSourceSystems() throws JsonProcessingException {
+  void testGetSourceSystems() {
     // Given
     int pageNum = 1;
     int pageSize = 10;
@@ -134,7 +132,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetSourceSystemsSecondPage() throws JsonProcessingException {
+  void testGetSourceSystemsSecondPage() {
     // Given
     int pageNum = 2;
     int pageSize = 10;
@@ -150,7 +148,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testTombstoneSourceSystem() throws JsonProcessingException {
+  void testTombstoneSourceSystem() {
     // Given
     var sourceSystem = givenSourceSystem();
     sourceSystem.withOdsStatus(OdsStatus.TOMBSTONE);
@@ -166,7 +164,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetActiveSourceSystem() throws JsonProcessingException {
+  void testGetActiveSourceSystem() {
     // Given
     var sourceSystem = givenSourceSystem();
     postSourceSystem(List.of(sourceSystem));
@@ -179,7 +177,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetActiveSourceSystemWasDeleted() throws JsonProcessingException {
+  void testGetActiveSourceSystemWasDeleted() {
     var sourceSystem = givenSourceSystem();
     postSourceSystem(List.of(sourceSystem));
     context.update(SOURCE_SYSTEM)
@@ -195,7 +193,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testRollback() throws JsonProcessingException {
+  void testRollback() {
     // Given
     var sourceSystem = givenSourceSystem();
     postSourceSystem(List.of(sourceSystem));
@@ -227,14 +225,10 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
   }
 
   private SourceSystem mapToSourceSystem(Record1<JSONB> record1) {
-    try {
-      return MAPPER.readValue(record1.get(SOURCE_SYSTEM.DATA).data(), SourceSystem.class);
-    } catch (JsonProcessingException e) {
-      throw new DisscoJsonBMappingException("Unable to convert jsonb to source system", e);
-    }
+    return MAPPER.readValue(record1.get(SOURCE_SYSTEM.DATA).data(), SourceSystem.class);
   }
 
-  private void postSourceSystem(List<SourceSystem> sourceSystems) throws JsonProcessingException {
+  private void postSourceSystem(List<SourceSystem> sourceSystems) {
     List<Query> queryList = new ArrayList<>();
     for (var sourceSystem : sourceSystems) {
       queryList.add(context.insertInto(SOURCE_SYSTEM)
@@ -255,7 +249,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
     context.batch(queryList).execute();
   }
 
-  private JSONB mapToJSONB(SourceSystem sourceSystem) throws JsonProcessingException {
+  private JSONB mapToJSONB(SourceSystem sourceSystem) {
     return JSONB.valueOf(MAPPER.writeValueAsString(sourceSystem));
   }
 
