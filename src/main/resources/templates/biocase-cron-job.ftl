@@ -48,13 +48,13 @@ spec:
             - name: mas.media-mass
               value: ${mediaMass}
           </#if>
-          <#if exchangeName??>
-            - name: rabbimq.exchangeName
-              value: ${exchangeName}
-          </#if>
           <#if routingKeyName??>
-            - name: rabbimq.routingKeyName
+            - name: rabbitmq.routingKeyName
               value: ${routingKeyName}
+          </#if>
+          <#if exchangeName??>
+            - name: rabbitmq.exchangeName
+              value: ${exchangeName}
           </#if>
             - name: spring.datasource.url
               value: ${database_url}

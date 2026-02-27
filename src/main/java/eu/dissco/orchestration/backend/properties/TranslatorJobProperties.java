@@ -27,7 +27,6 @@ public class TranslatorJobProperties {
   @Valid
   private Export export = new Export();
 
-  @Valid
   private RabbitMq rabbitMq = new RabbitMq();
 
   @Data
@@ -45,9 +44,7 @@ public class TranslatorJobProperties {
   }
 
   @Data
-  @Validated
-  public static class RabbitMq {
-
+  public static class RabbitMq{
     private String exchangeName;
 
     private String routingKeyName;

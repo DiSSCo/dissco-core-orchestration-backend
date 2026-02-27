@@ -38,13 +38,13 @@ spec:
             - name: application.maxItems
               value: "${maxItems?c}"
           </#if>
-          <#if exchangeName??>
-            - name: rabbimq.exchangeName
-              value: ${exchangeName}
-          </#if>
           <#if routingKeyName??>
-            - name: rabbimq.routingKeyName
+            - name: rabbitmq.routingKeyName
               value: ${routingKeyName}
+          </#if>
+          <#if exchangeName??>
+            - name: rabbitmq.exchangeName
+              value: ${exchangeName}
           </#if>
             - name: spring.datasource.url
               value: ${database_url}

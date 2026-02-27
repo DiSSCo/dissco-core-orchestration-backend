@@ -50,6 +50,7 @@ import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties;
 import eu.dissco.orchestration.backend.properties.TranslatorJobProperties.Export;
+import eu.dissco.orchestration.backend.properties.TranslatorJobProperties.RabbitMq;
 import eu.dissco.orchestration.backend.repository.SourceSystemRepository;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsTranslatorType;
@@ -151,29 +152,28 @@ class SourceSystemServiceTest {
     container.setImage(image);
     container.setName(name);
     container.setEnv(List.of(
-            new V1EnvVar().name("spring.profiles.active").value("biocase"),
-            new V1EnvVar().name("spring.rabbitmq.host")
-                .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
-            new V1EnvVar().name("spring.rabbitmq.username").valueFrom(new V1EnvVarSource().secretKeyRef(
-                new V1SecretKeySelector().key("rabbitmq-username").name("aws-secrets"))),
-            new V1EnvVar().name("spring.rabbitmq.password").valueFrom(new V1EnvVarSource().secretKeyRef(
-                new V1SecretKeySelector().key("rabbitmq-password").name("aws-secrets"))),
-            new V1EnvVar().name("application.sourceSystemId").value("20.5000.1025/GW0-POP-XSL"),
-            new V1EnvVar().name("spring.datasource.url")
-                .value("jdbc:postgresql://localhost:5432/translator"),
-            new V1EnvVar().name("spring.datasource.username")
-                .valueFrom(new V1EnvVarSource().secretKeyRef(
-                    new V1SecretKeySelector().key("db-username").name("db-secrets"))),
-            new V1EnvVar().name("spring.datasource.password")
-                .valueFrom(new V1EnvVarSource().secretKeyRef(
-                    new V1SecretKeySelector().key("db-password").name("db-secrets"))),
-            new V1EnvVar().name("fdo.digital-media-type")
-                .value("https://doi.org/21.T11148/bbad8c4e101e8af01115"),
-            new V1EnvVar().name("fdo.digital-specimen-type")
-                .value("https://doi.org/21.T11148/894b1e6cad57e921764e"),
-            new V1EnvVar().name("JAVA_TOOL_OPTIONS").value("-XX:MaxRAMPercentage=85")
-        )
-    );
+        new V1EnvVar().name("spring.profiles.active").value("biocase"),
+        new V1EnvVar().name("spring.rabbitmq.host")
+            .value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
+        new V1EnvVar().name("spring.rabbitmq.username").valueFrom(new V1EnvVarSource().secretKeyRef(
+            new V1SecretKeySelector().key("rabbitmq-username").name("aws-secrets"))),
+        new V1EnvVar().name("spring.rabbitmq.password").valueFrom(new V1EnvVarSource().secretKeyRef(
+            new V1SecretKeySelector().key("rabbitmq-password").name("aws-secrets"))),
+        new V1EnvVar().name("application.sourceSystemId").value("20.5000.1025/GW0-POP-XSL"),
+        new V1EnvVar().name("spring.datasource.url")
+            .value("jdbc:postgresql://localhost:5432/translator"),
+        new V1EnvVar().name("spring.datasource.username")
+            .valueFrom(new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("db-username").name("db-secrets"))),
+        new V1EnvVar().name("spring.datasource.password")
+            .valueFrom(new V1EnvVarSource().secretKeyRef(
+                new V1SecretKeySelector().key("db-password").name("db-secrets"))),
+        new V1EnvVar().name("fdo.digital-media-type")
+            .value("https://doi.org/21.T11148/bbad8c4e101e8af01115"),
+        new V1EnvVar().name("fdo.digital-specimen-type")
+            .value("https://doi.org/21.T11148/894b1e6cad57e921764e"),
+        new V1EnvVar().name("JAVA_TOOL_OPTIONS").value("-XX:MaxRAMPercentage=85")
+    ));
     container.setVolumeMounts(List.of(
         new V1VolumeMount().name("db-secrets").mountPath("/mnt/secrets-store/db-secrets")
             .readOnly(true),
@@ -318,6 +318,40 @@ class SourceSystemServiceTest {
     then(repository).should().createSourceSystem(givenSourceSystem());
     then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenSourceSystem(), givenAgent());
+  }
+
+  @Test
+  void testCreateSourceSystemRabbitMq() throws Exception {
+    // Given
+    var expected = givenSourceSystemSingleJsonApiWrapper();
+    var sourceSystem = givenSourceSystemRequest();
+    given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
+    given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
+    given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
+        Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
+    var createCron = mock(APIcreateNamespacedCronJobRequest.class);
+    given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
+        .willReturn(createCron);
+    given(batchV1Api.createNamespacedCronJob(eq(EXPORT_NAMESPACE), any(V1CronJob.class)))
+        .willReturn(createCron);
+    var rabbitMq = new RabbitMq();
+    rabbitMq.setExchangeName("source-system-data-checker-exchange");
+    rabbitMq.setRoutingKeyName("source-system-data-checker");
+    jobProperties.setRabbitMq(rabbitMq);
+
+    var createJob = mock(APIcreateNamespacedJobRequest.class);
+    given(
+        batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
+
+    // When
+    var result = service.createSourceSystem(sourceSystem, givenAgent(), SYSTEM_PATH);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+    then(repository).should().createSourceSystem(givenSourceSystem());
+    then(rabbitMqPublisherService).should()
+        .publishCreateEvent(givenSourceSystem(), givenAgent());
+    jobProperties.setRabbitMq(null);
   }
 
   @Test
