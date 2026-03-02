@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
 
 import eu.dissco.orchestration.backend.client.HandleClient;
@@ -62,6 +63,18 @@ class HandleComponentTest {
 
     // When / Then
     assertThrows(PidException.class, () -> handleComponent.postHandle(givenMasHandleRequest()));
+  }
+
+  @Test
+  void testRollbackHandleCreation(){
+    // Given
+    var request = MAPPER.createObjectNode();
+
+    // When
+    handleComponent.rollbackHandleCreation(request);
+
+    // Then
+    then(handleClient).should().rollbackHandle(request);
 
   }
 
