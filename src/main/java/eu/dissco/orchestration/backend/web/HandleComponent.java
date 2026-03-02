@@ -43,9 +43,9 @@ public class HandleComponent {
   private String parseResponse(JsonNode apiResponse) throws PidException {
     try {
       return apiResponse.get("data").get(0).get("id").asString();
-    } catch (NullPointerException e) {
+    } catch (NullPointerException _) {
       log.error(
-          "Unable to parse response from handle server. Received response does not contain  \"id\" field");
+          "Unable to parse response from handle server. Received response: {}", apiResponse);
       throw new PidException("Unable to parse response from handle server");
     }
   }

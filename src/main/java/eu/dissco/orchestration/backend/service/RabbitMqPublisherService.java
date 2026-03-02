@@ -54,9 +54,9 @@ public class RabbitMqPublisherService {
     var stringBuilder = new StringBuilder(
         rabbitMqProperties.getProvenanceRoutingKeyPrefix()).append('.');
     switch (object) {
-      case DataMapping dm -> stringBuilder.append("data-mapping");
-      case SourceSystem ss -> stringBuilder.append("source-system");
-      case MachineAnnotationService mas -> stringBuilder.append("machine-annotation-service");
+      case DataMapping _ -> stringBuilder.append("data-mapping");
+      case SourceSystem _ -> stringBuilder.append("source-system");
+      case MachineAnnotationService _ -> stringBuilder.append("machine-annotation-service");
       default ->
           throw new ProcessingFailedException("Unsupported object type for routing key assembly");
     }

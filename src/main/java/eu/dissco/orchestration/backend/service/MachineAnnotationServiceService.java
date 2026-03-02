@@ -822,7 +822,7 @@ public class MachineAnnotationServiceService {
         try {
           deployKedaToCluster(rollbackRecord);
         } catch (KubernetesFailedException ex) {
-          log.error("Fatal error, unable to redeploy previous keda configuration");
+          log.error("Fatal error, unable to redeploy previous keda configuration", ex);
         }
       }
       throw new KubernetesFailedException("Failed to remove keda from cluster");
@@ -915,7 +915,7 @@ public class MachineAnnotationServiceService {
       try {
         deployMasToCluster(currentMas, true);
       } catch (KubernetesFailedException ex) {
-        log.error("Failed error, unable to create deployment after failed keda deletion");
+        log.error("Failed error, unable to create deployment after failed keda deletion", ex);
       }
       throw new ProcessingFailedException("Failed to delete kubernetes resources", e);
     }
