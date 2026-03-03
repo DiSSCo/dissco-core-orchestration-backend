@@ -19,7 +19,6 @@
     <k8s-client-java.version>24.0.0</k8s-client-java.version>
     <json-patch.version>0.6.2</json-patch.version>
     <testcontainers.version>1.21.1</testcontainers.version>
-    <ok-http.version>4.12.0</ok-http.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <sonar.organization>dissco</sonar.organization>
     <amazon.awssdk.version>2.29.6</amazon.awssdk.version>
@@ -157,12 +156,6 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.squareup.okhttp3</groupId>
-      <artifactId>mockwebserver</artifactId>
-      <version>${ok-http.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
