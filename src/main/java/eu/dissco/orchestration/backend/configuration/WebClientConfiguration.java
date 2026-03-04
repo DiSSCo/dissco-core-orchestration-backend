@@ -42,19 +42,6 @@ public class WebClientConfiguration {
   }
 
   @Bean
-  public WebClient webClient(OAuth2AuthorizedClientManager authorizedClientManager) {
-    var oauth2Client = new ServletOAuth2AuthorizedClientExchangeFilterFunction(
-        authorizedClientManager);
-    oauth2Client.setDefaultClientRegistrationId("dissco");
-    return WebClient.builder()
-        .apply(oauth2Client.oauth2Configuration())
-        .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
-        .baseUrl(properties.getHandleEndpoint())
-        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-        .build();
-  }
-
-  @Bean
   public HandleClient handleClient(OAuth2AuthorizedClientManager authorizedClientManager) {
     // Set up Oauth2
     var oauth2Client = new ServletOAuth2AuthorizedClientExchangeFilterFunction(
