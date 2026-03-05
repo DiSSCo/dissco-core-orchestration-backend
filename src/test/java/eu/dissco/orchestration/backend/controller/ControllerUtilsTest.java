@@ -4,7 +4,7 @@ import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_ORCID;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.ORCID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 

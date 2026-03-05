@@ -4,9 +4,6 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.DATA_MAPPING;
 import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
 import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.DataMapping;
 import java.time.Instant;
 import java.util.List;
@@ -16,12 +13,13 @@ import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
+import tools.jackson.databind.json.JsonMapper;
 
 @Repository
 @RequiredArgsConstructor
 public class DataMappingRepository {
 
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   private final DSLContext context;
 
   public void createDataMapping(DataMapping dataMapping) {
@@ -38,11 +36,7 @@ public class DataMappingRepository {
   }
 
   private JSONB mapToJSONB(DataMapping dataMapping) {
-    try {
-      return JSONB.valueOf(mapper.writeValueAsString(dataMapping));
-    } catch (JsonProcessingException e) {
-      throw new DisscoJsonBMappingException("Unable to map data mapping to jsonb", e);
-    }
+    return JSONB.valueOf(mapper.writeValueAsString(dataMapping));
   }
 
   public void updateDataMapping(DataMapping dataMapping) {
@@ -57,7 +51,6 @@ public class DataMappingRepository {
         .where(DATA_MAPPING.ID.eq(removeProxy(dataMapping.getId())))
         .execute();
   }
-
 
   public DataMapping getDataMapping(String id) {
     return context.select(DATA_MAPPING.DATA)
@@ -97,11 +90,7 @@ public class DataMappingRepository {
   }
 
   private DataMapping mapToDataMapping(Record1<JSONB> record1) {
-    try {
-      return mapper.readValue(record1.get(DATA_MAPPING.DATA).data(), DataMapping.class);
-    } catch (JsonProcessingException e) {
-      throw new DisscoJsonBMappingException("Unable to convert jsonb to data mapping", e);
-    }
+    return mapper.readValue(record1.get(DATA_MAPPING.DATA).data(), DataMapping.class);
   }
 
   public void rollbackDataMappingCreation(String id) {

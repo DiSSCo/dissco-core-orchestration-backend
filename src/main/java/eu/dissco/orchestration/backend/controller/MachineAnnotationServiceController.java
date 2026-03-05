@@ -10,7 +10,6 @@ import static eu.dissco.orchestration.backend.utils.ControllerUtils.PREFIX_OAS;
 import static eu.dissco.orchestration.backend.utils.ControllerUtils.SUFFIX_OAS;
 import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.domain.openapi.datamapping.DataMappingResponseSingle;
@@ -53,7 +52,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class MachineAnnotationServiceController {
 
   private final MachineAnnotationServiceService service;
-  private final ObjectMapper mapper;
   private final ApplicationProperties appProperties;
 
   @Operation(

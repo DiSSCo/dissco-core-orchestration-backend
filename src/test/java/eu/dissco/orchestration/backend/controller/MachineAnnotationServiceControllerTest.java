@@ -1,9 +1,8 @@
 package eu.dissco.orchestration.backend.controller;
 
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_ORCID;
+import static eu.dissco.orchestration.backend.testutils.TestUtils.MAS_URI;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
 import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
@@ -47,7 +46,7 @@ class MachineAnnotationServiceControllerTest {
 
   @BeforeEach
   void setup() {
-    controller = new MachineAnnotationServiceController(service, MAPPER, appProperties);
+    controller = new MachineAnnotationServiceController(service, appProperties);
     mockRequest.setRequestURI(MAS_URI);
   }
 

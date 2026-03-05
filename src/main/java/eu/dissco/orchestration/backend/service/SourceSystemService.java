@@ -4,9 +4,7 @@ import static eu.dissco.orchestration.backend.configuration.ApplicationConfigura
 import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import eu.dissco.orchestration.backend.domain.Enrichment;
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.MasScheduleData;
@@ -60,6 +58,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @Service
@@ -72,9 +73,9 @@ public class SourceSystemService {
   private final DataMappingService dataMappingService;
   private final MachineAnnotationServiceService machineAnnotationService;
   private final RabbitMqPublisherService rabbitMqPublisherService;
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   @Qualifier("yamlMapper")
-  private final ObjectMapper yamlMapper;
+  private final YAMLMapper yamlMapper;
   private final TranslatorJobProperties jobProperties;
   private final Configuration configuration;
   private final BatchV1Api batchV1Api;
@@ -430,7 +431,7 @@ public class SourceSystemService {
       throws ProcessingFailedException {
     try {
       rabbitMqPublisherService.publishCreateEvent(sourceSystem, agent);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackSourceSystemCreation(sourceSystem, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
@@ -440,13 +441,7 @@ public class SourceSystemService {
   private void rollbackSourceSystemCreation(SourceSystem sourceSystem,
       boolean removeCron) {
     var request = fdoRecordService.buildRollbackCreateRequest(sourceSystem.getId());
-    try {
-      handleComponent.rollbackHandleCreation(request);
-    } catch (PidException e) {
-      log.error(
-          "Unable to rollback handle creation for source system. Manually delete the following handle: {}. Cause of error: ",
-          sourceSystem.getId(), e);
-    }
+    handleComponent.rollbackHandleCreation(request);
     repository.rollbackSourceSystemCreation(sourceSystem.getId());
     if (removeCron) {
       try {
@@ -541,7 +536,7 @@ public class SourceSystemService {
       SourceSystem currentSourceSystem, Agent agent) throws ProcessingFailedException {
     try {
       rabbitMqPublisherService.publishUpdateEvent(newSourceSystem, currentSourceSystem, agent);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentSourceSystem, true);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
@@ -603,7 +598,7 @@ public class SourceSystemService {
       repository.tombstoneSourceSystem(tombstoneSourceSystem, timestamp);
       try {
         rabbitMqPublisherService.publishTombstoneEvent(tombstoneSourceSystem, sourceSystem, agent);
-      } catch (JsonProcessingException e) {
+      } catch (JacksonException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
         throw new ProcessingFailedException(
             "Unable to publish tombstone event to provenance service", e);

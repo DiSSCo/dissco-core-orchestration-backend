@@ -37,9 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -108,6 +106,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import tools.jackson.core.JacksonException;
 
 @ExtendWith(MockitoExtension.class)
 class SourceSystemServiceTest {
@@ -115,8 +114,11 @@ class SourceSystemServiceTest {
   private static final String NAMESPACE = "translator-services";
   private static final String EXPORT_NAMESPACE = "data-export-job";
 
-  private final ObjectMapper yamlMapper = new ObjectMapper(
-      new YAMLFactory()).findAndRegisterModules();
+  private final YAMLMapper yamlMapper = new YAMLMapper(
+      YAMLMapper
+          .builder()
+          .findAndAddModules()
+          .build());
   private final TranslatorJobProperties jobProperties = new TranslatorJobProperties();
 
   private final Configuration configuration = new Configuration(Configuration.VERSION_2_3_32);
@@ -446,7 +448,7 @@ class SourceSystemServiceTest {
     var createJob = mock(APIcreateNamespacedJobRequest.class);
     given(
         batchV1Api.createNamespacedJob(eq(NAMESPACE), any(V1Job.class))).willReturn(createJob);
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
+    willThrow(JacksonException.class).given(rabbitMqPublisherService)
         .publishCreateEvent(givenSourceSystem(), givenAgent());
 
     // When
@@ -481,9 +483,8 @@ class SourceSystemServiceTest {
     given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
     given(dataMappingService.getActiveDataMapping(sourceSystem.getOdsDataMappingID())).willReturn(
         Optional.of(givenDataMapping(sourceSystem.getOdsDataMappingID(), 1)));
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
+    willThrow(JacksonException.class).given(rabbitMqPublisherService)
         .publishCreateEvent(givenSourceSystem(OdsTranslatorType.DWCA), givenAgent());
-    willThrow(PidException.class).given(handleComponent).rollbackHandleCreation(any());
     var createCron = mock(APIcreateNamespacedCronJobRequest.class);
     given(batchV1Api.createNamespacedCronJob(eq(NAMESPACE), any(V1CronJob.class)))
         .willReturn(createCron);
@@ -646,7 +647,7 @@ class SourceSystemServiceTest {
     var prevSourceSystem = Optional.of(givenSourceSystem(OdsTranslatorType.DWCA));
     given(repository.getActiveSourceSystem(BARE_HANDLE)).willReturn(prevSourceSystem);
     given(fdoProperties.getSourceSystemType()).willReturn(SOURCE_SYSTEM_TYPE_DOI);
-    willThrow(JsonProcessingException.class).given(rabbitMqPublisherService)
+    willThrow(JacksonException.class).given(rabbitMqPublisherService)
         .publishUpdateEvent(givenSourceSystem(2), prevSourceSystem.get(), givenAgent());
     var updateCron = mock(APIreplaceNamespacedCronJobRequest.class);
     given(batchV1Api.replaceNamespacedCronJob(anyString(), eq(NAMESPACE), any(V1CronJob.class)))

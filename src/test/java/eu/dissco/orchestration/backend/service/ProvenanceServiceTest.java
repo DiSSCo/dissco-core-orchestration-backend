@@ -20,7 +20,6 @@ import static eu.dissco.orchestration.backend.testutils.TestUtils.givenTombstone
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.schema.Agent;
@@ -36,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.core.type.TypeReference;
 
 @ExtendWith(MockitoExtension.class)
 class ProvenanceServiceTest {
@@ -134,7 +134,7 @@ class ProvenanceServiceTest {
 
     // Then
     assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
-    assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(
+    assertThat(event.getProvActivity().getOdsChangeValue()).hasSameElementsAs(
         givenChangeValueTombstone(ObjectType.MAS));
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object tombstoned");

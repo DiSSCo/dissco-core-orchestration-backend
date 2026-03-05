@@ -1,8 +1,9 @@
 package eu.dissco.orchestration.backend.testutils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.DATE_STRING;
+
+import com.fasterxml.jackson.annotation.JsonSetter.Value;
+import com.fasterxml.jackson.annotation.Nulls;
 import eu.dissco.orchestration.backend.domain.AgentRoleType;
 import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.ObjectType;
@@ -38,12 +39,17 @@ import eu.dissco.orchestration.backend.schema.TermMapping;
 import eu.dissco.orchestration.backend.schema.TombstoneMetadata;
 import eu.dissco.orchestration.backend.utils.AgentUtils;
 import java.net.URI;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 public class TestUtils {
 
@@ -60,11 +66,22 @@ public class TestUtils {
   public static final String BARE_HANDLE = PREFIX + "/" + SUFFIX;
   public static final String HANDLE_ALT = HANDLE_PROXY + PREFIX + "/EMK-X81-1QZ";
   public static final String SS_ENDPOINT = "https://api.biodiversitydata.nl/v2/specimen/dwca/getDataSet/tunicata";
-  public static final List<String> SS_FILTERS = List.of("{<like path='/DataSets/DataSet/Metadata/Description/Representation/Title'>Collection Crustacea SMF</like>}");
+  public static final List<String> SS_FILTERS = List.of(
+      "{<like path='/DataSets/DataSet/Metadata/Description/Representation/Title'>Collection Crustacea SMF</like>}");
   public static final String OBJECT_DESCRIPTION = "Source system for the DWCA of the Tunicate specimen";
   public static final Instant CREATED = Instant.parse("2022-11-01T09:59:24.00Z");
   public static final Instant UPDATED = Instant.parse("2024-11-01T09:59:24.00Z");
-  public static final ObjectMapper MAPPER = new ObjectMapper().findAndRegisterModules();
+  public static final JsonMapper MAPPER = JsonMapper.builder()
+      .findAndAddModules()
+      .defaultDateFormat(new SimpleDateFormat(DATE_STRING))
+      .defaultTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC))
+      .withConfigOverride(List.class, cfg ->
+          cfg.setNullHandling(Value.forValueNulls(Nulls.AS_EMPTY)))
+      .withConfigOverride(Map.class, cfg ->
+          cfg.setNullHandling(Value.forValueNulls(Nulls.AS_EMPTY)))
+      .withConfigOverride(Set.class, cfg ->
+          cfg.setNullHandling(Value.forValueNulls(Nulls.AS_EMPTY)))
+      .build();
   public static final String SANDBOX_URI = "https://sandbox.dissco.tech/orchestrator";
   public static final String SYSTEM_URI = "/source-system";
   public static final String SYSTEM_PATH = SANDBOX_URI + SYSTEM_URI;
@@ -134,11 +151,13 @@ public class TestUtils {
   }
 
   public static SourceSystem givenSourceSystem() {
-    return givenSourceSystem(HANDLE, 1, SourceSystem.OdsTranslatorType.BIOCASE, OBJECT_NAME, SS_ENDPOINT);
+    return givenSourceSystem(HANDLE, 1, SourceSystem.OdsTranslatorType.BIOCASE, OBJECT_NAME,
+        SS_ENDPOINT);
   }
 
   public static SourceSystem givenSourceSystem(int version) {
-    return givenSourceSystem(HANDLE, version, SourceSystem.OdsTranslatorType.BIOCASE, OBJECT_NAME, SS_ENDPOINT);
+    return givenSourceSystem(HANDLE, version, SourceSystem.OdsTranslatorType.BIOCASE, OBJECT_NAME,
+        SS_ENDPOINT);
   }
 
   public static SourceSystem givenSourceSystem(SourceSystem.OdsTranslatorType translatorType) {
@@ -371,7 +390,18 @@ public class TestUtils {
         .withOdsHasTombstoneMetadata(givenTombstoneMetadata(ObjectType.MAS));
   }
 
-  public static JsonNode givenMasHandleRequest() throws Exception {
+  public static Map<String, Object> givenMasHandleRequestMap() {
+    return Map.of(
+        "data", Map.of(
+            "type", "https://doi.org/21.T11148/a369e128df5ef31044d4",
+            "attributes", Map.of(
+                "machineAnnotationServiceName", "A Machine Annotation Service"
+            )
+        )
+    );
+  }
+
+  public static JsonNode givenMasHandleRequest() {
     return MAPPER.readTree("""
         {
           "data": {
@@ -383,7 +413,7 @@ public class TestUtils {
         }""");
   }
 
-  public static JsonNode givenSourceSystemHandleRequest() throws Exception {
+  public static JsonNode givenSourceSystemHandleRequest() {
     return MAPPER.readTree("""
         {
           "data": {
@@ -395,7 +425,7 @@ public class TestUtils {
         }""");
   }
 
-  public static JsonNode givenMappingHandleRequest() throws Exception {
+  public static JsonNode givenMappingHandleRequest() {
     return MAPPER.readTree("""
         {
           "data": {
@@ -407,7 +437,7 @@ public class TestUtils {
         }""");
   }
 
-  public static JsonNode givenRollbackCreationRequest() throws Exception {
+  public static JsonNode givenRollbackCreationRequest() {
     return MAPPER.readTree("""
         {
           "data":
@@ -415,7 +445,7 @@ public class TestUtils {
         }""");
   }
 
-  public static JsonNode givenTombstoneRequestMas() throws JsonProcessingException {
+  public static JsonNode givenTombstoneRequestMas() {
     return MAPPER.readTree("""
         {
           "data": {
@@ -459,7 +489,7 @@ public class TestUtils {
     );
   }
 
-  public static MasScheduleData givenMasScheduleData(){
+  public static MasScheduleData givenMasScheduleData() {
     return new MasScheduleData(
         true,
         Set.of(HANDLE_ALT),

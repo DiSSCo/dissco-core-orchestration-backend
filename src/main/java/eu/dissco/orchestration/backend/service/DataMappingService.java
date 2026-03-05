@@ -3,9 +3,6 @@ package eu.dissco.orchestration.backend.service;
 import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
 import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -33,6 +30,9 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @Service
@@ -43,7 +43,7 @@ public class DataMappingService {
   private final HandleComponent handleComponent;
   private final RabbitMqPublisherService rabbitMqPublisherService;
   private final DataMappingRepository repository;
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   private final FdoProperties fdoProperties;
 
   private static boolean isEqual(DataMapping dataMapping,
@@ -150,7 +150,7 @@ public class DataMappingService {
       throws ProcessingFailedException {
     try {
       rabbitMqPublisherService.publishCreateEvent(dataMapping, agent);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackMappingCreation(dataMapping);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
@@ -159,13 +159,7 @@ public class DataMappingService {
 
   private void rollbackMappingCreation(DataMapping dataMapping) {
     var request = fdoRecordService.buildRollbackCreateRequest(dataMapping.getId());
-    try {
-      handleComponent.rollbackHandleCreation(request);
-    } catch (PidException e) {
-      log.error(
-          "Unable to rollback handle creation for data mapping. Manually delete the following handle: {}. Cause of error: ",
-          dataMapping.getId(), e);
-    }
+    handleComponent.rollbackHandleCreation(request);
     repository.rollbackDataMappingCreation(dataMapping.getId());
   }
 
@@ -192,7 +186,7 @@ public class DataMappingService {
       DataMapping currentDataMapping, Agent agent) throws ProcessingFailedException {
     try {
       rabbitMqPublisherService.publishUpdateEvent(dataMapping, currentDataMapping, agent);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       log.error("Unable to publish message to RabbitMQ", e);
       rollbackToPreviousVersion(currentDataMapping);
       throw new ProcessingFailedException("Failed to create new machine annotation service", e);
@@ -214,7 +208,7 @@ public class DataMappingService {
       repository.tombstoneDataMapping(tombstoneDataMapping, timestamp);
       try {
         rabbitMqPublisherService.publishTombstoneEvent(tombstoneDataMapping, dataMapping, agent);
-      } catch (JsonProcessingException e) {
+      } catch (JacksonException e) {
         log.error("Unable to publish tombstone event to provenance service", e);
         throw new ProcessingFailedException(
             "Unable to publish tombstone event to provenance service", e);

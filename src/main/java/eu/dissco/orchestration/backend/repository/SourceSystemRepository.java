@@ -4,11 +4,8 @@ import static eu.dissco.orchestration.backend.database.jooq.Tables.SOURCE_SYSTEM
 import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
 import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.domain.ExportType;
-import eu.dissco.orchestration.backend.exception.DisscoJsonBMappingException;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import java.time.Instant;
 import java.util.List;
@@ -18,13 +15,14 @@ import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
+import tools.jackson.databind.json.JsonMapper;
 
 @Repository
 @RequiredArgsConstructor
 public class SourceSystemRepository {
 
   private final DSLContext context;
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
 
   public void createSourceSystem(SourceSystem sourceSystem) {
     context.insertInto(SOURCE_SYSTEM)
@@ -43,12 +41,7 @@ public class SourceSystemRepository {
         .execute();
   }
 
-  private JSONB mapToJSONB(SourceSystem sourceSystem) {
-    try {
-      return JSONB.valueOf(mapper.writeValueAsString(sourceSystem));
-    } catch (JsonProcessingException e) {
-      throw new DisscoJsonBMappingException("Unable to map source system to jsonb", e);
-    }
+  private JSONB mapToJSONB(SourceSystem sourceSystem) {      return JSONB.valueOf(mapper.writeValueAsString(sourceSystem));
   }
 
   public void updateSourceSystem(SourceSystem sourceSystem) {
@@ -103,11 +96,7 @@ public class SourceSystemRepository {
   }
 
   private SourceSystem mapToSourceSystem(Record1<JSONB> record1) {
-    try {
-      return mapper.readValue(record1.get(SOURCE_SYSTEM.DATA).data(), SourceSystem.class);
-    } catch (JsonProcessingException e) {
-      throw new DisscoJsonBMappingException("Unable to convert jsonb to source system", e);
-    }
+    return mapper.readValue(record1.get(SOURCE_SYSTEM.DATA).data(), SourceSystem.class);
   }
 
   public void rollbackSourceSystemCreation(String id) {

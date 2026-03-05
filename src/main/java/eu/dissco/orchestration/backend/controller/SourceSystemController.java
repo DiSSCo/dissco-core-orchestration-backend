@@ -10,7 +10,6 @@ import static eu.dissco.orchestration.backend.utils.ControllerUtils.PREFIX_OAS;
 import static eu.dissco.orchestration.backend.utils.ControllerUtils.SUFFIX_OAS;
 import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
@@ -50,6 +49,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @RestController
@@ -58,7 +58,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SourceSystemController {
 
   private final SourceSystemService service;
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   private final ApplicationProperties appProperties;
 
   private static String generateDownloadName(String id, ExportType exportType) {
