@@ -38,107 +38,108 @@ import org.springframework.security.oauth2.jwt.Jwt;
 @ExtendWith(MockitoExtension.class)
 class DataMappingControllerTest {
 
-  private final MockHttpServletRequest mockRequest = new MockHttpServletRequest();
-  @Mock
-  private DataMappingService service;
-  @Mock
-  private ApplicationProperties appProperties;
-  private DataMappingController controller;
-  @Mock
-  private Authentication authentication;
+	private final MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
-  @BeforeEach
-  void setup() {
-    controller = new DataMappingController(service, MAPPER, appProperties);
-    mockRequest.setRequestURI(MAPPING_URI);
-  }
+	@Mock
+	private DataMappingService service;
 
-  @Test
-  void testCreateDataMapping() throws Exception {
-    // Given
-    givenAuthentication();
-    var requestBody = givenDataMappingRequestJson();
+	@Mock
+	private ApplicationProperties appProperties;
 
-    // When
-    var result = controller.createDataMapping(authentication, requestBody, mockRequest);
+	private DataMappingController controller;
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-  }
+	@Mock
+	private Authentication authentication;
 
-  @Test
-  void testUpdateDataMapping() throws Exception {
-    // Given
-    givenAuthentication();
-    var requestBody = givenDataMappingRequestJson();
-    given(service.updateDataMapping(BARE_HANDLE, givenDataMappingRequest(), givenAgent(),
-        "null/data-mapping")).willReturn(
-        givenDataMappingSingleJsonApiWrapper());
+	@BeforeEach
+	void setup() {
+		controller = new DataMappingController(service, MAPPER, appProperties);
+		mockRequest.setRequestURI(MAPPING_URI);
+	}
 
-    // When
-    var result = controller.updateDataMapping(authentication, PREFIX, SUFFIX, requestBody,
-        mockRequest);
+	@Test
+	void testCreateDataMapping() throws Exception {
+		// Given
+		givenAuthentication();
+		var requestBody = givenDataMappingRequestJson();
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
+		// When
+		var result = controller.createDataMapping(authentication, requestBody, mockRequest);
 
-  @Test
-  void testUpdateDataMappingNoChanges() throws Exception {
-    // Given
-    givenAuthentication();
-    var requestBody = givenDataMappingRequestJson();
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+	}
 
-    // When
-    var result = controller.updateDataMapping(authentication, PREFIX, SUFFIX, requestBody,
-        mockRequest);
+	@Test
+	void testUpdateDataMapping() throws Exception {
+		// Given
+		givenAuthentication();
+		var requestBody = givenDataMappingRequestJson();
+		given(service.updateDataMapping(BARE_HANDLE, givenDataMappingRequest(), givenAgent(), "null/data-mapping"))
+			.willReturn(givenDataMappingSingleJsonApiWrapper());
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-  }
+		// When
+		var result = controller.updateDataMapping(authentication, PREFIX, SUFFIX, requestBody, mockRequest);
 
-  @Test
-  void testGetDataMappingById() throws NotFoundException {
-    // When
-    var result = controller.getDataMappingById(PREFIX, SUFFIX, mockRequest);
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
+	@Test
+	void testUpdateDataMappingNoChanges() throws Exception {
+		// Given
+		givenAuthentication();
+		var requestBody = givenDataMappingRequestJson();
 
-  @Test
-  void testDeleteSourceSystem() throws Exception {
-    // When
-    givenAuthentication();
-    var result = controller.tombstoneDataMapping(authentication, PREFIX, SUFFIX);
+		// When
+		var result = controller.updateDataMapping(authentication, PREFIX, SUFFIX, requestBody, mockRequest);
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-  }
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+	}
 
-  @Test
-  void testGetDataMappings() {
-    int pageNum = 1;
-    int pageSize = 10;
+	@Test
+	void testGetDataMappingById() throws NotFoundException {
+		// When
+		var result = controller.getDataMappingById(PREFIX, SUFFIX, mockRequest);
 
-    List<DataMapping> dataMappings = Collections.nCopies(pageSize,
-        givenDataMapping(HANDLE, 1));
-    var linksNode = new JsonApiLinks(pageSize, pageNum, true, MAPPING_PATH);
-    var expected = givenMappingResponse(dataMappings, linksNode);
-    given(service.getDataMappings(pageNum, pageSize, MAPPING_PATH)).willReturn(expected);
-    given(appProperties.getBaseUrl()).willReturn("https://sandbox.dissco.tech/orchestrator");
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
 
-    // When
-    var result = controller.getDataMappings(pageNum, pageSize, mockRequest);
+	@Test
+	void testDeleteSourceSystem() throws Exception {
+		// When
+		givenAuthentication();
+		var result = controller.tombstoneDataMapping(authentication, PREFIX, SUFFIX);
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(expected);
-  }
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+	}
 
-  private void givenAuthentication() {
-    var principal = mock(Jwt.class);
-    given(authentication.getPrincipal()).willReturn(principal);
-    given(principal.getClaims()).willReturn(givenClaims());
-  }
+	@Test
+	void testGetDataMappings() {
+		int pageNum = 1;
+		int pageSize = 10;
+
+		List<DataMapping> dataMappings = Collections.nCopies(pageSize, givenDataMapping(HANDLE, 1));
+		var linksNode = new JsonApiLinks(pageSize, pageNum, true, MAPPING_PATH);
+		var expected = givenMappingResponse(dataMappings, linksNode);
+		given(service.getDataMappings(pageNum, pageSize, MAPPING_PATH)).willReturn(expected);
+		given(appProperties.getBaseUrl()).willReturn("https://sandbox.dissco.tech/orchestrator");
+
+		// When
+		var result = controller.getDataMappings(pageNum, pageSize, mockRequest);
+
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(result.getBody()).isEqualTo(expected);
+	}
+
+	private void givenAuthentication() {
+		var principal = mock(Jwt.class);
+		given(authentication.getPrincipal()).willReturn(principal);
+		given(principal.getClaims()).willReturn(givenClaims());
+	}
+
 }

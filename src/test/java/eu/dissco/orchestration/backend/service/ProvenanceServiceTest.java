@@ -40,144 +40,134 @@ import tools.jackson.core.type.TypeReference;
 @ExtendWith(MockitoExtension.class)
 class ProvenanceServiceTest {
 
-  @Mock
-  private ApplicationProperties properties;
-  private ProvenanceService service;
+	@Mock
+	private ApplicationProperties properties;
 
-  private static List<Agent> givenExpectedAgents() {
-    return List.of(
-        AgentUtils.createAgent(null, ORCID, CREATOR,
-            "orcid", Type.PROV_PERSON),
-        AgentUtils.createAgent(APP_NAME, APP_HANDLE, PROCESSING_SERVICE,
-            DctermsType.DOI.value(), Type.PROV_SOFTWARE_AGENT)
-    );
-  }
+	private ProvenanceService service;
 
-  private static List<OdsChangeValue> givenChangeValueTombstone(ObjectType objectType) {
-    return List.of(
-        givenOdsChangeValue("add", "/ods:hasTombstoneMetadata", givenTombstoneMetadata(objectType)),
-        givenOdsChangeValue("replace", "/ods:status", OdsStatus.TOMBSTONE),
-        givenOdsChangeValue("replace", "/schema:version", 2),
-        givenOdsChangeValue("replace", "/schema:dateModified", Date.from(UPDATED))
-    );
-  }
+	private static List<Agent> givenExpectedAgents() {
+		return List.of(AgentUtils.createAgent(null, ORCID, CREATOR, "orcid", Type.PROV_PERSON), AgentUtils
+			.createAgent(APP_NAME, APP_HANDLE, PROCESSING_SERVICE, DctermsType.DOI.value(), Type.PROV_SOFTWARE_AGENT));
+	}
 
-  private static List<OdsChangeValue> givenChangeValueUpdate() {
-    return List.of(
-        givenOdsChangeValue("replace", "/schema:version", 2),
-        givenOdsChangeValue("replace", "/schema:name", "A Machine Annotation Service")
-    );
-  }
+	private static List<OdsChangeValue> givenChangeValueTombstone(ObjectType objectType) {
+		return List.of(givenOdsChangeValue("add", "/ods:hasTombstoneMetadata", givenTombstoneMetadata(objectType)),
+				givenOdsChangeValue("replace", "/ods:status", OdsStatus.TOMBSTONE),
+				givenOdsChangeValue("replace", "/schema:version", 2),
+				givenOdsChangeValue("replace", "/schema:dateModified", Date.from(UPDATED)));
+	}
 
-  private static OdsChangeValue givenOdsChangeValue(String op, String path, Object value) {
-    return new OdsChangeValue()
-        .withAdditionalProperty("op", op)
-        .withAdditionalProperty("path", path)
-        .withAdditionalProperty("value", MAPPER.convertValue(value, new TypeReference<>() {
-        }));
-  }
+	private static List<OdsChangeValue> givenChangeValueUpdate() {
+		return List.of(givenOdsChangeValue("replace", "/schema:version", 2),
+				givenOdsChangeValue("replace", "/schema:name", "A Machine Annotation Service"));
+	}
 
-  @BeforeEach
-  void setup() {
-    this.service = new ProvenanceService(MAPPER, properties);
-  }
+	private static OdsChangeValue givenOdsChangeValue(String op, String path, Object value) {
+		return new OdsChangeValue().withAdditionalProperty("op", op)
+			.withAdditionalProperty("path", path)
+			.withAdditionalProperty("value", MAPPER.convertValue(value, new TypeReference<>() {
+			}));
+	}
 
-  @Test
-  void testGenerateCreateEvent() {
-    // Given
-    given(properties.getName()).willReturn(APP_NAME);
-    given(properties.getPid()).willReturn(APP_HANDLE);
-    var machineAnnotationService = givenMas();
+	@BeforeEach
+	void setup() {
+		this.service = new ProvenanceService(MAPPER, properties);
+	}
 
-    // When
-    var event = service.generateCreateEvent(MAPPER.valueToTree(machineAnnotationService),
-        givenAgent());
+	@Test
+	void testGenerateCreateEvent() {
+		// Given
+		given(properties.getName()).willReturn(APP_NAME);
+		given(properties.getPid()).willReturn(APP_HANDLE);
+		var machineAnnotationService = givenMas();
 
-    // Then
-    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "1");
-    assertThat(event.getProvActivity().getOdsChangeValue()).isNull();
-    assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object newly created");
-    assertThat(event.getProvEntity().getProvValue()).isNotNull();
-    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
-  }
+		// When
+		var event = service.generateCreateEvent(MAPPER.valueToTree(machineAnnotationService), givenAgent());
 
-  @Test
-  void testGenerateUpdateEvent() {
-    // Given
-    given(properties.getName()).willReturn(APP_NAME);
-    given(properties.getPid()).willReturn(APP_HANDLE);
-    var machineAnnotationService = givenMas(2);
-    var prevMachineAnnotationService = givenMas(1, "The old name for the mas", TTL);
+		// Then
+		assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "1");
+		assertThat(event.getProvActivity().getOdsChangeValue()).isNull();
+		assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object newly created");
+		assertThat(event.getProvEntity().getProvValue()).isNotNull();
+		assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
+	}
 
-    // When
-    var event = service.generateUpdateEvent(MAPPER.valueToTree(machineAnnotationService),
-        MAPPER.valueToTree(prevMachineAnnotationService), givenAgent());
+	@Test
+	void testGenerateUpdateEvent() {
+		// Given
+		given(properties.getName()).willReturn(APP_NAME);
+		given(properties.getPid()).willReturn(APP_HANDLE);
+		var machineAnnotationService = givenMas(2);
+		var prevMachineAnnotationService = givenMas(1, "The old name for the mas", TTL);
 
-    // Then
-    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
-    assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object updated");
-    assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(givenChangeValueUpdate());
-    assertThat(event.getProvEntity().getProvValue()).isNotNull();
-    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
-  }
+		// When
+		var event = service.generateUpdateEvent(MAPPER.valueToTree(machineAnnotationService),
+				MAPPER.valueToTree(prevMachineAnnotationService), givenAgent());
 
-  @Test
-  void testGenerateTombstoneEventMas() {
-    // Given
-    given(properties.getName()).willReturn(APP_NAME);
-    given(properties.getPid()).willReturn(APP_HANDLE);
-    var originalMas = MAPPER.valueToTree(givenMas());
-    var tombstoneMas = MAPPER.valueToTree(givenTombstoneMas());
+		// Then
+		assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
+		assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object updated");
+		assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(givenChangeValueUpdate());
+		assertThat(event.getProvEntity().getProvValue()).isNotNull();
+		assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
+	}
 
-    // When
-    var event = service.generateTombstoneEvent(tombstoneMas, originalMas, givenAgent());
+	@Test
+	void testGenerateTombstoneEventMas() {
+		// Given
+		given(properties.getName()).willReturn(APP_NAME);
+		given(properties.getPid()).willReturn(APP_HANDLE);
+		var originalMas = MAPPER.valueToTree(givenMas());
+		var tombstoneMas = MAPPER.valueToTree(givenTombstoneMas());
 
-    // Then
-    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
-    assertThat(event.getProvActivity().getOdsChangeValue()).hasSameElementsAs(
-        givenChangeValueTombstone(ObjectType.MAS));
-    assertThat(event.getProvEntity().getProvValue()).isNotNull();
-    assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object tombstoned");
-    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
-  }
+		// When
+		var event = service.generateTombstoneEvent(tombstoneMas, originalMas, givenAgent());
 
-  @Test
-  void testGenerateTombstoneEventSourceSystem() {
-    // Given
-    given(properties.getName()).willReturn(APP_NAME);
-    given(properties.getPid()).willReturn(APP_HANDLE);
-    var originalSourceSystem = MAPPER.valueToTree(givenSourceSystem());
-    var tombstoneSourceSystem = MAPPER.valueToTree(givenTombstoneSourceSystem());
+		// Then
+		assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
+		assertThat(event.getProvActivity().getOdsChangeValue())
+			.hasSameElementsAs(givenChangeValueTombstone(ObjectType.MAS));
+		assertThat(event.getProvEntity().getProvValue()).isNotNull();
+		assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Object tombstoned");
+		assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
+	}
 
-    // When
-    var event = service.generateTombstoneEvent(tombstoneSourceSystem, originalSourceSystem,
-        givenAgent());
+	@Test
+	void testGenerateTombstoneEventSourceSystem() {
+		// Given
+		given(properties.getName()).willReturn(APP_NAME);
+		given(properties.getPid()).willReturn(APP_HANDLE);
+		var originalSourceSystem = MAPPER.valueToTree(givenSourceSystem());
+		var tombstoneSourceSystem = MAPPER.valueToTree(givenTombstoneSourceSystem());
 
-    // Then
-    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
-    assertThat(event.getProvActivity().getOdsChangeValue()).hasSameElementsAs(
-        givenChangeValueTombstone(ObjectType.SOURCE_SYSTEM));
-    assertThat(event.getProvEntity().getProvValue()).isNotNull();
-    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
-  }
+		// When
+		var event = service.generateTombstoneEvent(tombstoneSourceSystem, originalSourceSystem, givenAgent());
 
-  @Test
-  void testGenerateTombstoneEventDataMapping() {
-    // Given
-    given(properties.getName()).willReturn(APP_NAME);
-    given(properties.getPid()).willReturn(APP_HANDLE);
-    var originalDataMapping = MAPPER.valueToTree(givenDataMapping());
-    var tombstoneDataMapping = MAPPER.valueToTree(givenTombstoneDataMapping());
+		// Then
+		assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
+		assertThat(event.getProvActivity().getOdsChangeValue())
+			.hasSameElementsAs(givenChangeValueTombstone(ObjectType.SOURCE_SYSTEM));
+		assertThat(event.getProvEntity().getProvValue()).isNotNull();
+		assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
+	}
 
-    // When
-    var event = service.generateTombstoneEvent(tombstoneDataMapping, originalDataMapping,
-        givenAgent());
+	@Test
+	void testGenerateTombstoneEventDataMapping() {
+		// Given
+		given(properties.getName()).willReturn(APP_NAME);
+		given(properties.getPid()).willReturn(APP_HANDLE);
+		var originalDataMapping = MAPPER.valueToTree(givenDataMapping());
+		var tombstoneDataMapping = MAPPER.valueToTree(givenTombstoneDataMapping());
 
-    // Then
-    assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
-    assertThat(event.getProvActivity().getOdsChangeValue()).hasSameElementsAs(
-        givenChangeValueTombstone(ObjectType.DATA_MAPPING));
-    assertThat(event.getProvEntity().getProvValue()).isNotNull();
-    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
-  }
+		// When
+		var event = service.generateTombstoneEvent(tombstoneDataMapping, originalDataMapping, givenAgent());
+
+		// Then
+		assertThat(event.getDctermsIdentifier()).isEqualTo(HANDLE + "/" + "2");
+		assertThat(event.getProvActivity().getOdsChangeValue())
+			.hasSameElementsAs(givenChangeValueTombstone(ObjectType.DATA_MAPPING));
+		assertThat(event.getProvEntity().getProvValue()).isNotNull();
+		assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
+	}
+
 }

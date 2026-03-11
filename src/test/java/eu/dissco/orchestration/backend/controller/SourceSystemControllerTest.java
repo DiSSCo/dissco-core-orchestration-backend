@@ -47,170 +47,172 @@ import org.springframework.security.oauth2.jwt.Jwt;
 @ExtendWith(MockitoExtension.class)
 class SourceSystemControllerTest {
 
+	MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
-  MockHttpServletRequest mockRequest = new MockHttpServletRequest();
-  @Mock
-  private SourceSystemService service;
-  @Mock
-  private ApplicationProperties appProperties;
-  private SourceSystemController controller;
-  @Mock
-  private Authentication authentication;
+	@Mock
+	private SourceSystemService service;
 
-  @BeforeEach
-  void setup() {
-    controller = new SourceSystemController(service, MAPPER, appProperties);
-    mockRequest.setRequestURI(SYSTEM_URI);
-  }
+	@Mock
+	private ApplicationProperties appProperties;
 
-  @Test
-  void testCreateSourceSystem() throws Exception {
-    // Given
-    var sourceSystem = givenSourceSystemRequestJson();
-    givenAuthentication();
+	private SourceSystemController controller;
 
-    // When
-    var result = controller.createSourceSystem(authentication, sourceSystem, mockRequest);
+	@Mock
+	private Authentication authentication;
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-  }
+	@BeforeEach
+	void setup() {
+		controller = new SourceSystemController(service, MAPPER, appProperties);
+		mockRequest.setRequestURI(SYSTEM_URI);
+	}
 
-  @Test
-  void testScheduleRunSourceSystemById() throws Exception {
-    // Given
+	@Test
+	void testCreateSourceSystem() throws Exception {
+		// Given
+		var sourceSystem = givenSourceSystemRequestJson();
+		givenAuthentication();
 
-    // When
-    controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, Optional.of(givenMasScheduleData()));
+		// When
+		var result = controller.createSourceSystem(authentication, sourceSystem, mockRequest);
 
-    // Then
-    then(service).should().runSourceSystemById(BARE_HANDLE, givenMasScheduleData());
-  }
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+	}
 
-  @Test
-  void testScheduleRunSourceSystemByIdNoMasSchedule() throws Exception {
-    // Given
+	@Test
+	void testScheduleRunSourceSystemById() throws Exception {
+		// Given
 
-    // When
-    controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, Optional.empty());
+		// When
+		controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, Optional.of(givenMasScheduleData()));
 
-    // Then
-    then(service).should().runSourceSystemById(BARE_HANDLE, new MasScheduleData());
-  }
+		// Then
+		then(service).should().runSourceSystemById(BARE_HANDLE, givenMasScheduleData());
+	}
 
-  @Test
-  void testUpdateSourceSystem() throws Exception {
-    // Given
-    var sourceSystem = givenSourceSystemRequestJson();
-    givenAuthentication();
-    given(service.updateSourceSystem(BARE_HANDLE, givenSourceSystemRequest(), givenAgent(),
-        "null/source-system", true)).willReturn(
-        givenSourceSystemSingleJsonApiWrapper());
+	@Test
+	void testScheduleRunSourceSystemByIdNoMasSchedule() throws Exception {
+		// Given
 
-    // When
-    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, true, sourceSystem,
-        mockRequest);
+		// When
+		controller.scheduleRunSourceSystemById(PREFIX, SUFFIX, Optional.empty());
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
+		// Then
+		then(service).should().runSourceSystemById(BARE_HANDLE, new MasScheduleData());
+	}
 
-  @Test
-  void testUpdateSourceSystemNoChanges() throws Exception {
-    // Given
-    var sourceSystem = givenSourceSystemRequestJson();
-    givenAuthentication();
+	@Test
+	void testUpdateSourceSystem() throws Exception {
+		// Given
+		var sourceSystem = givenSourceSystemRequestJson();
+		givenAuthentication();
+		given(service.updateSourceSystem(BARE_HANDLE, givenSourceSystemRequest(), givenAgent(), "null/source-system",
+				true))
+			.willReturn(givenSourceSystemSingleJsonApiWrapper());
 
-    // When
-    var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, false, sourceSystem,
-        mockRequest);
+		// When
+		var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, true, sourceSystem, mockRequest);
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-  }
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
 
-  @Test
-  void testGetSourceSystemById() throws NotFoundException {
-    // Given
-    // When
-    var result = controller.getSourceSystemById(PREFIX, SUFFIX, mockRequest);
+	@Test
+	void testUpdateSourceSystemNoChanges() throws Exception {
+		// Given
+		var sourceSystem = givenSourceSystemRequestJson();
+		givenAuthentication();
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
+		// When
+		var result = controller.updateSourceSystem(authentication, PREFIX, SUFFIX, false, sourceSystem, mockRequest);
 
-  @Test
-  void testDownloadSourceSystemDwcDp() throws URISyntaxException, IOException, NotFoundException {
-    // Given
-    var exportType = ExportType.DWC_DP;
-    given(service.getSourceSystemDownload(BARE_HANDLE, exportType)).willReturn(
-        new ByteArrayInputStream("test".getBytes()));
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+	}
 
-    // When
-    var result = controller.getSourceSystemDownload(PREFIX, SUFFIX, exportType);
+	@Test
+	void testGetSourceSystemById() throws NotFoundException {
+		// Given
+		// When
+		var result = controller.getSourceSystemById(PREFIX, SUFFIX, mockRequest);
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(new String(result.getBody().getContentAsByteArray())).isEqualTo("test");
-    assertTrue(result.getHeaders().containsHeaderValue("Content-Type", "application/zip"));
-    assertTrue(result.getHeaders().containsHeaderValue("Content-Disposition",
-        "attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\""));
-  }
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
 
-  @Test
-  void testGetSourceSystems() {
-    // Given
-    int pageNum = 1;
-    int pageSize = 10;
-    List<SourceSystem> sourceSystems = Collections.nCopies(pageSize, givenSourceSystem());
-    var linksNode = new JsonApiLinks(pageSize, pageNum, true, SYSTEM_PATH);
-    var expected = givenSourceSystemResponse(sourceSystems, linksNode);
-    given(service.getSourceSystems(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
-    given(appProperties.getBaseUrl()).willReturn(SANDBOX_URI);
+	@Test
+	void testDownloadSourceSystemDwcDp() throws URISyntaxException, IOException, NotFoundException {
+		// Given
+		var exportType = ExportType.DWC_DP;
+		given(service.getSourceSystemDownload(BARE_HANDLE, exportType))
+			.willReturn(new ByteArrayInputStream("test".getBytes()));
 
-    // When
-    var result = controller.getSourceSystems(pageNum, pageSize, mockRequest);
+		// When
+		var result = controller.getSourceSystemDownload(PREFIX, SUFFIX, exportType);
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(expected);
-  }
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(new String(result.getBody().getContentAsByteArray())).isEqualTo("test");
+		assertTrue(result.getHeaders().containsHeaderValue("Content-Type", "application/zip"));
+		assertTrue(result.getHeaders()
+			.containsHeaderValue("Content-Disposition",
+					"attachment; filename=\"20.5000.1025_gw0-pop-xsl_dwc-dp.zip\""));
+	}
 
-  @Test
-  void testGetSourceSystemsLastPage() {
-    // Given
-    int pageNum = 2;
-    int pageSize = 10;
-    List<SourceSystem> ssRecords = Collections.nCopies(pageSize, givenSourceSystem());
-    var linksNode = new JsonApiLinks(pageSize, pageNum, false, SYSTEM_PATH);
-    var expected = givenSourceSystemResponse(ssRecords, linksNode);
-    given(service.getSourceSystems(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
-    given(appProperties.getBaseUrl()).willReturn(SANDBOX_URI);
+	@Test
+	void testGetSourceSystems() {
+		// Given
+		int pageNum = 1;
+		int pageSize = 10;
+		List<SourceSystem> sourceSystems = Collections.nCopies(pageSize, givenSourceSystem());
+		var linksNode = new JsonApiLinks(pageSize, pageNum, true, SYSTEM_PATH);
+		var expected = givenSourceSystemResponse(sourceSystems, linksNode);
+		given(service.getSourceSystems(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
+		given(appProperties.getBaseUrl()).willReturn(SANDBOX_URI);
 
-    // When
-    var result = controller.getSourceSystems(pageNum, pageSize, mockRequest);
+		// When
+		var result = controller.getSourceSystems(pageNum, pageSize, mockRequest);
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(expected);
-  }
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(result.getBody()).isEqualTo(expected);
+	}
 
-  @Test
-  void testTombstoneSourceSystem() throws Exception {
-    // Given
-    givenAuthentication();
+	@Test
+	void testGetSourceSystemsLastPage() {
+		// Given
+		int pageNum = 2;
+		int pageSize = 10;
+		List<SourceSystem> ssRecords = Collections.nCopies(pageSize, givenSourceSystem());
+		var linksNode = new JsonApiLinks(pageSize, pageNum, false, SYSTEM_PATH);
+		var expected = givenSourceSystemResponse(ssRecords, linksNode);
+		given(service.getSourceSystems(pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
+		given(appProperties.getBaseUrl()).willReturn(SANDBOX_URI);
 
-    // When
-    var result = controller.tombstoneSourceSystem(authentication, PREFIX, SUFFIX);
+		// When
+		var result = controller.getSourceSystems(pageNum, pageSize, mockRequest);
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-  }
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(result.getBody()).isEqualTo(expected);
+	}
 
-  private void givenAuthentication() {
-    var principal = mock(Jwt.class);
-    given(authentication.getPrincipal()).willReturn(principal);
-    given(principal.getClaims()).willReturn(givenClaims());
-  }
+	@Test
+	void testTombstoneSourceSystem() throws Exception {
+		// Given
+		givenAuthentication();
+
+		// When
+		var result = controller.tombstoneSourceSystem(authentication, PREFIX, SUFFIX);
+
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+	}
+
+	private void givenAuthentication() {
+		var principal = mock(Jwt.class);
+		given(authentication.getPrincipal()).willReturn(principal);
+		given(principal.getClaims()).willReturn(givenClaims());
+	}
 
 }

@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("endpoint")
 public class WebConnectionProperties {
 
-  @NotBlank
-  private String handleEndpoint;
+	@NotBlank
+	private String handleEndpoint;
 
 }

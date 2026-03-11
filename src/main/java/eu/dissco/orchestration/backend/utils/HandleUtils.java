@@ -4,11 +4,12 @@ import static eu.dissco.orchestration.backend.configuration.ApplicationConfigura
 
 public class HandleUtils {
 
-  private HandleUtils() {
-    // Utility class not meant to be instantiated
-  }
+	private HandleUtils() {
+		// Utility class not meant to be instantiated
+	}
 
-  public static String removeProxy(String id) {
-    return id.replace(HANDLE_PROXY, "");
-  }
+	public static String removeProxy(String id) {
+		return id.replace(HANDLE_PROXY, "");
+	}
+
 }

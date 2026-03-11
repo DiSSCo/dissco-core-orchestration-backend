@@ -35,126 +35,120 @@ import org.springframework.security.oauth2.jwt.Jwt;
 @ExtendWith(MockitoExtension.class)
 class MachineAnnotationServiceControllerTest {
 
-  MockHttpServletRequest mockRequest = new MockHttpServletRequest();
-  @Mock
-  private Authentication authentication;
-  @Mock
-  private MachineAnnotationServiceService service;
-  @Mock
-  private ApplicationProperties appProperties;
-  private MachineAnnotationServiceController controller;
+	MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
-  @BeforeEach
-  void setup() {
-    controller = new MachineAnnotationServiceController(service, appProperties);
-    mockRequest.setRequestURI(MAS_URI);
-  }
+	@Mock
+	private Authentication authentication;
 
-  @Test
-  void testCreateMas() throws Exception {
-    // Given
-    givenAuthentication();
-    var mas = givenMasRequestJson();
+	@Mock
+	private MachineAnnotationServiceService service;
 
-    // When
-    var result = controller.createMachineAnnotationService(authentication, mas, mockRequest);
+	@Mock
+	private ApplicationProperties appProperties;
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-  }
+	private MachineAnnotationServiceController controller;
 
-  @Test
-  void testUpdateMas() throws Exception {
-    // Given
-    givenAuthentication();
-    var mas = givenMasRequestJson();
-    var masResponse = givenMasSingleJsonApiWrapper();
-    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), givenAgent(),
-        "null/mas")).willReturn(
-        masResponse);
+	@BeforeEach
+	void setup() {
+		controller = new MachineAnnotationServiceController(service, appProperties);
+		mockRequest.setRequestURI(MAS_URI);
+	}
 
-    // When
-    var result = controller.updateMachineAnnotationService(authentication, PREFIX, SUFFIX, mas,
-        mockRequest);
+	@Test
+	void testCreateMas() throws Exception {
+		// Given
+		givenAuthentication();
+		var mas = givenMasRequestJson();
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
+		// When
+		var result = controller.createMachineAnnotationService(authentication, mas, mockRequest);
 
-  @Test
-  void testUpdateMasTokenHasName() throws Exception {
-    // Given
-    var principal = mock(Jwt.class);
-    given(authentication.getPrincipal()).willReturn(principal);
-    given(principal.getClaims()).willReturn(Map.of(
-        "orcid", BARE_ORCID,
-        "given_name", "Carl"
-    ));
-    var expectedAgent = givenAgent()
-        .withSchemaName("Carl");
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+	}
 
-    // When
-    controller.updateMachineAnnotationService(authentication, PREFIX, SUFFIX,
-        givenMasRequestJson(), mockRequest);
+	@Test
+	void testUpdateMas() throws Exception {
+		// Given
+		givenAuthentication();
+		var mas = givenMasRequestJson();
+		var masResponse = givenMasSingleJsonApiWrapper();
+		given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), givenAgent(), "null/mas"))
+			.willReturn(masResponse);
 
-    // Then
-    then(service).should()
-        .updateMachineAnnotationService(anyString(), any(), eq(expectedAgent), anyString());
-  }
+		// When
+		var result = controller.updateMachineAnnotationService(authentication, PREFIX, SUFFIX, mas, mockRequest);
 
-  @Test
-  void testUpdateMasNoChange() throws Exception {
-    // Given
-    givenAuthentication();
-    var mas = givenMasRequestJson();
-    given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), givenAgent(),
-        "null/mas")).willReturn(
-        null);
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
 
-    // When
-    var result = controller.updateMachineAnnotationService(authentication, PREFIX, SUFFIX, mas,
-        mockRequest);
+	@Test
+	void testUpdateMasTokenHasName() throws Exception {
+		// Given
+		var principal = mock(Jwt.class);
+		given(authentication.getPrincipal()).willReturn(principal);
+		given(principal.getClaims()).willReturn(Map.of("orcid", BARE_ORCID, "given_name", "Carl"));
+		var expectedAgent = givenAgent().withSchemaName("Carl");
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-  }
+		// When
+		controller.updateMachineAnnotationService(authentication, PREFIX, SUFFIX, givenMasRequestJson(), mockRequest);
 
-  @Test
-  void testGetMasById() throws NotFoundException {
-    // When
-    var result = controller.getMachineAnnotationService(PREFIX, SUFFIX, mockRequest);
+		// Then
+		then(service).should().updateMachineAnnotationService(anyString(), any(), eq(expectedAgent), anyString());
+	}
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
+	@Test
+	void testUpdateMasNoChange() throws Exception {
+		// Given
+		givenAuthentication();
+		var mas = givenMasRequestJson();
+		given(service.updateMachineAnnotationService(BARE_HANDLE, givenMasRequest(), givenAgent(), "null/mas"))
+			.willReturn(null);
 
-  @Test
-  void testGetMass() {
-    // Given
+		// When
+		var result = controller.updateMachineAnnotationService(authentication, PREFIX, SUFFIX, mas, mockRequest);
 
-    // When
-    var result = controller.getMachineAnnotationServices(1, 10, mockRequest);
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+	}
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
+	@Test
+	void testGetMasById() throws NotFoundException {
+		// When
+		var result = controller.getMachineAnnotationService(PREFIX, SUFFIX, mockRequest);
 
-  @Test
-  void testDeleteMas() throws Exception {
-    // Given
-    givenAuthentication();
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
 
-    // When
-    var result = controller.tombstoneMachineAnnotationService(authentication, PREFIX, SUFFIX);
+	@Test
+	void testGetMass() {
+		// Given
 
-    // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-  }
+		// When
+		var result = controller.getMachineAnnotationServices(1, 10, mockRequest);
 
-  private void givenAuthentication() {
-    var principal = mock(Jwt.class);
-    given(authentication.getPrincipal()).willReturn(principal);
-    given(principal.getClaims()).willReturn(givenClaims());
-  }
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
+
+	@Test
+	void testDeleteMas() throws Exception {
+		// Given
+		givenAuthentication();
+
+		// When
+		var result = controller.tombstoneMachineAnnotationService(authentication, PREFIX, SUFFIX);
+
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+	}
+
+	private void givenAuthentication() {
+		var principal = mock(Jwt.class);
+		given(authentication.getPrincipal()).willReturn(principal);
+		given(principal.getClaims()).willReturn(givenClaims());
+	}
 
 }

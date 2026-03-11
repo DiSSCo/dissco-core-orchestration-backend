@@ -14,49 +14,53 @@ import org.springframework.security.oauth2.jwt.Jwt;
 @Slf4j
 public class ControllerUtils {
 
-  public static final String ORCID = "orcid";
-  public static final String PREFIX_OAS = "Prefix of target ID";
-  public static final String SUFFIX_OAS = "Suffix of target ID";
-  public static final String PAGE_NUM_OAS = "Desired page number";
-  public static final String PAGE_SIZE_OAS = "Desired page size";
-  public static final String DEFAULT_PAGE_NUM = "1";
-  public static final String DEFAULT_PAGE_SIZE = "10";
+	public static final String ORCID = "orcid";
 
+	public static final String PREFIX_OAS = "Prefix of target ID";
 
-  private ControllerUtils() {
-  }
+	public static final String SUFFIX_OAS = "Suffix of target ID";
 
-  public static Agent getAgent(Authentication authentication, AgentRoleType roleType)
-      throws ForbiddenException {
-    var claims = ((Jwt) authentication.getPrincipal()).getClaims();
-    if (claims.containsKey(ORCID)) {
-      StringBuilder fullName = new StringBuilder();
-      if (claims.containsKey("given_name")) {
-        fullName.append(claims.get("given_name"));
-      }
-      if (claims.containsKey("family_name")) {
-        if (!fullName.isEmpty()) {
-          fullName.append(" ");
-        }
-        fullName.append(claims.get("family_name"));
-      }
-      var nameString = fullName.isEmpty() ? null : fullName.toString();
-      return createAgent(nameString, retrieveOrcid(claims), roleType, ORCID,
-          Type.SCHEMA_PERSON);
-    } else {
-      log.error("Missing ORCID in token");
-      throw new ForbiddenException("No ORCID provided");
-    }
-  }
+	public static final String PAGE_NUM_OAS = "Desired page number";
 
-  private static String retrieveOrcid(Map<String, Object> claims) {
-    var orcid = (String) claims.get(ORCID);
-    if (!orcid.startsWith("https://orcid.org/")) {
-      return "https://orcid.org/" + orcid;
-    } else {
-      return orcid;
-    }
-  }
+	public static final String PAGE_SIZE_OAS = "Desired page size";
 
+	public static final String DEFAULT_PAGE_NUM = "1";
+
+	public static final String DEFAULT_PAGE_SIZE = "10";
+
+	private ControllerUtils() {
+	}
+
+	public static Agent getAgent(Authentication authentication, AgentRoleType roleType) throws ForbiddenException {
+		var claims = ((Jwt) authentication.getPrincipal()).getClaims();
+		if (claims.containsKey(ORCID)) {
+			StringBuilder fullName = new StringBuilder();
+			if (claims.containsKey("given_name")) {
+				fullName.append(claims.get("given_name"));
+			}
+			if (claims.containsKey("family_name")) {
+				if (!fullName.isEmpty()) {
+					fullName.append(" ");
+				}
+				fullName.append(claims.get("family_name"));
+			}
+			var nameString = fullName.isEmpty() ? null : fullName.toString();
+			return createAgent(nameString, retrieveOrcid(claims), roleType, ORCID, Type.SCHEMA_PERSON);
+		}
+		else {
+			log.error("Missing ORCID in token");
+			throw new ForbiddenException("No ORCID provided");
+		}
+	}
+
+	private static String retrieveOrcid(Map<String, Object> claims) {
+		var orcid = (String) claims.get(ORCID);
+		if (!orcid.startsWith("https://orcid.org/")) {
+			return "https://orcid.org/" + orcid;
+		}
+		else {
+			return orcid;
+		}
+	}
 
 }

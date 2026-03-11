@@ -15,40 +15,40 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("k8s")
 public class KubernetesProperties {
 
-  @NotNull
-  private Duration apiPingInterval = Duration.ofSeconds(15L);
+	@NotNull
+	private Duration apiPingInterval = Duration.ofSeconds(15L);
 
-  @NotNull
-  private Duration apiWriteTimeout = Duration.ofSeconds(30L);
+	@NotNull
+	private Duration apiWriteTimeout = Duration.ofSeconds(30L);
 
-  @NotNull
-  private Duration apiReadTimeout = Duration.ofMinutes(2L);
+	@NotNull
+	private Duration apiReadTimeout = Duration.ofMinutes(2L);
 
-  @NotNull
-  private Duration apiConnectTimeout = Duration.ofSeconds(15L);
+	@NotNull
+	private Duration apiConnectTimeout = Duration.ofSeconds(15L);
 
-  @NotBlank
-  private String kedaGroup = "keda.sh";
+	@NotBlank
+	private String kedaGroup = "keda.sh";
 
-  @NotBlank
-  private String kedaVersion = "v1alpha1";
+	@NotBlank
+	private String kedaVersion = "v1alpha1";
 
-  @NotBlank
-  private String kedaResource = "scaledobjects";
+	@NotBlank
+	private String kedaResource = "scaledobjects";
 
-  @NotBlank
-  private String rabbitGroup = "rabbitmq.com";
+	@NotBlank
+	private String rabbitGroup = "rabbitmq.com";
 
-  @NotBlank
-  private String rabbitVersion = "v1beta1";
+	@NotBlank
+	private String rabbitVersion = "v1beta1";
 
-  @NotBlank
-  private String rabbitBindingResource = "bindings";
+	@NotBlank
+	private String rabbitBindingResource = "bindings";
 
-  @NotBlank
-  private String rabbitQueueResource = "queues";
+	@NotBlank
+	private String rabbitQueueResource = "queues";
 
-  @Positive
-  private int kedaPatchWait = 500;
+	@Positive
+	private int kedaPatchWait = 500;
 
 }

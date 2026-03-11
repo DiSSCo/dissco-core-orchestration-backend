@@ -5,9 +5,9 @@ import org.springframework.core.convert.converter.Converter;
 
 public class StringToExportTypeConverter implements Converter<String, ExportType> {
 
+	@Override
+	public ExportType convert(String exportTypeName) {
+		return ExportType.fromName(exportTypeName);
+	}
 
-  @Override
-  public ExportType convert(String exportTypeName) {
-    return ExportType.fromName(exportTypeName);
-  }
 }
