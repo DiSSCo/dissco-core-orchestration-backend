@@ -8,9 +8,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebServerConfiguration implements WebMvcConfigurer {
 
-  @Override
-  public void addFormatters(FormatterRegistry registry) {
-    registry.addConverter(new StringToExportTypeConverter());
-  }
+	@Override
+	public void addFormatters(FormatterRegistry registry) {
+		registry.addConverter(new StringToExportTypeConverter());
+	}
 
 }

@@ -25,62 +25,62 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @Slf4j
 class FdoRecordServiceTest {
 
-  private FdoRecordService builder;
+	private FdoRecordService builder;
 
-  @BeforeEach
-  void setup() {
-    this.builder = new FdoRecordService(MAPPER, new FdoProperties());
-  }
+	@BeforeEach
+	void setup() {
+		this.builder = new FdoRecordService(MAPPER, new FdoProperties());
+	}
 
-  @Test
-  void testCreateRequestSourceSystem() {
-    // When
-    var result = builder.buildCreateRequest(givenSourceSystemRequest(), ObjectType.SOURCE_SYSTEM);
+	@Test
+	void testCreateRequestSourceSystem() {
+		// When
+		var result = builder.buildCreateRequest(givenSourceSystemRequest(), ObjectType.SOURCE_SYSTEM);
 
-    // Then
-    assertThat(result).isEqualTo(givenSourceSystemHandleRequest());
-  }
+		// Then
+		assertThat(result).isEqualTo(givenSourceSystemHandleRequest());
+	}
 
-  @Test
-  void testCreateRequestMapping() {
-    // When
-    var result = builder.buildCreateRequest(givenDataMappingRequest(), ObjectType.DATA_MAPPING);
+	@Test
+	void testCreateRequestMapping() {
+		// When
+		var result = builder.buildCreateRequest(givenDataMappingRequest(), ObjectType.DATA_MAPPING);
 
-    // Then
-    assertThat(result).isEqualTo(givenMappingHandleRequest());
-  }
+		// Then
+		assertThat(result).isEqualTo(givenMappingHandleRequest());
+	}
 
-  @Test
-  void testCreateRequestMas() {
-    // When
-    var result = builder.buildCreateRequest(givenMasRequest(), ObjectType.MAS);
+	@Test
+	void testCreateRequestMas() {
+		// When
+		var result = builder.buildCreateRequest(givenMasRequest(), ObjectType.MAS);
 
-    // Then
-    assertThat(result).isEqualTo(givenMasHandleRequest());
-  }
+		// Then
+		assertThat(result).isEqualTo(givenMasHandleRequest());
+	}
 
-  @Test
-  void testRollbackHandleCreation() {
-    // Given
-    var expected = givenRollbackCreationRequest();
+	@Test
+	void testRollbackHandleCreation() {
+		// Given
+		var expected = givenRollbackCreationRequest();
 
-    // when
-    var result = builder.buildRollbackCreateRequest(HANDLE);
+		// when
+		var result = builder.buildRollbackCreateRequest(HANDLE);
 
-    // Then
-    assertThat(result).isEqualTo(expected);
-  }
+		// Then
+		assertThat(result).isEqualTo(expected);
+	}
 
-  @Test
-  void testTombstonePid() {
-    // given
-    var expected = givenTombstoneRequestMas();
+	@Test
+	void testTombstonePid() {
+		// given
+		var expected = givenTombstoneRequestMas();
 
-    // When
-    var result = builder.buildTombstoneRequest(ObjectType.MAS, BARE_HANDLE);
+		// When
+		var result = builder.buildTombstoneRequest(ObjectType.MAS, BARE_HANDLE);
 
-    // Then
-    assertThat(result).isEqualTo(expected);
-  }
+		// Then
+		assertThat(result).isEqualTo(expected);
+	}
 
 }

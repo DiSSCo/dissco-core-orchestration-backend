@@ -5,7 +5,8 @@ import lombok.Data;
 @Data
 public class Enrichment {
 
-  private String name;
-  private String imageOnly;
+	private String name;
+
+	private String imageOnly;
 
 }

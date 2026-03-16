@@ -25,194 +25,196 @@ import org.junit.jupiter.api.Test;
 
 class DataMappingRepositoryIT extends BaseRepositoryIT {
 
-  private DataMappingRepository repository;
+	private DataMappingRepository repository;
 
-  @BeforeEach
-  void setup() {
-    repository = new DataMappingRepository(MAPPER, context);
-  }
+	@BeforeEach
+	void setup() {
+		repository = new DataMappingRepository(MAPPER, context);
+	}
 
-  @AfterEach
-  void destroy() {
-    context.truncate(DATA_MAPPING).execute();
-  }
+	@AfterEach
+	void destroy() {
+		context.truncate(DATA_MAPPING).execute();
+	}
 
-  @Test
-  void testCreateDataMapping() {
-    // Given
-    var dataMapping = givenDataMapping(HANDLE, 1);
+	@Test
+	void testCreateDataMapping() {
+		// Given
+		var dataMapping = givenDataMapping(HANDLE, 1);
 
-    // When
-    repository.createDataMapping(dataMapping);
-    var result = readAllDataMappings();
+		// When
+		repository.createDataMapping(dataMapping);
+		var result = readAllDataMappings();
 
-    // Then
-    assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(dataMapping);
-  }
+		// Then
+		assertThat(result).hasSize(1);
+		assertThat(result.get(0)).isEqualTo(dataMapping);
+	}
 
-  @Test
-  void testUpdateDataMapping() {
-    // Given
-    var dataMapping = givenDataMapping(HANDLE, 1);
-    postDataMappings(List.of(dataMapping));
-    var updatedDataMapping = givenDataMapping(HANDLE, 2, "Updated name");
+	@Test
+	void testUpdateDataMapping() {
+		// Given
+		var dataMapping = givenDataMapping(HANDLE, 1);
+		postDataMappings(List.of(dataMapping));
+		var updatedDataMapping = givenDataMapping(HANDLE, 2, "Updated name");
 
-    // When
-    repository.updateDataMapping(updatedDataMapping);
-    var result = readAllDataMappings();
+		// When
+		repository.updateDataMapping(updatedDataMapping);
+		var result = readAllDataMappings();
 
-    // Then
-    assertThat(result).containsExactly(updatedDataMapping);
-  }
+		// Then
+		assertThat(result).containsExactly(updatedDataMapping);
+	}
 
-  @Test
-  void testGetDataMapping() {
-    // Given
-    var dataMapping = givenDataMapping(HANDLE, 1);
-    postDataMappings(List.of(dataMapping));
+	@Test
+	void testGetDataMapping() {
+		// Given
+		var dataMapping = givenDataMapping(HANDLE, 1);
+		postDataMappings(List.of(dataMapping));
 
-    // When
-    var result = repository.getDataMapping(HANDLE);
+		// When
+		var result = repository.getDataMapping(HANDLE);
 
-    // Then
-    assertThat(result).isEqualTo(dataMapping);
-  }
+		// Then
+		assertThat(result).isEqualTo(dataMapping);
+	}
 
-  @Test
-  void testGetDataMappingIsDeleted() {
-    // Given
-    var dataMapping = givenDataMapping();
-    postDataMappings(List.of(dataMapping));
+	@Test
+	void testGetDataMappingIsDeleted() {
+		// Given
+		var dataMapping = givenDataMapping();
+		postDataMappings(List.of(dataMapping));
 
-    var result = repository.getDataMapping(HANDLE);
+		var result = repository.getDataMapping(HANDLE);
 
-    // Then
-    assertThat(result).isEqualTo(dataMapping);
-  }
+		// Then
+		assertThat(result).isEqualTo(dataMapping);
+	}
 
-  @Test
-  void testGetActiveDataMappingIsPresent() {
-    // Given
-    var dataMapping = givenDataMapping(HANDLE, 1);
-    postDataMappings(List.of(dataMapping));
+	@Test
+	void testGetActiveDataMappingIsPresent() {
+		// Given
+		var dataMapping = givenDataMapping(HANDLE, 1);
+		postDataMappings(List.of(dataMapping));
 
-    // When
-    var result = repository.getActiveDataMapping(HANDLE);
+		// When
+		var result = repository.getActiveDataMapping(HANDLE);
 
-    // Then
-    assertThat(result).contains(dataMapping);
-  }
+		// Then
+		assertThat(result).contains(dataMapping);
+	}
 
-  @Test
-  void testGetActiveDataMappingNotPresent() {
-    // Given
-    var dataMapping = givenDataMapping(HANDLE, 1);
-    postDataMappings(List.of(dataMapping));
-    context.update(DATA_MAPPING)
-        .set(DATA_MAPPING.TOMBSTONED, CREATED)
-        .where(DATA_MAPPING.ID.eq(BARE_HANDLE))
-        .execute();
+	@Test
+	void testGetActiveDataMappingNotPresent() {
+		// Given
+		var dataMapping = givenDataMapping(HANDLE, 1);
+		postDataMappings(List.of(dataMapping));
+		context.update(DATA_MAPPING)
+			.set(DATA_MAPPING.TOMBSTONED, CREATED)
+			.where(DATA_MAPPING.ID.eq(BARE_HANDLE))
+			.execute();
 
-    // When
-    var result = repository.getActiveDataMapping(HANDLE);
+		// When
+		var result = repository.getActiveDataMapping(HANDLE);
 
-    // Then
-    assertThat(result).isEmpty();
-  }
+		// Then
+		assertThat(result).isEmpty();
+	}
 
-  @Test
-  void testGetDataMappings() {
-    // Given
-    int pageNum = 1;
-    int pageSize = 10;
-    List<DataMapping> mappingRecords = IntStream.range(0, pageSize).boxed()
-        .map(i -> givenDataMapping(String.valueOf(i), 1)).toList();
-    postDataMappings(mappingRecords);
+	@Test
+	void testGetDataMappings() {
+		// Given
+		int pageNum = 1;
+		int pageSize = 10;
+		List<DataMapping> mappingRecords = IntStream.range(0, pageSize)
+			.boxed()
+			.map(i -> givenDataMapping(String.valueOf(i), 1))
+			.toList();
+		postDataMappings(mappingRecords);
 
-    // When
-    var result = repository.getDataMappings(pageNum, pageSize);
+		// When
+		var result = repository.getDataMappings(pageNum, pageSize);
 
-    //Then
-    assertThat(result).isEqualTo(mappingRecords);
-  }
+		// Then
+		assertThat(result).isEqualTo(mappingRecords);
+	}
 
-  @Test
-  void testGetDataMappingsLastPage() {
-    // Given
-    int pageNum = 2;
-    int pageSize = 10;
-    List<DataMapping> mappingRecords = IntStream.range(0, pageSize + 1).boxed()
-        .map(i -> givenDataMapping(String.valueOf(i), 1)).toList();
-    postDataMappings(mappingRecords);
+	@Test
+	void testGetDataMappingsLastPage() {
+		// Given
+		int pageNum = 2;
+		int pageSize = 10;
+		List<DataMapping> mappingRecords = IntStream.range(0, pageSize + 1)
+			.boxed()
+			.map(i -> givenDataMapping(String.valueOf(i), 1))
+			.toList();
+		postDataMappings(mappingRecords);
 
-    // When
-    var result = repository.getDataMappings(pageNum, pageSize);
+		// When
+		var result = repository.getDataMappings(pageNum, pageSize);
 
-    //Then
-    assertThat(result).hasSize(1);
-  }
+		// Then
+		assertThat(result).hasSize(1);
+	}
 
-  @Test
-  void testTombstoneDataMapping() {
-    // Given
-    var dataMapping = givenDataMapping(HANDLE, 1);
-    dataMapping.setOdsStatus(OdsStatus.TOMBSTONE);
-    dataMapping.setOdsHasTombstoneMetadata(givenTombstoneMetadata(ObjectType.DATA_MAPPING));
-    postDataMappings(List.of(dataMapping));
+	@Test
+	void testTombstoneDataMapping() {
+		// Given
+		var dataMapping = givenDataMapping(HANDLE, 1);
+		dataMapping.setOdsStatus(OdsStatus.TOMBSTONE);
+		dataMapping.setOdsHasTombstoneMetadata(givenTombstoneMetadata(ObjectType.DATA_MAPPING));
+		postDataMappings(List.of(dataMapping));
 
-    // When
-    repository.tombstoneDataMapping(dataMapping, CREATED);
-    var result = getDeleted(BARE_HANDLE);
+		// When
+		repository.tombstoneDataMapping(dataMapping, CREATED);
+		var result = getDeleted(BARE_HANDLE);
 
-    // Then
-    assertThat(result).isEqualTo(dataMapping);
-  }
+		// Then
+		assertThat(result).isEqualTo(dataMapping);
+	}
 
-  private DataMapping getDeleted(String id) {
-    return context.select(DATA_MAPPING.DATA)
-        .from(DATA_MAPPING)
-        .where(DATA_MAPPING.ID.eq(id))
-        .fetchOne(this::mapToDataMapping);
-  }
+	private DataMapping getDeleted(String id) {
+		return context.select(DATA_MAPPING.DATA)
+			.from(DATA_MAPPING)
+			.where(DATA_MAPPING.ID.eq(id))
+			.fetchOne(this::mapToDataMapping);
+	}
 
-  List<DataMapping> readAllDataMappings() {
-    return context.select(DATA_MAPPING.DATA)
-        .from(DATA_MAPPING)
-        .fetch(this::mapToDataMapping);
-  }
+	List<DataMapping> readAllDataMappings() {
+		return context.select(DATA_MAPPING.DATA).from(DATA_MAPPING).fetch(this::mapToDataMapping);
+	}
 
-  private DataMapping mapToDataMapping(Record1<JSONB> record1) {
-    return MAPPER.readValue(record1.get(DATA_MAPPING.DATA).data(), DataMapping.class);
-  }
+	private DataMapping mapToDataMapping(Record1<JSONB> record1) {
+		return MAPPER.readValue(record1.get(DATA_MAPPING.DATA).data(), DataMapping.class);
+	}
 
-  private void postDataMappings(List<DataMapping> dataMappings) {
-    List<Query> queryList = new ArrayList<>();
-    for (var dataMapping : dataMappings) {
-      queryList.add(context.insertInto(DATA_MAPPING)
-          .set(DATA_MAPPING.ID, removeProxy(dataMapping.getId()))
-          .set(DATA_MAPPING.VERSION, dataMapping.getSchemaVersion())
-          .set(DATA_MAPPING.NAME, dataMapping.getSchemaName())
-          .set(DATA_MAPPING.CREATED, dataMapping.getSchemaDateCreated().toInstant())
-          .set(DATA_MAPPING.MODIFIED, dataMapping.getSchemaDateModified().toInstant())
-          .set(DATA_MAPPING.CREATOR, dataMapping.getSchemaCreator().getId())
-          .set(DATA_MAPPING.MAPPING_DATA_STANDARD, dataMapping.getOdsMappingDataStandard().value())
-          .set(DATA_MAPPING.DATA, JSONB.valueOf(MAPPER.writeValueAsString(dataMapping))));
-    }
-    context.batch(queryList).execute();
-  }
+	private void postDataMappings(List<DataMapping> dataMappings) {
+		List<Query> queryList = new ArrayList<>();
+		for (var dataMapping : dataMappings) {
+			queryList.add(context.insertInto(DATA_MAPPING)
+				.set(DATA_MAPPING.ID, removeProxy(dataMapping.getId()))
+				.set(DATA_MAPPING.VERSION, dataMapping.getSchemaVersion())
+				.set(DATA_MAPPING.NAME, dataMapping.getSchemaName())
+				.set(DATA_MAPPING.CREATED, dataMapping.getSchemaDateCreated().toInstant())
+				.set(DATA_MAPPING.MODIFIED, dataMapping.getSchemaDateModified().toInstant())
+				.set(DATA_MAPPING.CREATOR, dataMapping.getSchemaCreator().getId())
+				.set(DATA_MAPPING.MAPPING_DATA_STANDARD, dataMapping.getOdsMappingDataStandard().value())
+				.set(DATA_MAPPING.DATA, JSONB.valueOf(MAPPER.writeValueAsString(dataMapping))));
+		}
+		context.batch(queryList).execute();
+	}
 
-  @Test
-  void testRollback() {
-    // Given
-    postDataMappings(List.of(givenDataMapping(HANDLE, 1)));
+	@Test
+	void testRollback() {
+		// Given
+		postDataMappings(List.of(givenDataMapping(HANDLE, 1)));
 
-    // When
-    repository.rollbackDataMappingCreation(HANDLE);
+		// When
+		repository.rollbackDataMappingCreation(HANDLE);
 
-    // Then
-    var result = repository.getDataMapping(HANDLE);
-    assertThat(result).isNull();
-  }
+		// Then
+		var result = repository.getDataMapping(HANDLE);
+		assertThat(result).isNull();
+	}
 
 }

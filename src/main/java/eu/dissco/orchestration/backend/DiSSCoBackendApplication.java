@@ -8,8 +8,8 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @ConfigurationPropertiesScan
 public class DiSSCoBackendApplication {
 
-  public static void main(String[] args) {
-    SpringApplication.run(DiSSCoBackendApplication.class, args);
-  }
+	public static void main(String[] args) {
+		SpringApplication.run(DiSSCoBackendApplication.class, args);
+	}
 
 }

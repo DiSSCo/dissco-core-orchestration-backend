@@ -10,16 +10,16 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("mas")
 public class MachineAnnotationServiceProperties {
 
-  @NotBlank
-  private String namespace = "machine-annotation-services";
+	@NotBlank
+	private String namespace = "machine-annotation-services";
 
-  @NotBlank
-  private String masSecretStore = "mas-secrets";
+	@NotBlank
+	private String masSecretStore = "mas-secrets";
 
-  @NotBlank
-  private String masRabbitExchange = "mas-exchange";
+	@NotBlank
+	private String masRabbitExchange = "mas-exchange";
 
-  @NotBlank
-  private String runningEndpoint;
+	@NotBlank
+	private String runningEndpoint;
 
 }

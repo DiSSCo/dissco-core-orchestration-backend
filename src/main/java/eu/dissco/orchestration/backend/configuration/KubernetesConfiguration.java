@@ -20,59 +20,60 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties({KubernetesProperties.class})
+@EnableConfigurationProperties({ KubernetesProperties.class })
 public class KubernetesConfiguration {
 
-  private final KubernetesProperties properties;
+	private final KubernetesProperties properties;
 
-  @Bean
-  public CloseableHttpClient httpClient() {
-    var socketConfig = SocketConfig.custom().setTcpNoDelay(true).build();
+	@Bean
+	public CloseableHttpClient httpClient() {
+		var socketConfig = SocketConfig.custom().setTcpNoDelay(true).build();
 
-    var connectionConfig = ConnectionConfig.custom().build();
+		var connectionConfig = ConnectionConfig.custom().build();
 
-    var connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
-        .setDefaultSocketConfig(socketConfig)
-        .setDefaultConnectionConfig(connectionConfig)
-        .build();
+		var connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+			.setDefaultSocketConfig(socketConfig)
+			.setDefaultConnectionConfig(connectionConfig)
+			.build();
 
-    return HttpClients.custom()
-        .evictExpiredConnections()
-        .evictIdleConnections(TimeValue.ofMinutes(1L))
-        .setConnectionManager(connectionManager)
-        .build();
-  }
+		return HttpClients.custom()
+			.evictExpiredConnections()
+			.evictIdleConnections(TimeValue.ofMinutes(1L))
+			.setConnectionManager(connectionManager)
+			.build();
+	}
 
-  @Bean
-  public BatchV1Api batchV1Api() throws IOException {
-    var client = apiClient();
-    return new BatchV1Api(client);
-  }
+	@Bean
+	public BatchV1Api batchV1Api() throws IOException {
+		var client = apiClient();
+		return new BatchV1Api(client);
+	}
 
-  @Bean
-  public AppsV1Api coreV1Api() throws IOException {
-    var client = apiClient();
-    return new AppsV1Api(client);
-  }
+	@Bean
+	public AppsV1Api coreV1Api() throws IOException {
+		var client = apiClient();
+		return new AppsV1Api(client);
+	}
 
-  @Bean
-  public CustomObjectsApi customObjectsApi() throws IOException {
-    var client = apiClient();
-    return new CustomObjectsApi(client);
-  }
+	@Bean
+	public CustomObjectsApi customObjectsApi() throws IOException {
+		var client = apiClient();
+		return new CustomObjectsApi(client);
+	}
 
-  @Bean
-  public ApiClient apiClient() throws IOException {
-    var apiClient = Config.defaultClient();
-    var httpClient = apiClient.getHttpClient().newBuilder()
-        .retryOnConnectionFailure(true)
-        .readTimeout(properties.getApiReadTimeout())
-        .writeTimeout(properties.getApiWriteTimeout())
-        .connectTimeout(properties.getApiConnectTimeout())
-        .pingInterval(properties.getApiPingInterval())
-        .build();
-    apiClient.setHttpClient(httpClient);
-    return apiClient;
-  }
+	@Bean
+	public ApiClient apiClient() throws IOException {
+		var apiClient = Config.defaultClient();
+		var httpClient = apiClient.getHttpClient()
+			.newBuilder()
+			.retryOnConnectionFailure(true)
+			.readTimeout(properties.getApiReadTimeout())
+			.writeTimeout(properties.getApiWriteTimeout())
+			.connectTimeout(properties.getApiConnectTimeout())
+			.pingInterval(properties.getApiPingInterval())
+			.build();
+		apiClient.setHttpClient(httpClient);
+		return apiClient;
+	}
 
 }

@@ -25,90 +25,89 @@ import tools.jackson.databind.JsonNode;
 @ExtendWith(MockitoExtension.class)
 class HandleComponentTest {
 
-  private HandleComponent handleComponent;
-  @Mock
-  HandleClient handleClient;
+	private HandleComponent handleComponent;
 
-  @BeforeEach
-  void setup() {
-    handleComponent = new HandleComponent(handleClient);
-  }
+	@Mock
+	HandleClient handleClient;
 
-  @Test
-  void testPostHandle() throws PidException {
-    // Given
-    given(handleClient.postHandle(List.of(givenMasHandleRequest()))).willReturn(
-        givenHandleApiResponse());
+	@BeforeEach
+	void setup() {
+		handleComponent = new HandleComponent(handleClient);
+	}
 
-    // When
-    var result = handleComponent.postHandle(givenMasHandleRequest());
+	@Test
+	void testPostHandle() throws PidException {
+		// Given
+		given(handleClient.postHandle(List.of(givenMasHandleRequest()))).willReturn(givenHandleApiResponse());
 
-    // Then
-    assertThat(result).isEqualTo(BARE_HANDLE);
-  }
+		// When
+		var result = handleComponent.postHandle(givenMasHandleRequest());
 
-  @Test
-  void testPostHandleFailed() {
-    // Given
-    doThrow(RuntimeException.class).when(handleClient).postHandle(any());
+		// Then
+		assertThat(result).isEqualTo(BARE_HANDLE);
+	}
 
-    // When / Then
-    assertThrows(PidException.class, () -> handleComponent.postHandle(givenMasHandleRequest()));
-  }
+	@Test
+	void testPostHandleFailed() {
+		// Given
+		doThrow(RuntimeException.class).when(handleClient).postHandle(any());
 
-  @Test
-  void testPostHandleBadResponse() {
-    // Given
-    given(handleClient.postHandle(any())).willReturn(MAPPER.createObjectNode());
+		// When / Then
+		assertThrows(PidException.class, () -> handleComponent.postHandle(givenMasHandleRequest()));
+	}
 
-    // When / Then
-    assertThrows(PidException.class, () -> handleComponent.postHandle(givenMasHandleRequest()));
-  }
+	@Test
+	void testPostHandleBadResponse() {
+		// Given
+		given(handleClient.postHandle(any())).willReturn(MAPPER.createObjectNode());
 
-  @Test
-  void testRollbackHandleCreation(){
-    // Given
-    var request = MAPPER.createObjectNode();
+		// When / Then
+		assertThrows(PidException.class, () -> handleComponent.postHandle(givenMasHandleRequest()));
+	}
 
-    // When
-    handleComponent.rollbackHandleCreation(request);
+	@Test
+	void testRollbackHandleCreation() {
+		// Given
+		var request = MAPPER.createObjectNode();
 
-    // Then
-    then(handleClient).should().rollbackHandle(request);
+		// When
+		handleComponent.rollbackHandleCreation(request);
 
-  }
+		// Then
+		then(handleClient).should().rollbackHandle(request);
 
-  @Test
-  void testTombstoneHandle() {
-    // Given
+	}
 
-    // When / Then
-    assertDoesNotThrow(() -> handleComponent.tombstoneHandle(givenMasHandleRequest(), BARE_HANDLE));
-  }
+	@Test
+	void testTombstoneHandle() {
+		// Given
 
-  @Test
-  void testTombstoneHandleFails() {
-    // Given
-    doThrow(RuntimeException.class).when(handleClient).tombstoneHandle(any(), any());
+		// When / Then
+		assertDoesNotThrow(() -> handleComponent.tombstoneHandle(givenMasHandleRequest(), BARE_HANDLE));
+	}
 
-    // When / Then
-    assertThrows(PidException.class,
-        () -> handleComponent.tombstoneHandle(givenMasHandleRequest(), BARE_HANDLE));
-  }
+	@Test
+	void testTombstoneHandleFails() {
+		// Given
+		doThrow(RuntimeException.class).when(handleClient).tombstoneHandle(any(), any());
 
-  private JsonNode givenHandleApiResponse() {
-    return MAPPER.readTree("""
-        {
-          "data":
-          [
-            {
-              "type": "machineAnnotationService",
-              "id":"20.5000.1025/GW0-POP-XSL",
-              "attributes":{
-              }
-            }
-          ]
-        }""");
-  }
+		// When / Then
+		assertThrows(PidException.class, () -> handleComponent.tombstoneHandle(givenMasHandleRequest(), BARE_HANDLE));
+	}
+
+	private JsonNode givenHandleApiResponse() {
+		return MAPPER.readTree("""
+				{
+				  "data":
+				  [
+				    {
+				      "type": "machineAnnotationService",
+				      "id":"20.5000.1025/GW0-POP-XSL",
+				      "attributes":{
+				      }
+				    }
+				  ]
+				}""");
+	}
 
 }

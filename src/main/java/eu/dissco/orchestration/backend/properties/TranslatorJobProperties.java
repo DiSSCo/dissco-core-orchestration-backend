@@ -14,39 +14,46 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("translator-job")
 public class TranslatorJobProperties {
 
-  @NotBlank
-  private String image = "public.ecr.aws/dissco/dissco-core-translator:latest";
+	@NotBlank
+	private String image = "public.ecr.aws/dissco/dissco-core-translator:latest";
 
-  @NotBlank
-  private String namespace = "translator-services";
+	@NotBlank
+	private String namespace = "translator-services";
 
-  @NotBlank
-  @Value("${spring.datasource.url}")
-  private String databaseUrl;
+	@NotBlank
+	@Value("${spring.datasource.url}")
+	private String databaseUrl;
 
-  @Valid
-  private Export export = new Export();
+	@Valid
+	private Export export = new Export();
 
-  private RabbitMq rabbitMq = new RabbitMq();
+	private RabbitMq rabbitMq = new RabbitMq();
 
-  @Data
-  @Validated
-  public static class Export {
+	@Data
+	@Validated
+	public static class Export {
 
-    @NotBlank
-    private String exportImage;
-    @NotBlank
-    private String keycloak;
-    @NotBlank
-    private String disscoDomain;
-    @NotBlank
-    private String namespace = "data-export-job";
-  }
+		@NotBlank
+		private String exportImage;
 
-  @Data
-  public static class RabbitMq{
-    private String exchangeName;
+		@NotBlank
+		private String keycloak;
 
-    private String routingKeyName;
-  }
+		@NotBlank
+		private String disscoDomain;
+
+		@NotBlank
+		private String namespace = "data-export-job";
+
+	}
+
+	@Data
+	public static class RabbitMq {
+
+		private String exchangeName;
+
+		private String routingKeyName;
+
+	}
+
 }

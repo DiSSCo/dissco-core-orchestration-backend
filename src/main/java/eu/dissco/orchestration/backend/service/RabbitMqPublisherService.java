@@ -18,49 +18,48 @@ import tools.jackson.databind.json.JsonMapper;
 @RequiredArgsConstructor
 public class RabbitMqPublisherService {
 
-  private final RabbitTemplate rabbitTemplate;
-  private final JsonMapper mapper;
-  private final ProvenanceService provenanceService;
-  private final RabbitMqProperties rabbitMqProperties;
+	private final RabbitTemplate rabbitTemplate;
 
+	private final JsonMapper mapper;
 
-  public void publishCreateEvent(Object object, Agent agent)
-      throws JacksonException, ProcessingFailedException {
-    var event = provenanceService.generateCreateEvent(mapper.valueToTree(object), agent);
-    log.info("Publishing new create message to queue: {}", event);
-    rabbitTemplate.convertAndSend(rabbitMqProperties.getProvenanceExchangeName(),
-        assembleRoutingKey(object), mapper.writeValueAsString(event));
-  }
+	private final ProvenanceService provenanceService;
 
-  public void publishUpdateEvent(Object object, Object currentObject, Agent agent)
-      throws JacksonException, ProcessingFailedException {
-    var event = provenanceService.generateUpdateEvent(mapper.valueToTree(object),
-        mapper.valueToTree(currentObject), agent);
-    log.info("Publishing new update message to queue: {}", event);
-    rabbitTemplate.convertAndSend(rabbitMqProperties.getProvenanceExchangeName(),
-        assembleRoutingKey(object), mapper.writeValueAsString(event));
-  }
+	private final RabbitMqProperties rabbitMqProperties;
 
-  public void publishTombstoneEvent(Object tombstoneObject, Object currentObject, Agent agent)
-      throws JacksonException, ProcessingFailedException {
-    var event = provenanceService.generateTombstoneEvent(mapper.valueToTree(tombstoneObject),
-        mapper.valueToTree(currentObject), agent);
-    log.info("Publishing new tombstone message to queue: {}", event);
-    rabbitTemplate.convertAndSend(rabbitMqProperties.getProvenanceExchangeName(),
-        assembleRoutingKey(tombstoneObject), mapper.writeValueAsString(event));
-  }
+	public void publishCreateEvent(Object object, Agent agent) throws JacksonException, ProcessingFailedException {
+		var event = provenanceService.generateCreateEvent(mapper.valueToTree(object), agent);
+		log.info("Publishing new create message to queue: {}", event);
+		rabbitTemplate.convertAndSend(rabbitMqProperties.getProvenanceExchangeName(), assembleRoutingKey(object),
+				mapper.writeValueAsString(event));
+	}
 
-  private String assembleRoutingKey(Object object) throws ProcessingFailedException {
-    var stringBuilder = new StringBuilder(
-        rabbitMqProperties.getProvenanceRoutingKeyPrefix()).append('.');
-    switch (object) {
-      case DataMapping _ -> stringBuilder.append("data-mapping");
-      case SourceSystem _ -> stringBuilder.append("source-system");
-      case MachineAnnotationService _ -> stringBuilder.append("machine-annotation-service");
-      default ->
-          throw new ProcessingFailedException("Unsupported object type for routing key assembly");
-    }
-    return stringBuilder.toString();
-  }
+	public void publishUpdateEvent(Object object, Object currentObject, Agent agent)
+			throws JacksonException, ProcessingFailedException {
+		var event = provenanceService.generateUpdateEvent(mapper.valueToTree(object), mapper.valueToTree(currentObject),
+				agent);
+		log.info("Publishing new update message to queue: {}", event);
+		rabbitTemplate.convertAndSend(rabbitMqProperties.getProvenanceExchangeName(), assembleRoutingKey(object),
+				mapper.writeValueAsString(event));
+	}
+
+	public void publishTombstoneEvent(Object tombstoneObject, Object currentObject, Agent agent)
+			throws JacksonException, ProcessingFailedException {
+		var event = provenanceService.generateTombstoneEvent(mapper.valueToTree(tombstoneObject),
+				mapper.valueToTree(currentObject), agent);
+		log.info("Publishing new tombstone message to queue: {}", event);
+		rabbitTemplate.convertAndSend(rabbitMqProperties.getProvenanceExchangeName(),
+				assembleRoutingKey(tombstoneObject), mapper.writeValueAsString(event));
+	}
+
+	private String assembleRoutingKey(Object object) throws ProcessingFailedException {
+		var stringBuilder = new StringBuilder(rabbitMqProperties.getProvenanceRoutingKeyPrefix()).append('.');
+		switch (object) {
+			case DataMapping _ -> stringBuilder.append("data-mapping");
+			case SourceSystem _ -> stringBuilder.append("source-system");
+			case MachineAnnotationService _ -> stringBuilder.append("machine-annotation-service");
+			default -> throw new ProcessingFailedException("Unsupported object type for routing key assembly");
+		}
+		return stringBuilder.toString();
+	}
 
 }

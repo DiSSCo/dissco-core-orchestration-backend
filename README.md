@@ -1,16 +1,16 @@
 # Orchestration Service
 
-Orchestration backend to start translators and manage machine annotation services. 
+Orchestration backend to start translators and manage machine annotation services.
 
 # Documentation
 
-Documentation is available via swagger endpoints: 
+Documentation is available via swagger endpoints:
 
 * Test: https://dev-orchestration.dissco.tech/api/docs/swagger-ui/index.html
 * Acceptance: https://acc.orchestration.dissco.tech/api/docs/swagger-ui/index.html
 
-
 # Running Locally
+
 ## Requirements
 
 Running locally requires:
@@ -82,9 +82,13 @@ Users can manually set exchanges and routing keys for the translator to publish 
 are already defined in the translator code, and do not need to be set.
 
 ```properties
-translator-job.rabbitmq.exchangeName= desired exchange
-translator-job.rabbitmq.routingKeyName= desired routing key
+translator-job.rabbitmq.exchangeName=desired exchange
+translator-job.rabbitmq.routingKeyName=desired routing key
 ```
 
+# Formatter
 
+This project uses the [spring java format](https://github.com/spring-io/spring-javaformat). Before
+making contributions, ensure you have this plugin installed, so that formatting stays consistent
+between developers. 
 

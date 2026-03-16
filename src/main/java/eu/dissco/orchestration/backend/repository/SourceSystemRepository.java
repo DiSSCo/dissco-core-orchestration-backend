@@ -21,98 +21,95 @@ import tools.jackson.databind.json.JsonMapper;
 @RequiredArgsConstructor
 public class SourceSystemRepository {
 
-  private final DSLContext context;
-  private final JsonMapper mapper;
+	private final DSLContext context;
 
-  public void createSourceSystem(SourceSystem sourceSystem) {
-    context.insertInto(SOURCE_SYSTEM)
-        .set(SOURCE_SYSTEM.ID, removeProxy(sourceSystem.getId()))
-        .set(SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
-        .set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
-        .set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
-        .set(SOURCE_SYSTEM.FILTERS, sourceSystem.getOdsFilters().toArray(new String[0]))
-        .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
-        .set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
-        .set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
-        .set(SOURCE_SYSTEM.MAPPING_ID, removeProxy(sourceSystem.getOdsDataMappingID()))
-        .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
-            sourceSystem.getOdsTranslatorType().value()))
-        .set(SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem))
-        .execute();
-  }
+	private final JsonMapper mapper;
 
-  private JSONB mapToJSONB(SourceSystem sourceSystem) {      return JSONB.valueOf(mapper.writeValueAsString(sourceSystem));
-  }
+	public void createSourceSystem(SourceSystem sourceSystem) {
+		context.insertInto(SOURCE_SYSTEM)
+			.set(SOURCE_SYSTEM.ID, removeProxy(sourceSystem.getId()))
+			.set(SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
+			.set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
+			.set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
+			.set(SOURCE_SYSTEM.FILTERS, sourceSystem.getOdsFilters().toArray(new String[0]))
+			.set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
+			.set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
+			.set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
+			.set(SOURCE_SYSTEM.MAPPING_ID, removeProxy(sourceSystem.getOdsDataMappingID()))
+			.set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(sourceSystem.getOdsTranslatorType().value()))
+			.set(SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem))
+			.execute();
+	}
 
-  public void updateSourceSystem(SourceSystem sourceSystem) {
-    context.update(SOURCE_SYSTEM)
-        .set(SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
-        .set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
-        .set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
-        .set(SOURCE_SYSTEM.FILTERS, sourceSystem.getOdsFilters().toArray(new String[0]))
-        .set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
-        .set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
-        .set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
-        .set(SOURCE_SYSTEM.MAPPING_ID, removeProxy(sourceSystem.getOdsDataMappingID()))
-        .set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(
-            sourceSystem.getOdsTranslatorType().value()))
-        .set(SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem))
-        .where(SOURCE_SYSTEM.ID.eq(removeProxy(sourceSystem.getId()))).execute();
-  }
+	private JSONB mapToJSONB(SourceSystem sourceSystem) {
+		return JSONB.valueOf(mapper.writeValueAsString(sourceSystem));
+	}
 
-  public SourceSystem getSourceSystem(String id) {
-    return context.select(SOURCE_SYSTEM.DATA)
-        .from(SOURCE_SYSTEM)
-        .where(SOURCE_SYSTEM.ID.eq(removeProxy(id)))
-        .fetchOne(this::mapToSourceSystem);
-  }
+	public void updateSourceSystem(SourceSystem sourceSystem) {
+		context.update(SOURCE_SYSTEM)
+			.set(SOURCE_SYSTEM.VERSION, sourceSystem.getSchemaVersion())
+			.set(SOURCE_SYSTEM.NAME, sourceSystem.getSchemaName())
+			.set(SOURCE_SYSTEM.ENDPOINT, sourceSystem.getSchemaUrl().toString())
+			.set(SOURCE_SYSTEM.FILTERS, sourceSystem.getOdsFilters().toArray(new String[0]))
+			.set(SOURCE_SYSTEM.CREATOR, sourceSystem.getSchemaCreator().getId())
+			.set(SOURCE_SYSTEM.CREATED, sourceSystem.getSchemaDateCreated().toInstant())
+			.set(SOURCE_SYSTEM.MODIFIED, sourceSystem.getSchemaDateModified().toInstant())
+			.set(SOURCE_SYSTEM.MAPPING_ID, removeProxy(sourceSystem.getOdsDataMappingID()))
+			.set(SOURCE_SYSTEM.TRANSLATOR_TYPE, TranslatorType.valueOf(sourceSystem.getOdsTranslatorType().value()))
+			.set(SOURCE_SYSTEM.DATA, mapToJSONB(sourceSystem))
+			.where(SOURCE_SYSTEM.ID.eq(removeProxy(sourceSystem.getId())))
+			.execute();
+	}
 
-  public Optional<SourceSystem> getActiveSourceSystem(String id) {
-    return context.select(SOURCE_SYSTEM.DATA)
-        .from(SOURCE_SYSTEM)
-        .where(SOURCE_SYSTEM.ID.eq(removeProxy(id)))
-        .and(SOURCE_SYSTEM.TOMBSTONED.isNull())
-        .fetchOptional(this::mapToSourceSystem);
-  }
+	public SourceSystem getSourceSystem(String id) {
+		return context.select(SOURCE_SYSTEM.DATA)
+			.from(SOURCE_SYSTEM)
+			.where(SOURCE_SYSTEM.ID.eq(removeProxy(id)))
+			.fetchOne(this::mapToSourceSystem);
+	}
 
-  public void tombstoneSourceSystem(SourceSystem tombstoneSourceSystem, Instant timestamp) {
-    context.update(SOURCE_SYSTEM)
-        .set(SOURCE_SYSTEM.TOMBSTONED, timestamp)
-        .set(SOURCE_SYSTEM.MODIFIED, timestamp)
-        .set(SOURCE_SYSTEM.VERSION, tombstoneSourceSystem.getSchemaVersion())
-        .set(SOURCE_SYSTEM.DATA, mapToJSONB(tombstoneSourceSystem))
-        .where(SOURCE_SYSTEM.ID.eq(removeProxy(tombstoneSourceSystem.getId())))
-        .execute();
-  }
+	public Optional<SourceSystem> getActiveSourceSystem(String id) {
+		return context.select(SOURCE_SYSTEM.DATA)
+			.from(SOURCE_SYSTEM)
+			.where(SOURCE_SYSTEM.ID.eq(removeProxy(id)))
+			.and(SOURCE_SYSTEM.TOMBSTONED.isNull())
+			.fetchOptional(this::mapToSourceSystem);
+	}
 
-  public List<SourceSystem> getSourceSystems(int pageNum, int pageSize) {
-    int offset = getOffset(pageNum, pageSize);
-    return context.select(SOURCE_SYSTEM.DATA)
-        .from(SOURCE_SYSTEM)
-        .where(SOURCE_SYSTEM.TOMBSTONED.isNull())
-        .limit(pageSize + 1)
-        .offset(offset)
-        .fetch(this::mapToSourceSystem);
-  }
+	public void tombstoneSourceSystem(SourceSystem tombstoneSourceSystem, Instant timestamp) {
+		context.update(SOURCE_SYSTEM)
+			.set(SOURCE_SYSTEM.TOMBSTONED, timestamp)
+			.set(SOURCE_SYSTEM.MODIFIED, timestamp)
+			.set(SOURCE_SYSTEM.VERSION, tombstoneSourceSystem.getSchemaVersion())
+			.set(SOURCE_SYSTEM.DATA, mapToJSONB(tombstoneSourceSystem))
+			.where(SOURCE_SYSTEM.ID.eq(removeProxy(tombstoneSourceSystem.getId())))
+			.execute();
+	}
 
-  private SourceSystem mapToSourceSystem(Record1<JSONB> record1) {
-    return mapper.readValue(record1.get(SOURCE_SYSTEM.DATA).data(), SourceSystem.class);
-  }
+	public List<SourceSystem> getSourceSystems(int pageNum, int pageSize) {
+		int offset = getOffset(pageNum, pageSize);
+		return context.select(SOURCE_SYSTEM.DATA)
+			.from(SOURCE_SYSTEM)
+			.where(SOURCE_SYSTEM.TOMBSTONED.isNull())
+			.limit(pageSize + 1)
+			.offset(offset)
+			.fetch(this::mapToSourceSystem);
+	}
 
-  public void rollbackSourceSystemCreation(String id) {
-    context.deleteFrom(SOURCE_SYSTEM)
-        .where(SOURCE_SYSTEM.ID.eq(removeProxy(id)))
-        .execute();
-  }
+	private SourceSystem mapToSourceSystem(Record1<JSONB> record1) {
+		return mapper.readValue(record1.get(SOURCE_SYSTEM.DATA).data(), SourceSystem.class);
+	}
 
-  public String getExportLink(String id, ExportType exportType) {
-    var linkColumn = switch (exportType) {
-      case DWC_DP -> SOURCE_SYSTEM.DWC_DP_LINK;
-      case DWCA -> SOURCE_SYSTEM.DWCA_LINK;
-    };
-    return context.select(linkColumn)
-        .from(SOURCE_SYSTEM)
-        .where(SOURCE_SYSTEM.ID.eq(id))
-        .fetchOne(Record1::value1);
-  }
+	public void rollbackSourceSystemCreation(String id) {
+		context.deleteFrom(SOURCE_SYSTEM).where(SOURCE_SYSTEM.ID.eq(removeProxy(id))).execute();
+	}
+
+	public String getExportLink(String id, ExportType exportType) {
+		var linkColumn = switch (exportType) {
+			case DWC_DP -> SOURCE_SYSTEM.DWC_DP_LINK;
+			case DWCA -> SOURCE_SYSTEM.DWCA_LINK;
+		};
+		return context.select(linkColumn).from(SOURCE_SYSTEM).where(SOURCE_SYSTEM.ID.eq(id)).fetchOne(Record1::value1);
+	}
+
 }

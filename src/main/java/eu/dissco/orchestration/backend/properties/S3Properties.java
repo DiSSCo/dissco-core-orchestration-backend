@@ -10,10 +10,10 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "s3")
 public class S3Properties {
 
-  @NotBlank
-  private String accessKey;
+	@NotBlank
+	private String accessKey;
 
-  @NotBlank
-  private String accessSecret;
+	@NotBlank
+	private String accessSecret;
 
 }

@@ -10,12 +10,13 @@ import tools.jackson.databind.JsonNode;
 
 public interface HandleClient {
 
-  @PostExchange("batch")
-  JsonNode postHandle(@RequestBody List<JsonNode> handleRequest);
+	@PostExchange("batch")
+	JsonNode postHandle(@RequestBody List<JsonNode> handleRequest);
 
-  @PutExchange("{pid}")
-  void tombstoneHandle(@PathVariable String pid, @RequestBody JsonNode handleRequest);
+	@PutExchange("{pid}")
+	void tombstoneHandle(@PathVariable String pid, @RequestBody JsonNode handleRequest);
 
-  @DeleteExchange("rollback/create")
-  void rollbackHandle(@RequestBody JsonNode handleRequest);
+	@DeleteExchange("rollback/create")
+	void rollbackHandle(@RequestBody JsonNode handleRequest);
+
 }
