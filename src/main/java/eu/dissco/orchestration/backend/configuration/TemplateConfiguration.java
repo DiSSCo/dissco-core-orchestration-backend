@@ -1,10 +1,11 @@
 package eu.dissco.orchestration.backend.configuration;
 
 import freemarker.template.Template;
-import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.io.IOException;
 
 @Configuration
 @RequiredArgsConstructor

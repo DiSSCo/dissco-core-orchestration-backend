@@ -62,3 +62,21 @@ create table machine_annotation_service
     environment            jsonb,
     secrets                jsonb
 );
+
+create type error_code as enum ('TIMEOUT', 'DISSCO_EXCEPTION');
+
+create type job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED');
+
+create table translator_job_record
+(
+    job_id            uuid                     not null,
+    job_state         job_state                not null,
+    source_system_id  text                     not null,
+    time_started      timestamp with time zone not null,
+    time_completed    timestamp with time zone,
+    processed_records int,
+    report            jsonb,
+    error             error_code,
+    PRIMARY KEY (job_id, source_system_id),
+    FOREIGN KEY (source_system_id) REFERENCES source_system (id)
+);

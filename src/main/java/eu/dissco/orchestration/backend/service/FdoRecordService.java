@@ -1,21 +1,20 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.MAS_NAME;
-import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_DATA_STANDARD;
-import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.SOURCE_SYSTEM_NAME;
-import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
-
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
+
+import java.util.List;
+
+import static eu.dissco.orchestration.backend.domain.FdoProfileAttributes.*;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
 @Service
 @RequiredArgsConstructor

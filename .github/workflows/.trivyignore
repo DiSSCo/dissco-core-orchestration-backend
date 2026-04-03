@@ -1,11 +1,11 @@
-# Feb 27, 2026
-# Issue with libpng, alpine image
+# March 2, 2026
+# Issue with alpine image, libpng
 CVE-2026-25646
 
 # March 2, 2026
-# Issue with jackson, spring needs to update its version
-GHSA-72hv-8253-57qq
+# Issue with alpine image, libpng
+CVE-2026-33416
 
-# March 5, 2026
-# Issue with jackson, spring needs to update its version
-CVE-2026-29062
+# March 2, 2026
+# Issue with alpine image, libpng
+CVE-2026-33636

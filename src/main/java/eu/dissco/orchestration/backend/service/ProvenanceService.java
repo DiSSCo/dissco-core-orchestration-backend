@@ -1,33 +1,28 @@
 package eu.dissco.orchestration.backend.service;
 
+import com.flipkart.zjsonpatch.Jackson3JsonDiff;
+import eu.dissco.orchestration.backend.properties.ApplicationProperties;
+import eu.dissco.orchestration.backend.schema.*;
+import eu.dissco.orchestration.backend.schema.Identifier.DctermsType;
+import eu.dissco.orchestration.backend.schema.ProvWasAssociatedWith.ProvHadRole;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.time.Instant;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
 import static eu.dissco.orchestration.backend.domain.AgentRoleType.PROCESSING_SERVICE;
 import static eu.dissco.orchestration.backend.schema.Agent.Type.PROV_PERSON;
 import static eu.dissco.orchestration.backend.schema.Agent.Type.PROV_SOFTWARE_AGENT;
 import static eu.dissco.orchestration.backend.utils.AgentUtils.createAgent;
 import static eu.dissco.orchestration.backend.utils.ControllerUtils.ORCID;
-
-import com.flipkart.zjsonpatch.Jackson3JsonDiff;
-import eu.dissco.orchestration.backend.properties.ApplicationProperties;
-import eu.dissco.orchestration.backend.schema.Agent;
-import eu.dissco.orchestration.backend.schema.CreateUpdateTombstoneEvent;
-import eu.dissco.orchestration.backend.schema.Identifier.DctermsType;
-import eu.dissco.orchestration.backend.schema.OdsChangeValue;
-import eu.dissco.orchestration.backend.schema.ProvActivity;
-import eu.dissco.orchestration.backend.schema.ProvEntity;
-import eu.dissco.orchestration.backend.schema.ProvValue;
-import eu.dissco.orchestration.backend.schema.ProvWasAssociatedWith;
-import eu.dissco.orchestration.backend.schema.ProvWasAssociatedWith.ProvHadRole;
-import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @RequiredArgsConstructor

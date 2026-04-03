@@ -1,39 +1,14 @@
 package eu.dissco.orchestration.backend.controller;
 
-import static eu.dissco.orchestration.backend.testutils.TestUtils.BARE_HANDLE;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.MAPPER;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.PREFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SANDBOX_URI;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SUFFIX;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_PATH;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.SYSTEM_URI;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenAgent;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenClaims;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenMasScheduleData;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystem;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequest;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemRequestJson;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemResponse;
-import static eu.dissco.orchestration.backend.testutils.TestUtils.givenSourceSystemSingleJsonApiWrapper;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.mock;
-
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.MasScheduleData;
+import eu.dissco.orchestration.backend.domain.TranslatorJobRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import eu.dissco.orchestration.backend.service.TranslatorJobRecordService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +19,20 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import static eu.dissco.orchestration.backend.testutils.TestUtils.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
+
 @ExtendWith(MockitoExtension.class)
 class SourceSystemControllerTest {
 
@@ -51,6 +40,9 @@ class SourceSystemControllerTest {
 
 	@Mock
 	private SourceSystemService service;
+
+	@Mock
+	private TranslatorJobRecordService jobRecordService;
 
 	@Mock
 	private ApplicationProperties appProperties;
@@ -62,7 +54,7 @@ class SourceSystemControllerTest {
 
 	@BeforeEach
 	void setup() {
-		controller = new SourceSystemController(service, MAPPER, appProperties);
+		controller = new SourceSystemController(service, jobRecordService, appProperties);
 		mockRequest.setRequestURI(SYSTEM_URI);
 	}
 
@@ -207,6 +199,25 @@ class SourceSystemControllerTest {
 
 		// Then
 		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+	}
+
+	@Test
+	void testGetSourceSystemJobRecord() {
+		// Given
+		int pageNum = 1;
+		int pageSize = 10;
+		List<TranslatorJobRecord> translatorJobRecords = Collections.nCopies(pageSize, givenTranslatorJobRecord());
+		var linksNode = new JsonApiLinks(pageSize, pageNum, true, JOB_RECORD_PATH);
+		var expected = givenTranslatorJobRecordResponse(translatorJobRecords, linksNode);
+		given(jobRecordService.retrieveJobRecords(BARE_HANDLE, pageNum, pageSize, SYSTEM_PATH)).willReturn(expected);
+		given(appProperties.getBaseUrl()).willReturn(SANDBOX_URI);
+
+		// When
+		var result = controller.getTranslatorJobRecords(PREFIX, SUFFIX, pageNum, pageSize, mockRequest);
+
+		// Then
+		assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(result.getBody()).isEqualTo(expected);
 	}
 
 	private void givenAuthentication() {

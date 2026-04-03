@@ -1,15 +1,16 @@
 package eu.dissco.orchestration.backend.utils;
 
-import static eu.dissco.orchestration.backend.utils.AgentUtils.createAgent;
-
 import eu.dissco.orchestration.backend.domain.AgentRoleType;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.Agent.Type;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
+
+import java.util.Map;
+
+import static eu.dissco.orchestration.backend.utils.AgentUtils.createAgent;
 
 @Slf4j
 public class ControllerUtils {
