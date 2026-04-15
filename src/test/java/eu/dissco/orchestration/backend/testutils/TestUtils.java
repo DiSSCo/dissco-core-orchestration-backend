@@ -94,7 +94,7 @@ public class TestUtils {
 
 	public static final String MAS_PATH = SANDBOX_URI + MAS_URI;
 
-	public static final String JOB_RECORD_PATH = SANDBOX_URI + "/" + PREFIX + "/" + SUFFIX + "/translator-job-record";
+	public static final String JOB_RECORD_PATH = SANDBOX_URI + "/" + PREFIX + "/" + SUFFIX + "/job-record";
 
 	public static final Integer TTL = 86400;
 

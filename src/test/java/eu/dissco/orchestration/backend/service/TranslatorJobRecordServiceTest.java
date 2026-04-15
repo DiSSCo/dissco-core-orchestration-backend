@@ -30,7 +30,7 @@ class TranslatorJobRecordServiceTest {
 	}
 
 	@Test
-	void getTranslatorJobRecord() {
+	void getTranslatorJobRecordHasNext() {
 		// Given
 		int pageNum = 1;
 		int pageSize = 10;
@@ -39,6 +39,24 @@ class TranslatorJobRecordServiceTest {
 		given(repository.getJobRecords(BARE_HANDLE, pageNum, pageSize)).willReturn(translatorJobRecords);
 		var linksNode = new JsonApiLinks(pageSize, pageNum, true, path);
 		var expected = givenTranslatorJobRecordResponse(translatorJobRecords.subList(0, pageSize), linksNode);
+
+		// When
+		var result = service.retrieveJobRecords(BARE_HANDLE, pageNum, pageSize, path);
+
+		// Then
+		assertThat(result).isEqualTo(expected);
+	}
+
+	@Test
+	void getTranslatorJobRecordNoNext() {
+		// Given
+		int pageNum = 1;
+		int pageSize = 10;
+		String path = JOB_RECORD_PATH;
+		List<TranslatorJobRecord> translatorJobRecords = Collections.nCopies(5, givenTranslatorJobRecord());
+		given(repository.getJobRecords(BARE_HANDLE, pageNum, pageSize)).willReturn(translatorJobRecords);
+		var linksNode = new JsonApiLinks(pageSize, pageNum, false, path);
+		var expected = givenTranslatorJobRecordResponse(translatorJobRecords.subList(0, 5), linksNode);
 
 		// When
 		var result = service.retrieveJobRecords(BARE_HANDLE, pageNum, pageSize, path);

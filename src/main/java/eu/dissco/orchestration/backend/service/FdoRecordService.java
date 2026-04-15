@@ -62,8 +62,8 @@ public class FdoRecordService {
 			case SOURCE_SYSTEM -> {
 				return buildSourceSystemAttributes((SourceSystemRequest) object);
 			}
+			default -> throw new IllegalStateException();
 		}
-		throw new IllegalStateException();
 	}
 
 	private JsonNode buildMappingAttributes(DataMappingRequest mapping) {

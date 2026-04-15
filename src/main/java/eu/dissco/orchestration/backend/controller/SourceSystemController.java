@@ -7,6 +7,7 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemRequestSchema;
 import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemResponseList;
 import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemResponseSingle;
+import eu.dissco.orchestration.backend.domain.openapi.translatorjobrecord.TranslatorJobRecordResponseList;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
@@ -218,7 +219,7 @@ public class SourceSystemController {
 			""")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Translator Job Records successfully retrieved",
 			content = { @Content(mediaType = "application/json",
-					schema = @Schema(implementation = TranslatorJobRecordService.class)) }) })
+					schema = @Schema(implementation = TranslatorJobRecordResponseList.class)) }) })
 	@ResponseStatus(HttpStatus.OK)
 	@GetMapping(value = "/{prefix}/{suffix}/job-record")
 	public ResponseEntity<JsonApiListWrapper> getTranslatorJobRecords(

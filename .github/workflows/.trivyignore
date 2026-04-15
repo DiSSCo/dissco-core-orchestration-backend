@@ -9,3 +9,19 @@ CVE-2026-33416
 # March 2, 2026
 # Issue with alpine image, libpng
 CVE-2026-33636
+
+# March 10, 2026
+# Issue with alpine image, zlib: zlib: Arbitrary code execution via buffer overflow
+CVE-2026-22184
+
+# April 15 2026
+# Issue with alpine image, openssl, libcrypto3, libssl3: Denial of Service due to NULL pointer
+CVE-2026-28390
+
+# April 15 2026
+# Issue with alpine image, musl: musl libc: Arbitrary code execution and denial of service
+CVE-2026-40200
+
+# April 15 2026
+# Issue with tools.jackson.core:jackson-core, spring boot update should fix this
+GHSA-2m67-wjpj-xhg9

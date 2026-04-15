@@ -39,7 +39,7 @@ class TranslatorJobRecordRepositoryIT extends BaseRepositoryIT {
 		// Given
 		int pageNum = 1;
 		int pageSize = 10;
-		List<TranslatorJobRecord> jobRecords = generateJobRecords();
+		var jobRecords = generateJobRecords();
 		postJobRecords(jobRecords);
 
 		// When
@@ -90,6 +90,8 @@ class TranslatorJobRecordRepositoryIT extends BaseRepositoryIT {
 			list.add(new TranslatorJobRecord(UUID.randomUUID(), CREATED, Instant.parse("2024-11-01T10:05:24.00Z"),
 					JobState.COMPLETED, getJobRecordReport()));
 		}
+		list.add(new TranslatorJobRecord(UUID.randomUUID(), CREATED, Instant.parse("2024-11-01T10:05:24.00Z"),
+				JobState.COMPLETED, null));
 		return list;
 	}
 

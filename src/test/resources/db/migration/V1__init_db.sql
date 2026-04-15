@@ -63,9 +63,9 @@ create table machine_annotation_service
     secrets                jsonb
 );
 
-create type error_code as enum ('TIMEOUT', 'DISSCO_EXCEPTION');
+create type error_code as enum ('TIMEOUT', 'DISSCO_EXCEPTION', 'MAS_EXCEPTION');
 
-create type job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED');
+create type job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED', 'QUEUED', 'NOTIFICATION_FAILED');
 
 create table translator_job_record
 (
