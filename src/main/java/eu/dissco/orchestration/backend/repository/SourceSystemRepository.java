@@ -1,21 +1,22 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.SOURCE_SYSTEM;
-import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
-import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
-
 import eu.dissco.orchestration.backend.database.jooq.enums.TranslatorType;
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.schema.SourceSystem;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+import static eu.dissco.orchestration.backend.database.jooq.Tables.SOURCE_SYSTEM;
+import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
 @Repository
 @RequiredArgsConstructor

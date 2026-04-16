@@ -7,9 +7,13 @@ import lombok.Getter;
 public enum ObjectType {
 
 	@JsonProperty("ods:SourceSystem")
-	SOURCE_SYSTEM("ods:SourceSystem"), @JsonProperty("ods:DataMapping")
-	DATA_MAPPING("ods:DataMapping"), @JsonProperty("ods:MachineAnnotationService")
-	MAS("ods:MachineAnnotationService");
+	SOURCE_SYSTEM("ods:SourceSystem"),
+	@JsonProperty("ods:DataMapping")
+	DATA_MAPPING("ods:DataMapping"),
+	@JsonProperty("ods:MachineAnnotationService")
+	MAS("ods:MachineAnnotationService"),
+	@JsonProperty("ods:TranslatorJobRecord")
+	TRANSLATOR_JOB_RECORD("ods:TranslatorJobRecord");
 
 	private final String fullName;
 

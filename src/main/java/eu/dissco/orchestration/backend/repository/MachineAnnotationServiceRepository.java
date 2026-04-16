@@ -1,22 +1,23 @@
 package eu.dissco.orchestration.backend.repository;
 
-import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOTATION_SERVICE;
-import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
-import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
-
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
 import eu.dissco.orchestration.backend.utils.HandleUtils;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import static eu.dissco.orchestration.backend.database.jooq.Tables.MACHINE_ANNOTATION_SERVICE;
+import static eu.dissco.orchestration.backend.repository.RepositoryUtils.getOffset;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
 
 @Repository
 @RequiredArgsConstructor

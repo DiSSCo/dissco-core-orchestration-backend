@@ -1,10 +1,5 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
-import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
-import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
-import static java.util.stream.Collectors.toMap;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -24,14 +19,8 @@ import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.properties.KubernetesProperties;
 import eu.dissco.orchestration.backend.properties.MachineAnnotationServiceProperties;
 import eu.dissco.orchestration.backend.repository.MachineAnnotationServiceRepository;
-import eu.dissco.orchestration.backend.schema.Agent;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
+import eu.dissco.orchestration.backend.schema.*;
 import eu.dissco.orchestration.backend.schema.MachineAnnotationService.OdsStatus;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
-import eu.dissco.orchestration.backend.schema.OdsHasTargetDigitalObjectFilter;
-import eu.dissco.orchestration.backend.schema.OdsHasTargetDigitalObjectFilter__1;
-import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
-import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
 import eu.dissco.orchestration.backend.web.HandleComponent;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -40,17 +29,6 @@ import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.V1Deployment;
 import jakarta.annotation.PostConstruct;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -58,6 +36,17 @@ import org.springframework.stereotype.Service;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
+import static eu.dissco.orchestration.backend.utils.HandleUtils.removeProxy;
+import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
+import static java.util.stream.Collectors.toMap;
 
 @Slf4j
 @Service

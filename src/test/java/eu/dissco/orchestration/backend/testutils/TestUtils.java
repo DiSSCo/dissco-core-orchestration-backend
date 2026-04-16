@@ -1,12 +1,12 @@
 package eu.dissco.orchestration.backend.testutils;
 
-import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.DATE_STRING;
-
 import com.fasterxml.jackson.annotation.JsonSetter.Value;
 import com.fasterxml.jackson.annotation.Nulls;
+import eu.dissco.orchestration.backend.database.jooq.enums.JobState;
 import eu.dissco.orchestration.backend.domain.AgentRoleType;
 import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.ObjectType;
+import eu.dissco.orchestration.backend.domain.TranslatorJobRecord;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
@@ -17,39 +17,22 @@ import eu.dissco.orchestration.backend.domain.openapi.mas.MasRequestSchema;
 import eu.dissco.orchestration.backend.domain.openapi.mas.MasRequestSchema.MasRequestData;
 import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemRequestSchema;
 import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemRequestSchema.SourceSystemRequestData;
-import eu.dissco.orchestration.backend.schema.Agent;
+import eu.dissco.orchestration.backend.schema.*;
 import eu.dissco.orchestration.backend.schema.Agent.Type;
-import eu.dissco.orchestration.backend.schema.DataMapping;
-import eu.dissco.orchestration.backend.schema.DataMappingRequest;
 import eu.dissco.orchestration.backend.schema.DataMappingRequest.OdsMappingDataStandard;
-import eu.dissco.orchestration.backend.schema.DefaultMapping;
-import eu.dissco.orchestration.backend.schema.EnvironmentalVariable;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationService;
-import eu.dissco.orchestration.backend.schema.MachineAnnotationServiceRequest;
-import eu.dissco.orchestration.backend.schema.OdsHasTargetDigitalObjectFilter;
-import eu.dissco.orchestration.backend.schema.OdsHasTargetDigitalObjectFilter__1;
-import eu.dissco.orchestration.backend.schema.SchemaContactPoint;
-import eu.dissco.orchestration.backend.schema.SchemaContactPoint__1;
-import eu.dissco.orchestration.backend.schema.SecretVariable;
-import eu.dissco.orchestration.backend.schema.SourceSystem;
 import eu.dissco.orchestration.backend.schema.SourceSystem.OdsStatus;
-import eu.dissco.orchestration.backend.schema.SourceSystemRequest;
 import eu.dissco.orchestration.backend.schema.SourceSystemRequest.OdsTranslatorType;
-import eu.dissco.orchestration.backend.schema.TermMapping;
-import eu.dissco.orchestration.backend.schema.TombstoneMetadata;
 import eu.dissco.orchestration.backend.utils.AgentUtils;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
+import java.util.*;
+
+import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.DATE_STRING;
 
 public class TestUtils {
 
@@ -110,6 +93,8 @@ public class TestUtils {
 	public static final String MAS_URI = "/mas";
 
 	public static final String MAS_PATH = SANDBOX_URI + MAS_URI;
+
+	public static final String JOB_RECORD_PATH = SANDBOX_URI + "/" + PREFIX + "/" + SUFFIX + "/job-record";
 
 	public static final Integer TTL = 86400;
 
@@ -224,6 +209,28 @@ public class TestUtils {
 		sourceSystems.forEach(
 				ss -> dataNode.add(new JsonApiData(ss.getId(), ObjectType.SOURCE_SYSTEM, flattenSourceSystem(ss))));
 		return new JsonApiListWrapper(dataNode, linksNode);
+	}
+
+	public static JsonApiListWrapper givenTranslatorJobRecordResponse(List<TranslatorJobRecord> translatorJobRecords,
+			JsonApiLinks linksNode) {
+		List<JsonApiData> dataNode = new ArrayList<>();
+		translatorJobRecords.forEach(jobRecord -> dataNode.add(new JsonApiData(jobRecord.jobId().toString(),
+				ObjectType.TRANSLATOR_JOB_RECORD, MAPPER.valueToTree(jobRecord))));
+		return new JsonApiListWrapper(dataNode, linksNode);
+	}
+
+	public static TranslatorJobRecord givenTranslatorJobRecord() {
+		return new TranslatorJobRecord(UUID.randomUUID(), CREATED, Instant.parse("2024-11-01T10:05:24.00Z"),
+				JobState.COMPLETED, givenJobRecordReport());
+	}
+
+	public static JsonNode givenJobRecordReport() {
+		return MAPPER.createObjectNode()
+			.put("successfulSpecimen", 291545)
+			.put("successfulMedia", 175241)
+			.set("digitalMediaIssues", MAPPER.createObjectNode())
+			.set("digitalSpecimenIssues",
+					MAPPER.createObjectNode().put("BasisOfRecord 'OtherSpecimen' is not accepted", 15));
 	}
 
 	public static JsonApiListWrapper givenMasResponse(List<MachineAnnotationService> machineAnnotationServices,

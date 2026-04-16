@@ -1,8 +1,5 @@
 package eu.dissco.orchestration.backend.service;
 
-import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
-import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
-
 import eu.dissco.orchestration.backend.domain.ObjectType;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiLinks;
@@ -13,26 +10,22 @@ import eu.dissco.orchestration.backend.exception.PidException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.FdoProperties;
 import eu.dissco.orchestration.backend.repository.DataMappingRepository;
-import eu.dissco.orchestration.backend.schema.Agent;
-import eu.dissco.orchestration.backend.schema.DataMapping;
+import eu.dissco.orchestration.backend.schema.*;
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsMappingDataStandard;
 import eu.dissco.orchestration.backend.schema.DataMapping.OdsStatus;
-import eu.dissco.orchestration.backend.schema.DataMappingRequest;
-import eu.dissco.orchestration.backend.schema.DefaultMapping;
-import eu.dissco.orchestration.backend.schema.TermMapping;
 import eu.dissco.orchestration.backend.web.HandleComponent;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.time.Instant;
+import java.util.*;
+
+import static eu.dissco.orchestration.backend.configuration.ApplicationConfiguration.HANDLE_PROXY;
+import static eu.dissco.orchestration.backend.utils.TombstoneUtils.buildTombstoneMetadata;
 
 @Slf4j
 @Service

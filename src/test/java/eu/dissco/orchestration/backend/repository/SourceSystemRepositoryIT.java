@@ -46,7 +46,7 @@ class SourceSystemRepositoryIT extends BaseRepositoryIT {
 
 	@AfterEach
 	void destroy() {
-		context.truncate(SOURCE_SYSTEM).execute();
+		context.truncate(SOURCE_SYSTEM).cascade().execute();
 	}
 
 	@Test

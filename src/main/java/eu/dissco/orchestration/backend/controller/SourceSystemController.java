@@ -1,15 +1,5 @@
 package eu.dissco.orchestration.backend.controller;
 
-import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
-import static eu.dissco.orchestration.backend.domain.AgentRoleType.TOMBSTONER;
-import static eu.dissco.orchestration.backend.utils.ControllerUtils.DEFAULT_PAGE_NUM;
-import static eu.dissco.orchestration.backend.utils.ControllerUtils.DEFAULT_PAGE_SIZE;
-import static eu.dissco.orchestration.backend.utils.ControllerUtils.PAGE_NUM_OAS;
-import static eu.dissco.orchestration.backend.utils.ControllerUtils.PAGE_SIZE_OAS;
-import static eu.dissco.orchestration.backend.utils.ControllerUtils.PREFIX_OAS;
-import static eu.dissco.orchestration.backend.utils.ControllerUtils.SUFFIX_OAS;
-import static eu.dissco.orchestration.backend.utils.ControllerUtils.getAgent;
-
 import eu.dissco.orchestration.backend.domain.ExportType;
 import eu.dissco.orchestration.backend.domain.MasScheduleData;
 import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiListWrapper;
@@ -17,11 +7,13 @@ import eu.dissco.orchestration.backend.domain.jsonapi.JsonApiWrapper;
 import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemRequestSchema;
 import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemResponseList;
 import eu.dissco.orchestration.backend.domain.openapi.sourcesystem.SourceSystemResponseSingle;
+import eu.dissco.orchestration.backend.domain.openapi.translatorjobrecord.TranslatorJobRecordResponseList;
 import eu.dissco.orchestration.backend.exception.ForbiddenException;
 import eu.dissco.orchestration.backend.exception.NotFoundException;
 import eu.dissco.orchestration.backend.exception.ProcessingFailedException;
 import eu.dissco.orchestration.backend.properties.ApplicationProperties;
 import eu.dissco.orchestration.backend.service.SourceSystemService;
+import eu.dissco.orchestration.backend.service.TranslatorJobRecordService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,8 +21,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
-import java.net.URISyntaxException;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -39,17 +29,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-import tools.jackson.databind.json.JsonMapper;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URISyntaxException;
+import java.util.Optional;
+
+import static eu.dissco.orchestration.backend.domain.AgentRoleType.CREATOR;
+import static eu.dissco.orchestration.backend.domain.AgentRoleType.TOMBSTONER;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.*;
 
 @Slf4j
 @RestController
@@ -59,7 +46,7 @@ public class SourceSystemController {
 
 	private final SourceSystemService service;
 
-	private final JsonMapper mapper;
+	private final TranslatorJobRecordService jobRecordService;
 
 	private final ApplicationProperties appProperties;
 
@@ -173,7 +160,7 @@ public class SourceSystemController {
 			Retrieve data from a given source system. Exports are downloadable from an AWS S3 bucket.
 			""")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200",
-			description = "Source system download successfully retrieved", content = {}) })
+			description = "Source system download successfully retrieved") })
 	@ResponseStatus(HttpStatus.OK)
 	@GetMapping(value = "/{prefix}/{suffix}/download/{export-type}")
 	public ResponseEntity<Resource> getSourceSystemDownload(
@@ -222,9 +209,32 @@ public class SourceSystemController {
 			@Parameter(description = PAGE_SIZE_OAS) @RequestParam(value = "pageSize",
 					defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
 			HttpServletRequest servletRequest) {
-		log.info("Received get request for source system with pageNumber: {} and pageSzie: {}: ", pageNum, pageSize);
+		log.info("Received get request for source system with pageNumber: {} and pageSize: {}: ", pageNum, pageSize);
 		String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
 		return ResponseEntity.status(HttpStatus.OK).body(service.getSourceSystems(pageNum, pageSize, path));
+	}
+
+	@Operation(summary = "Retrieve a paginated list of translator job request for Source System", description = """
+			Retrieve the translator job requests for a particular Source System. The job request indicate whether the ingestion run was successful and has a report indicating if there were any rejected records.
+			""")
+	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Translator Job Records successfully retrieved",
+			content = { @Content(mediaType = "application/json",
+					schema = @Schema(implementation = TranslatorJobRecordResponseList.class)) }) })
+	@ResponseStatus(HttpStatus.OK)
+	@GetMapping(value = "/{prefix}/{suffix}/job-record")
+	public ResponseEntity<JsonApiListWrapper> getTranslatorJobRecords(
+			@Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
+			@Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix,
+	@Parameter(description = PAGE_NUM_OAS) @RequestParam(value = "pageNumber",
+			defaultValue = DEFAULT_PAGE_NUM) int pageNum,
+	@Parameter(description = PAGE_SIZE_OAS) @RequestParam(value = "pageSize",
+			defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+			HttpServletRequest servletRequest) {
+		var id = prefix + '/' + suffix;
+		log.info("Received request for translator job records for source system with id: {} with pageNumber: {} and pageSize: {}: ", id, pageNum, pageSize);
+		String path = appProperties.getBaseUrl() + servletRequest.getRequestURI();
+		var translatorJobRecords = jobRecordService.retrieveJobRecords(id, pageNum, pageSize, path);
+		return ResponseEntity.ok().body(translatorJobRecords);
 	}
 
 }

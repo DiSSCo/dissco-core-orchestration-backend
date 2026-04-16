@@ -17,7 +17,10 @@
         source_system |
         machine_annotation_service |
         translator_type|
-        data_mapping
+        data_mapping |
+        translator_job_record |
+        job_state |
+        error_code |
       </includes>
       <forcedTypes>
         <forcedType>

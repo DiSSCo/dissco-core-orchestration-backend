@@ -1,17 +1,18 @@
 package eu.dissco.orchestration.backend.utils;
 
-import static eu.dissco.orchestration.backend.schema.Identifier.DctermsType.DOI;
-import static eu.dissco.orchestration.backend.schema.Identifier.OdsGupriLevel.GLOBALLY_UNIQUE_STABLE_PERSISTENT_RESOLVABLE_FDO_COMPLIANT;
-import static eu.dissco.orchestration.backend.schema.Identifier.OdsIdentifierStatus.PREFERRED;
-import static eu.dissco.orchestration.backend.utils.ControllerUtils.ORCID;
-
 import eu.dissco.orchestration.backend.domain.AgentRoleType;
 import eu.dissco.orchestration.backend.schema.Agent;
 import eu.dissco.orchestration.backend.schema.Agent.Type;
 import eu.dissco.orchestration.backend.schema.Identifier;
 import eu.dissco.orchestration.backend.schema.Identifier.DctermsType;
 import eu.dissco.orchestration.backend.schema.OdsHasRole;
+
 import java.util.List;
+
+import static eu.dissco.orchestration.backend.schema.Identifier.DctermsType.DOI;
+import static eu.dissco.orchestration.backend.schema.Identifier.OdsGupriLevel.GLOBALLY_UNIQUE_STABLE_PERSISTENT_RESOLVABLE_FDO_COMPLIANT;
+import static eu.dissco.orchestration.backend.schema.Identifier.OdsIdentifierStatus.PREFERRED;
+import static eu.dissco.orchestration.backend.utils.ControllerUtils.ORCID;
 
 public class AgentUtils {
 
