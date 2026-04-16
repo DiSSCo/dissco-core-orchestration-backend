@@ -88,7 +88,7 @@ class TranslatorJobRecordRepositoryIT extends BaseRepositoryIT {
 		var list = new ArrayList<TranslatorJobRecord>();
 		for (int i = 0; i < 10; i++) {
 			list.add(new TranslatorJobRecord(UUID.randomUUID(), CREATED, Instant.parse("2024-11-01T10:05:24.00Z"),
-					JobState.COMPLETED, getJobRecordReport()));
+					JobState.COMPLETED, givenJobRecordReport()));
 		}
 		list.add(new TranslatorJobRecord(UUID.randomUUID(), CREATED, Instant.parse("2024-11-01T10:05:24.00Z"),
 				JobState.COMPLETED, null));

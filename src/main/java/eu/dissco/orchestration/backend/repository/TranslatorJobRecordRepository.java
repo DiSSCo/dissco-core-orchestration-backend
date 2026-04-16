@@ -26,10 +26,7 @@ public class TranslatorJobRecordRepository {
 			.orderBy(TRANSLATOR_JOB_RECORD.TIME_STARTED.desc())
 			.offset(getOffset(pageNum, pageSize))
 			.limit(pageSize + 1)
-			.fetch()
-			.stream()
-			.map(this::mapTranslatorJobRecord)
-			.toList();
+			.fetch(this::mapTranslatorJobRecord);
 	}
 
 	private TranslatorJobRecord mapTranslatorJobRecord(Record jobRecord) {

@@ -221,10 +221,10 @@ public class TestUtils {
 
 	public static TranslatorJobRecord givenTranslatorJobRecord() {
 		return new TranslatorJobRecord(UUID.randomUUID(), CREATED, Instant.parse("2024-11-01T10:05:24.00Z"),
-				JobState.COMPLETED, getJobRecordReport());
+				JobState.COMPLETED, givenJobRecordReport());
 	}
 
-	public static JsonNode getJobRecordReport() {
+	public static JsonNode givenJobRecordReport() {
 		return MAPPER.createObjectNode()
 			.put("successfulSpecimen", 291545)
 			.put("successfulMedia", 175241)
