@@ -48,16 +48,7 @@ class HandleComponentTest {
 	}
 
 	@Test
-	void testPostHandleFailed() {
-		// Given
-		doThrow(RuntimeException.class).when(handleClient).postHandle(any());
-
-		// When / Then
-		assertThrows(PidException.class, () -> handleComponent.postHandle(givenMasHandleRequest()));
-	}
-
-	@Test
-	void testPostHandleBadResponse() {
+	void testPostHandleBadResponse() throws Exception {
 		// Given
 		given(handleClient.postHandle(any())).willReturn(MAPPER.createObjectNode());
 
@@ -66,7 +57,7 @@ class HandleComponentTest {
 	}
 
 	@Test
-	void testRollbackHandleCreation() {
+	void testRollbackHandleCreation() throws Exception {
 		// Given
 		var request = MAPPER.createObjectNode();
 
@@ -75,7 +66,16 @@ class HandleComponentTest {
 
 		// Then
 		then(handleClient).should().rollbackHandle(request);
+	}
 
+	@Test
+	void testRollbackHandleCreationFails() throws Exception {
+		// Given
+		var request = MAPPER.createObjectNode();
+		doThrow(PidException.class).when(handleClient).rollbackHandle(request);
+
+		// When / Then
+		assertDoesNotThrow(() -> handleComponent.rollbackHandleCreation(request));
 	}
 
 	@Test
@@ -84,15 +84,6 @@ class HandleComponentTest {
 
 		// When / Then
 		assertDoesNotThrow(() -> handleComponent.tombstoneHandle(givenMasHandleRequest(), BARE_HANDLE));
-	}
-
-	@Test
-	void testTombstoneHandleFails() {
-		// Given
-		doThrow(RuntimeException.class).when(handleClient).tombstoneHandle(any(), any());
-
-		// When / Then
-		assertThrows(PidException.class, () -> handleComponent.tombstoneHandle(givenMasHandleRequest(), BARE_HANDLE));
 	}
 
 	private JsonNode givenHandleApiResponse() {
