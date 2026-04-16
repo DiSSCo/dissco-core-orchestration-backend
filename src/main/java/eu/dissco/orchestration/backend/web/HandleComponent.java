@@ -4,6 +4,7 @@ import eu.dissco.orchestration.backend.client.HandleClient;
 import eu.dissco.orchestration.backend.exception.PidException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 
@@ -17,28 +18,21 @@ public class HandleComponent {
 	private final HandleClient handleClient;
 
 	public String postHandle(JsonNode request) throws PidException {
-		try {
-			var result = handleClient.postHandle(List.of(request));
-			return parseResponse(result);
-		}
-		catch (RuntimeException e) {
-			log.error("An error has occurred while posting the Handle", e);
-			throw new PidException("Unable to create a PID for requested resource");
-		}
+		var result = handleClient.postHandle(List.of(request));
+		return parseResponse(result);
 	}
 
 	public void tombstoneHandle(JsonNode request, String id) throws PidException {
-		try {
-			handleClient.tombstoneHandle(id, request);
-		}
-		catch (RuntimeException e) {
-			log.error("An error has occurred while tombstoning handle {} ", id, e);
-			throw new PidException("Unable to create a PID for requested resource");
-		}
+		handleClient.tombstoneHandle(id, request);
 	}
 
 	public void rollbackHandleCreation(JsonNode request) {
-		handleClient.rollbackHandle(request);
+		try {
+			handleClient.rollbackHandle(request);
+		}
+		catch (PidException e) {
+			log.error("Unable to rollback handle creation", e);
+		}
 	}
 
 	private String parseResponse(JsonNode apiResponse) throws PidException {
