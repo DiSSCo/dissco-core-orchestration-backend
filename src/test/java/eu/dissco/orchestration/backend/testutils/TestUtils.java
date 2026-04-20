@@ -323,7 +323,6 @@ public class TestUtils {
 			.withSchemaLicense("https://www.apache.org/licenses/LICENSE-2.0")
 			.withOdsDependency(List.of())
 			.withSchemaContactPoint(new SchemaContactPoint().withSchemaEmail("dontmail@dissco.eu"))
-			.withOdsTopicName("fancy-topic-name")
 			.withOdsMaxReplicas(5)
 			.withOdsBatchingPermitted(false)
 			.withOdsTimeToLive(TTL)
@@ -375,12 +374,16 @@ public class TestUtils {
 			.withSchemaMaintainer(givenAgent())
 			.withSchemaLicense("https://www.apache.org/licenses/LICENSE-2.0")
 			.withSchemaContactPoint(new SchemaContactPoint__1().withSchemaEmail("dontmail@dissco.eu"))
-			.withOdsTopicName("fancy-topic-name")
+			.withOdsTopicName(stripId(id))
 			.withOdsMaxReplicas(5)
 			.withOdsBatchingPermitted(false)
 			.withOdsTimeToLive(ttl)
 			.withOdsHasEnvironmentalVariables(givenMasEnvironment())
 			.withOdsHasSecretVariables(givenMasSecrets());
+	}
+
+	private static String stripId(String pid) {
+		return pid.substring(pid.lastIndexOf('/') + 1).toLowerCase();
 	}
 
 	public static MachineAnnotationService givenTombstoneMas() {
