@@ -176,7 +176,7 @@ class MachineAnnotationServiceServiceTest {
 		var envList = new ArrayList<>(List.of(new V1EnvVar().name("MAS_NAME").value("A Machine Annotation Service"),
 				new V1EnvVar().name("MAS_ID").value("20.5000.1025/GW0-POP-XSL"),
 				new V1EnvVar().name("RABBITMQ_HOST").value("rabbitmq-cluster.rabbitmq.svc.cluster.local"),
-				new V1EnvVar().name("RABBITMQ_QUEUE").value("mas-fancy-topic-name-queue"),
+				new V1EnvVar().name("RABBITMQ_QUEUE").value("mas-gw0-pop-xsl-queue"),
 				new V1EnvVar().name("RABBITMQ_USER")
 					.valueFrom(new V1EnvVarSource()
 						.secretKeyRef(new V1SecretKeySelector().key("rabbitmq-username").name("aws-secrets"))),
@@ -279,7 +279,6 @@ class MachineAnnotationServiceServiceTest {
 				new JsonApiLinks(MAS_PATH));
 
 		var masRequest = givenMasRequest().withSchemaContactPoint(null)
-			.withOdsTopicName(null)
 			.withOdsMaxReplicas(maxReplicas);
 		given(handleComponent.postHandle(any())).willReturn(BARE_HANDLE);
 		given(fdoProperties.getMasType()).willReturn(MAS_TYPE_DOI);

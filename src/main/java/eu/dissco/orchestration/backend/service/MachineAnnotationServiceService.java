@@ -109,7 +109,7 @@ public class MachineAnnotationServiceService {
 
 	private final FdoProperties fdoProperties;
 
-	private static String getName(String pid) {
+	private static String getTopicName(String pid) {
 		return pid.substring(pid.lastIndexOf('/') + 1).toLowerCase();
 	}
 
@@ -147,8 +147,8 @@ public class MachineAnnotationServiceService {
 			.withSchemaLicense(mas.getSchemaLicense())
 			.withSchemaContactPoint(mas.getSchemaContactPoint())
 			.withOdsSlaDocumentation(mas.getOdsSlaDocumentation())
-			.withOdsTopicName(mas.getOdsTopicName())
-			.withOdsMaxReplicas(mas.getOdsMaxReplicas())
+			.withOdsTopicName(getTopicName(mas.getId()))
+			.withOdsMaxReplicas(getMaxReplicas(mas.getOdsMaxReplicas()))
 			.withOdsBatchingPermitted(mas.getOdsBatchingPermitted())
 			.withOdsTimeToLive(mas.getOdsTimeToLive())
 			.withOdsHasTombstoneMetadata(buildTombstoneMetadata(tombstoningAgent,
@@ -191,7 +191,7 @@ public class MachineAnnotationServiceService {
 						toMap(queue -> (((JsonObject) queue).get(METADATA).getAsJsonObject()).get("name").getAsString(),
 								queue -> queue));
 			for (var machineAnnotationService : existingMasList) {
-				var name = getName(machineAnnotationService.getId());
+				var name = getTopicName(machineAnnotationService.getId());
 				var expectedRabbitQueue = JsonParser.parseString(createRabbitQueueResource(name));
 				var existingRabbitQueue = existingRabbitQueueMap.get(MAS_PREFIX + name + QUEUE);
 				if (existingRabbitQueue == null) {
@@ -226,7 +226,7 @@ public class MachineAnnotationServiceService {
 			}
 			existingRabbitQueueMap.keySet()
 				.removeAll(existingMasList.stream()
-					.map(mas -> MAS_PREFIX + getName(mas.getId()) + QUEUE)
+					.map(mas -> MAS_PREFIX + getTopicName(mas.getId()) + QUEUE)
 					.collect(Collectors.toSet()));
 			for (var existingKeda : existingRabbitQueueMap.entrySet()) {
 				log.warn("Found a Rabbit Queue Resource: {} without a machine annotation service, deleting it",
@@ -255,7 +255,7 @@ public class MachineAnnotationServiceService {
 						binding -> (((JsonObject) binding).get(METADATA).getAsJsonObject()).get("name").getAsString(),
 						binding -> binding));
 			for (var machineAnnotationService : existingMasList) {
-				var name = getName(machineAnnotationService.getId());
+				var name = getTopicName(machineAnnotationService.getId());
 				var expectedRabbitBinding = JsonParser.parseString(createRabbitBindingResource(name));
 				var existingRabbitBinding = existingRabbitBindingMap.get(MAS_PREFIX + name + BINDING);
 				if (existingRabbitBinding == null) {
@@ -290,7 +290,7 @@ public class MachineAnnotationServiceService {
 			}
 			existingRabbitBindingMap.keySet()
 				.removeAll(existingMasList.stream()
-					.map(mas -> MAS_PREFIX + getName(mas.getId()) + BINDING)
+					.map(mas -> MAS_PREFIX + getTopicName(mas.getId()) + BINDING)
 					.collect(Collectors.toSet()));
 			for (var existingKeda : existingRabbitBindingMap.entrySet()) {
 				log.warn("Found a Rabbit Binding Resource: {} without a machine annotation service, deleting it",
@@ -322,7 +322,7 @@ public class MachineAnnotationServiceService {
 				.collect(toMap(keda -> (((JsonObject) keda).get(METADATA).getAsJsonObject()).get("name").getAsString(),
 						keda -> keda));
 			for (var machineAnnotationService : existingMasList) {
-				var name = getName(machineAnnotationService.getId());
+				var name = getTopicName(machineAnnotationService.getId());
 				var expectedKedaObject = createKedaFiles(machineAnnotationService, name);
 				var existingKedaObject = existingKedaMap.get(name + SCALED_OBJECT);
 				if (existingKedaObject == null) {
@@ -357,7 +357,7 @@ public class MachineAnnotationServiceService {
 			}
 			existingKedaMap.keySet()
 				.removeAll(existingMasList.stream()
-					.map(mas -> getName(mas.getId()) + SCALED_OBJECT)
+					.map(mas -> getTopicName(mas.getId()) + SCALED_OBJECT)
 					.collect(Collectors.toSet()));
 			for (var existingKeda : existingKedaMap.entrySet()) {
 				log.warn("Found a KEDA resource: {} without a machine annotation service, deleting it",
@@ -381,8 +381,8 @@ public class MachineAnnotationServiceService {
 			.collect(toMap(mas -> mas.getMetadata().getName(), mas -> mas));
 		for (var machineAnnotationService : existingMasList) {
 			var expectedMasDeploy = getV1Deployment(machineAnnotationService,
-					getName(machineAnnotationService.getId()));
-			var existingMasDeploy = existingDeployment.get(getName(machineAnnotationService.getId()) + DEPLOYMENT);
+					getTopicName(machineAnnotationService.getId()));
+			var existingMasDeploy = existingDeployment.get(getTopicName(machineAnnotationService.getId()) + DEPLOYMENT);
 			if (existingMasDeploy == null) {
 				log.warn("Found a machine annotation service: {} without a deployment, creating one",
 						machineAnnotationService.getId());
@@ -403,7 +403,9 @@ public class MachineAnnotationServiceService {
 		}
 		existingDeployment.keySet()
 			.removeAll(
-					existingMasList.stream().map(mas -> getName(mas.getId()) + DEPLOYMENT).collect(Collectors.toSet()));
+					existingMasList.stream()
+						.map(mas -> getTopicName(mas.getId()) + DEPLOYMENT)
+						.collect(Collectors.toSet()));
 		for (var existingDeploy : existingDeployment.values()) {
 			log.warn("Found a deployment: {} without a machine annotation service, deleting it",
 					existingDeploy.getMetadata().getName());
@@ -426,7 +428,6 @@ public class MachineAnnotationServiceService {
 		var requestBody = fdoRecordService.buildCreateRequest(masRequest, ObjectType.MAS);
 		try {
 			var handle = handleComponent.postHandle(requestBody);
-			setDefaultMas(masRequest, handle);
 			var mas = buildMachineAnnotationService(masRequest, 1, agent, handle, Instant.now());
 			repository.createMachineAnnotationService(mas);
 			createDeployment(mas);
@@ -463,8 +464,8 @@ public class MachineAnnotationServiceService {
 			.withSchemaLicense(mas.getSchemaLicense())
 			.withSchemaContactPoint(buildContactPoint(mas.getSchemaContactPoint()))
 			.withOdsSlaDocumentation(mas.getOdsSlaDocumentation())
-			.withOdsTopicName(mas.getOdsTopicName())
-			.withOdsMaxReplicas(mas.getOdsMaxReplicas())
+			.withOdsTopicName(getTopicName(handle))
+			.withOdsMaxReplicas(getMaxReplicas(mas.getOdsMaxReplicas()))
 			.withOdsBatchingPermitted(mas.getOdsBatchingPermitted())
 			.withOdsTimeToLive(mas.getOdsTimeToLive())
 			.withOdsHasSecretVariables(mas.getOdsHasSecretVariables())
@@ -480,13 +481,11 @@ public class MachineAnnotationServiceService {
 		return filter;
 	}
 
-	private void setDefaultMas(MachineAnnotationServiceRequest mas, String handle) {
-		if (mas.getOdsTopicName() == null) {
-			mas.setOdsTopicName(getName(handle));
+	private static Integer getMaxReplicas(Integer maxReplicas) {
+		if (maxReplicas == null || maxReplicas <= 0) {
+			return 1;
 		}
-		if (mas.getOdsMaxReplicas() == null || mas.getOdsMaxReplicas() <= 0) {
-			mas.setOdsMaxReplicas(1);
-		}
+		return maxReplicas;
 	}
 
 	private void createDeployment(MachineAnnotationService mas) throws ProcessingFailedException {
@@ -506,7 +505,7 @@ public class MachineAnnotationServiceService {
 	}
 
 	private boolean deployRabbitBindingToCluster(MachineAnnotationService mas) throws KubernetesFailedException {
-		var name = getName(mas.getId());
+		var name = getTopicName(mas.getId());
 		try {
 			var rabbitResource = createRabbitBindingResource(name);
 			var rabbitObject = JsonParser.parseString(rabbitResource);
@@ -529,7 +528,7 @@ public class MachineAnnotationServiceService {
 	}
 
 	private void deployRabbitQueueToCluster(MachineAnnotationService mas) throws KubernetesFailedException {
-		var name = getName(mas.getId());
+		var name = getTopicName(mas.getId());
 		try {
 			var rabbitResource = createRabbitQueueResource(name);
 			var rabbitObject = JsonParser.parseString(rabbitResource);
@@ -568,7 +567,7 @@ public class MachineAnnotationServiceService {
 	}
 
 	private boolean deployKedaToCluster(MachineAnnotationService mas) throws KubernetesFailedException {
-		var name = getName(mas.getId());
+		var name = getTopicName(mas.getId());
 		try {
 			var keda = createKedaFiles(mas, name);
 			customObjectsApi
@@ -590,7 +589,7 @@ public class MachineAnnotationServiceService {
 	}
 
 	private boolean deployMasToCluster(MachineAnnotationService mas, boolean create) throws KubernetesFailedException {
-		var shortPid = getName(mas.getId());
+		var shortPid = getTopicName(mas.getId());
 		try {
 			var deployment = getV1Deployment(mas, shortPid);
 			if (create) {
@@ -719,7 +718,7 @@ public class MachineAnnotationServiceService {
 		var request = fdoRecordService.buildRollbackCreateRequest(mas.getId());
 		handleComponent.rollbackHandleCreation(request);
 		repository.rollbackMasCreation(mas.getId());
-		var name = getName(mas.getId());
+		var name = getTopicName(mas.getId());
 		if (rollbackDeployment) {
 			try {
 				appsV1Api.deleteNamespacedDeployment(name + DEPLOYMENT, properties.getNamespace()).execute();
@@ -779,7 +778,6 @@ public class MachineAnnotationServiceService {
 		var currentMasOptional = repository.getActiveMachineAnnotationService(id);
 		if (currentMasOptional.isPresent()) {
 			var currentMas = currentMasOptional.get();
-			setDefaultMas(masRequest, id);
 			var machineAnnotationService = buildMachineAnnotationService(masRequest, currentMas.getSchemaVersion() + 1,
 					agent, id, Instant.now());
 			if (isEqual(machineAnnotationService, currentMas)) {
@@ -834,7 +832,7 @@ public class MachineAnnotationServiceService {
 
 	private void updateKedaResource(MachineAnnotationService mas, MachineAnnotationService rollbackRecord)
 			throws KubernetesFailedException, ProcessingFailedException {
-		var name = getName(mas.getId());
+		var name = getTopicName(mas.getId());
 		try {
 			customObjectsApi
 				.deleteNamespacedCustomObject(kubernetesProperties.getKedaGroup(),
@@ -936,7 +934,7 @@ public class MachineAnnotationServiceService {
 	}
 
 	private void deleteDeployment(MachineAnnotationService currentMas) throws ProcessingFailedException {
-		var name = getName(currentMas.getId());
+		var name = getTopicName(currentMas.getId());
 		try {
 			appsV1Api.deleteNamespacedDeployment(name + DEPLOYMENT, properties.getNamespace()).execute();
 		}
@@ -968,7 +966,7 @@ public class MachineAnnotationServiceService {
 
 	private void removeRabbitResources(MachineAnnotationService currentMas) {
 		try {
-			var name = getName(currentMas.getId());
+			var name = getTopicName(currentMas.getId());
 			customObjectsApi
 				.deleteNamespacedCustomObject(kubernetesProperties.getRabbitGroup(),
 						kubernetesProperties.getRabbitVersion(), properties.getNamespace(),
