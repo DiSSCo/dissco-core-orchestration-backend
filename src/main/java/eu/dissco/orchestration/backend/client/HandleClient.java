@@ -15,8 +15,9 @@ public interface HandleClient {
 	@PostExchange("batch")
 	JsonNode postHandle(@RequestBody List<JsonNode> handleRequest) throws PidException;
 
-	@PutExchange("{pid}")
-	void tombstoneHandle(@PathVariable String pid, @RequestBody JsonNode handleRequest) throws PidException;
+	@PutExchange("{prefix}/{suffix}")
+	void tombstoneHandle(@PathVariable String prefix, @PathVariable String suffix, @RequestBody JsonNode handleRequest)
+			throws PidException;
 
 	@DeleteExchange("rollback/create")
 	void rollbackHandle(@RequestBody JsonNode handleRequest) throws PidException;
