@@ -23,7 +23,9 @@ public class HandleComponent {
 	}
 
 	public void tombstoneHandle(JsonNode request, String id) throws PidException {
-		handleClient.tombstoneHandle(id, request);
+		var prefix = id.split("/")[0];
+		var suffix = id.split("/")[1];
+		handleClient.tombstoneHandle(prefix, suffix, request);
 	}
 
 	public void rollbackHandleCreation(JsonNode request) {
